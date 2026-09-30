@@ -113,6 +113,35 @@ export class App {
   // Side boxes pop-up animation state on scroll
   boxesVisible = signal<boolean>(false);
 
+  // Hero Title interactive motion signals
+  titleMouseX = signal<number>(0);
+  titleMouseY = signal<number>(0);
+  titleTiltX = signal<number>(0);
+  titleTiltY = signal<number>(0);
+
+  onHeroTitleMouseMove(event: MouseEvent) {
+    const target = event.currentTarget as HTMLElement;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const tiltY = ((x - centerX) / centerX) * 5;
+    const tiltX = -((y - centerY) / centerY) * 4;
+
+    this.titleMouseX.set(Math.round(x));
+    this.titleMouseY.set(Math.round(y));
+    this.titleTiltX.set(Number(tiltX.toFixed(2)));
+    this.titleTiltY.set(Number(tiltY.toFixed(2)));
+  }
+
+  onHeroTitleMouseLeave() {
+    this.titleTiltX.set(0);
+    this.titleTiltY.set(0);
+  }
+
   selectedBranch = computed(() =>
     this.hykonBranches.find(b => b.id === this.selectedBranchId()) || this.hykonBranches[0]
   );

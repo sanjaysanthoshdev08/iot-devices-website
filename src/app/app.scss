@@ -207,21 +207,24 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(8, 20, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 20, 42, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   backdrop-filter: blur(10px);
-  padding: 5px 16px;
+  padding: 6px 18px;
   border-radius: 100px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: badgePopIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 
   .badge-icon {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #00d2ff;
+    background: linear-gradient(135deg, #00d2ff 0%, #38bdf8 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
     svg { width: 11px; height: 11px; color: #031326; }
   }
 
@@ -229,43 +232,77 @@
     color: #e2e8f0;
     font-size: 13px;
     font-weight: 500;
+    letter-spacing: 0.3px;
   }
 }
 
-/* hero title */
+/* hero title with slow, smooth, silky motion, entrance animation, flowing gradient & 3D tilt */
 .hero-title {
+  position: relative;
   font-family: 'Montserrat', 'Inter', sans-serif;
   font-size: clamp(38px, 4.5vw, 68px);
   font-weight: 900;
   letter-spacing: normal;
   line-height: 1.15;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   max-width: 850px;
-  background: linear-gradient(180deg, #ffffff 10%, #c5eefe 50%, #38bdf8 100%);
+  padding: 0 16px;
+  
+  /* Metallic flowing animated gradient text */
+  background: linear-gradient(
+    115deg,
+    #ffffff 0%,
+    #e0f2fe 20%,
+    #38bdf8 42%,
+    #818cf8 65%,
+    #00f0ff 85%,
+    #ffffff 100%
+  );
+  background-size: 260% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 40px rgba(56, 189, 248, 0.3));
-  padding: 0 16px;
+
+  /* 3D Perspective tilt & smooth transitions */
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+  will-change: transform, filter, background-position;
+
+  /* Drop shadow & slow, silky continuous animations */
+  filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.4));
+  animation: 
+    heroTitleEntrance 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both,
+    heroGradientFlow 14s linear infinite,
+    heroTitleFloat 7.5s ease-in-out 1.6s infinite alternate;
+  cursor: default;
+  user-select: none;
+
+  &:hover {
+    filter: drop-shadow(0 0 50px rgba(0, 240, 255, 0.75)) drop-shadow(0 0 25px rgba(56, 189, 248, 0.65));
+    transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(1.02);
+  }
 }
 
-/* subtitle */
+/* hero subtitle */
 .hero-subtitle {
   color: #94a3b8;
   font-size: 16px;
   line-height: 1.55;
   font-weight: 400;
   text-align: center;
-  max-width: 540px;
-  margin: 0 0 22px;
+  max-width: 560px;
+  margin: 0 0 24px;
   padding: 0 16px;
+  animation: subtitleSlideUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both;
 }
 
 /* Explore More button */
 .btn-explore {
-  background: transparent;
+  background: rgba(10, 22, 44, 0.6);
   color: #fff;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
   padding: 10px 30px;
   border-radius: 100px;
   font-weight: 600;
@@ -275,17 +312,84 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: all 0.25s;
+  backdrop-filter: blur(8px);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: btnPopUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) 1.1s both;
 
   &:hover {
     border-color: #38bdf8;
     color: #38bdf8;
-    box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), inset 0 0 10px rgba(56, 189, 248, 0.15);
+    transform: translateY(-2px);
   }
 
-  .icon-arrow { width: 16px; height: 16px; transition: transform 0.2s; }
-  &:hover .icon-arrow { transform: translateX(3px); }
+  .icon-arrow { width: 16px; height: 16px; transition: transform 0.25s ease; }
+  &:hover .icon-arrow { transform: translateX(4px); }
+}
+
+/* Keyframe Animations for Entrance, Flowing Gradient & Floating Motion */
+@keyframes heroTitleEntrance {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) translateY(32px) scale(0.94);
+    filter: blur(8px) drop-shadow(0 0 0px transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) translateY(0) scale(1);
+    filter: blur(0px) drop-shadow(0 0 35px rgba(56, 189, 248, 0.4));
+  }
+}
+
+@keyframes heroGradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 260% 50%;
+  }
+}
+
+@keyframes heroTitleFloat {
+  0% {
+    transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(0px);
+  }
+  100% {
+    transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-7px);
+  }
+}
+
+@keyframes badgePopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes subtitleSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes btnPopUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ---------- GLASSMORPHIC CARDS WITH INTERACTIVE BOTTOM POP-UP ANIMATION ---------- */

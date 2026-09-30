@@ -1,5 +1,5 @@
 <div class="viewport-wrapper" (scroll)="onElementScroll($event)">
-  
+
   <!-- ===== HOME HERO SECTION ===== -->
   <section class="home-hero-section">
     <div class="app-card-frame">
@@ -16,11 +16,8 @@
         <div class="nav-left"></div>
 
         <nav class="nav-pill-container">
-          <a *ngFor="let link of navLinks(); let i = index"
-             href="javascript:void(0)"
-             class="nav-item"
-             [class.active]="link.active"
-             (click)="setActiveNav(i)">
+          <a *ngFor="let link of navLinks(); let i = index" href="javascript:void(0)" class="nav-item"
+            [class.active]="link.active" (click)="setActiveNav(i)">
             {{ link.label }}
           </a>
         </nav>
@@ -52,12 +49,21 @@
           <span class="badge-text">Fast, Secure, Global</span>
         </div>
 
-        <!-- Main Title -->
-        <h1 class="hero-title">Intelligent Energy Experience</h1>
+        <!-- Main Title with Interactive Motion Effects -->
+        <h1 class="hero-title"
+            (mousemove)="onHeroTitleMouseMove($event)"
+            (mouseleave)="onHeroTitleMouseLeave()"
+            [style.--mouse-x]="titleMouseX() + 'px'"
+            [style.--mouse-y]="titleMouseY() + 'px'"
+            [style.--tilt-x]="titleTiltX() + 'deg'"
+            [style.--tilt-y]="titleTiltY() + 'deg'">
+          Intelligent Energy Experience
+        </h1>
 
         <!-- Subtitle -->
         <p class="hero-subtitle">
-          Turn real-time system data into meaningful insights and stay connected to your power performance wherever you are.
+          Turn real-time system data into meaningful insights and stay connected to your power performance wherever you
+          are.
         </p>
 
         <!-- Explore More button -->
@@ -86,11 +92,8 @@
 
         <div class="avatar-row">
           <div class="avatar-stack">
-            <img *ngFor="let avatar of avatars; let i = index"
-                 [src]="avatar.src"
-                 [alt]="avatar.name"
-                 class="avatar-img"
-                 [style.z-index]="5 - i" />
+            <img *ngFor="let avatar of avatars; let i = index" [src]="avatar.src" [alt]="avatar.name" class="avatar-img"
+              [style.z-index]="5 - i" />
           </div>
           <div class="badge-users-count">+25K</div>
         </div>
@@ -119,10 +122,8 @@
 
           <!-- Dropdown list -->
           <div class="dropdown-menu branch-menu" *ngIf="showBranchDropdown()">
-            <div *ngFor="let branch of hykonBranches"
-                 class="dropdown-item branch-dropdown-item"
-                 [class.selected-item]="branch.id === selectedBranchId()"
-                 (click)="selectBranch(branch.id)">
+            <div *ngFor="let branch of hykonBranches" class="dropdown-item branch-dropdown-item"
+              [class.selected-item]="branch.id === selectedBranchId()" (click)="selectBranch(branch.id)">
               <div class="branch-item-top">
                 <span class="place-txt">{{ branch.place }}</span>
                 <span class="hq-tag" *ngIf="branch.isHeadquarters">HQ</span>
@@ -149,7 +150,9 @@
             </div>
             <div class="phone-line">
               <svg class="phone-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                </path>
               </svg>
               <span>{{ selectedBranch().phone }}</span>
             </div>

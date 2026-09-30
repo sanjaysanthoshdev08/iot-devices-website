@@ -1,0 +1,74 @@
+warning: in the working copy of 'src/app/app.html', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/app/app.html b/src/app/app.html[m
+[1mindex bee832b..b06eb2f 100644[m
+[1m--- a/src/app/app.html[m
+[1m+++ b/src/app/app.html[m
+[36m@@ -1,5 +1,5 @@[m
+ <div class="viewport-wrapper" (scroll)="onElementScroll($event)">[m
+[31m-  [m
+[32m+[m
+   <!-- ===== HOME HERO SECTION ===== -->[m
+   <section class="home-hero-section">[m
+     <div class="app-card-frame">[m
+[36m@@ -16,11 +16,8 @@[m
+         <div class="nav-left"></div>[m
+ [m
+         <nav class="nav-pill-container">[m
+[31m-          <a *ngFor="let link of navLinks(); let i = index"[m
+[31m-             href="javascript:void(0)"[m
+[31m-             class="nav-item"[m
+[31m-             [class.active]="link.active"[m
+[31m-             (click)="setActiveNav(i)">[m
+[32m+[m[32m          <a *ngFor="let link of navLinks(); let i = index" href="javascript:void(0)" class="nav-item"[m
+[32m+[m[32m            [class.active]="link.active" (click)="setActiveNav(i)">[m
+             {{ link.label }}[m
+           </a>[m
+         </nav>[m
+[36m@@ -57,7 +54,8 @@[m
+ [m
+         <!-- Subtitle -->[m
+         <p class="hero-subtitle">[m
+[31m-          Turn real-time system data into meaningful insights and stay connected to your power performance wherever you are.[m
+[32m+[m[32m          Turn real-time system data into meaningful insights and stay connected to your power performance wherever you[m
+[32m+[m[32m          are.[m
+         </p>[m
+ [m
+         <!-- Explore More button -->[m
+[36m@@ -86,11 +84,8 @@[m
+ [m
+         <div class="avatar-row">[m
+           <div class="avatar-stack">[m
+[31m-            <img *ngFor="let avatar of avatars; let i = index"[m
+[31m-                 [src]="avatar.src"[m
+[31m-                 [alt]="avatar.name"[m
+[31m-                 class="avatar-img"[m
+[31m-                 [style.z-index]="5 - i" />[m
+[32m+[m[32m            <img *ngFor="let avatar of avatars; let i = index" [src]="avatar.src" [alt]="avatar.name" class="avatar-img"[m
+[32m+[m[32m              [style.z-index]="5 - i" />[m
+           </div>[m
+           <div class="badge-users-count">+25K</div>[m
+         </div>[m
+[36m@@ -119,10 +114,8 @@[m
+ [m
+           <!-- Dropdown list -->[m
+           <div class="dropdown-menu branch-menu" *ngIf="showBranchDropdown()">[m
+[31m-            <div *ngFor="let branch of hykonBranches"[m
+[31m-                 class="dropdown-item branch-dropdown-item"[m
+[31m-                 [class.selected-item]="branch.id === selectedBranchId()"[m
+[31m-                 (click)="selectBranch(branch.id)">[m
+[32m+[m[32m            <div *ngFor="let branch of hykonBranches" class="dropdown-item branch-dropdown-item"[m
+[32m+[m[32m              [class.selected-item]="branch.id === selectedBranchId()" (click)="selectBranch(branch.id)">[m
+               <div class="branch-item-top">[m
+                 <span class="place-txt">{{ branch.place }}</span>[m
+                 <span class="hq-tag" *ngIf="branch.isHeadquarters">HQ</span>[m
+[36m@@ -149,7 +142,9 @@[m
+             </div>[m
+             <div class="phone-line">[m
+               <svg class="phone-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">[m
+[31m-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>[m
+[32m+[m[32m                <path[m
+[32m+[m[32m                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">[m
+[32m+[m[32m                </path>[m
+               </svg>[m
+               <span>{{ selectedBranch().phone }}</span>[m
+             </div>[m
