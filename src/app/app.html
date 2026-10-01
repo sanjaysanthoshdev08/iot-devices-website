@@ -175,8 +175,28 @@
 
   <!-- ===== ABOUT PAGE SECTION (Scroll down to see) ===== -->
   <section id="about-section" class="about-page-section">
-    <div class="about-container">
-      <img src="assets/about page image1 .png" alt="About Page" class="about-page-img" />
+    <div class="about-scroll-canvas-wrapper">
+      <div class="about-sticky-frame">
+        <canvas #aboutCanvas id="about-canvas" class="about-canvas"></canvas>
+
+        <!-- ===== ABOUT US CONTENT OVERLAY ===== -->
+        <div class="about-content-overlay"
+             [style.opacity]="aboutTextOpacity()"
+             [style.transform]="'translateY(' + aboutTextTranslateY() + 'px) scale(' + aboutTextScale() + ')'">
+
+          <div class="about-content-inner">
+            <h2 class="about-heading">About Us</h2>
+            <p class="about-text">Smart monitoring built for better visibility, control, and confidence.</p>
+            <p class="about-text">Get real-time insights into inverter, battery, grid, load, and system performance.</p>
+            <p class="about-text">Monitor essential operating conditions through clear and meaningful data.</p>
+            <p class="about-text">Stay informed with accurate status updates and timely system information.</p>
+            <p class="about-text">Designed to make power-system monitoring simple, reliable, and connected.</p>
+          </div>
+
+        </div>
+        <!-- ===== END ABOUT US CONTENT OVERLAY ===== -->
+
+      </div>
     </div>
   </section>
 

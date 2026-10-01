@@ -767,3 +767,94 @@
   70%  { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
+
+/* ===== ABOUT SECTION — SCROLL-DRIVEN CANVAS ANIMATION ===== */
+
+.about-page-section {
+  /* Extra tall so scroll can drive all 240 frames */
+  height: 800vh;
+  position: relative;
+  background: #020610;
+}
+
+/* Wrapper holds the sticky frame in place as user scrolls */
+.about-scroll-canvas-wrapper {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Full-viewport sticky frame */
+.about-sticky-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Canvas fills the sticky frame edge-to-edge */
+.about-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #020610;
+}
+
+/* ===== ABOUT US CONTENT OVERLAY ===== */
+
+.about-content-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  will-change: opacity, transform;
+  z-index: 10;
+}
+
+.about-content-inner {
+  text-align: center;
+  max-width: 720px;
+  width: 90%;
+  padding: 0 20px;
+}
+
+/* ---- Heading ---- */
+.about-heading {
+  font-family: 'Inter', 'Outfit', sans-serif;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 18px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Body text lines — diamond shape (two triangles joined) ---- */
+.about-text {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(15px, 1.6vw, 18px);
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0 auto 4px;
+  color: #ffffff;
+  text-shadow: none;
+
+  /* Diamond shape: narrow → wide → narrow */
+  &:nth-child(2) { max-width: 55%; }   /* top narrow */
+  &:nth-child(3) { max-width: 78%; }   /* wider */
+  &:nth-child(4) { max-width: 100%; }  /* widest middle */
+  &:nth-child(5) { max-width: 78%; }   /* narrower */
+  &:nth-child(6) { max-width: 55%; }   /* bottom narrow */
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+

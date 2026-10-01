@@ -1,6 +1,7 @@
-import { Component, signal, computed, HostListener } from '@angular/core';
+import { Component, signal, computed, HostListener, ViewChild, ElementRef, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { isPlatformBrowser } from '@angular/common';
 
 export interface HykonBranch {
   id: string;
@@ -20,7 +21,10 @@ export interface HykonBranch {
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {
+export class App implements AfterViewInit, OnDestroy {
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
+  @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
+
   // Navigation links
   navLinks = signal([
     { label: 'Home', active: true },
@@ -29,6 +33,19 @@ export class App {
     { label: 'Featurss', active: false },
     { label: 'Contact', active: false }
   ]);
+
+  // Scroll animation frames
+  private readonly TOTAL_FRAMES = 240;
+  private frames: HTMLImageElement[] = [];
+  private currentFrame = 0;
+  private animationFrameId: number | null = null;
+  private scrollListener: (() => void) | null = null;
+  private resizeListener: (() => void) | null = null;
+
+  // About Us text overlay signals (driven by scroll progress)
+  aboutTextOpacity    = signal<number>(0);
+  aboutTextTranslateY = signal<number>(40);
+  aboutTextScale      = signal<number>(0.92);
 
   // Avatars list
   avatars = [
@@ -156,6 +173,8 @@ export class App {
     if (target && target.scrollTop > 30) {
       this.boxesVisible.set(true);
     }
+    // Drive canvas animation via viewport-wrapper scroll
+    this.updateCanvasFrame(target);
   }
 
   checkScrollPosition() {
@@ -163,6 +182,147 @@ export class App {
     if (scrollPos > 30) {
       this.boxesVisible.set(true);
     }
+  }
+
+  // ---- Scroll-driven Canvas Animation ----
+
+  ngAfterViewInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.preloadFrames();
+      // Redraw at correct DPR on resize / zoom change
+      this.resizeListener = () => this.drawFrame(this.currentFrame);
+      window.addEventListener('resize', this.resizeListener);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    if (this.resizeListener) {
+      window.removeEventListener('resize', this.resizeListener);
+    }
+  }
+
+  private preloadFrames() {
+    let loaded = 0;
+    for (let i = 1; i <= this.TOTAL_FRAMES; i++) {
+      const img = new Image();
+      const num = String(i).padStart(3, '0');
+      img.src = `assets/ezgif-frame-${num}.jpg`;
+      img.onload = () => {
+        loaded++;
+        if (loaded === 1) {
+          // Draw first frame as soon as it's ready
+          this.drawFrame(0);
+        }
+      };
+      this.frames[i - 1] = img;
+    }
+  }
+
+  private drawFrame(index: number) {
+    if (!this.aboutCanvasRef) return;
+    const canvas = this.aboutCanvasRef.nativeElement;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
+    const img = this.frames[index];
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
+    const rect   = canvas.getBoundingClientRect();
+    const dpr    = window.devicePixelRatio || 1;
+
+    // Set the canvas backing buffer to native screen resolution
+    const targetW = Math.round(rect.width  * dpr);
+    const targetH = Math.round(rect.height * dpr);
+
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width  = targetW;
+      canvas.height = targetH;
+      // Scale all draw calls so 1 CSS pixel = dpr backing pixels
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // Highest-quality image smoothing
+    ctx.imageSmoothingEnabled = true;
+    (ctx as any).imageSmoothingQuality = 'high';
+
+    // Cover-fill: centre image, preserving aspect ratio
+    const cssW  = rect.width;
+    const cssH  = rect.height;
+    const scale = Math.max(cssW / img.naturalWidth, cssH / img.naturalHeight);
+    const drawW = img.naturalWidth  * scale;
+    const drawH = img.naturalHeight * scale;
+    const ox    = (cssW - drawW) / 2;
+    const oy    = (cssH - drawH) / 2;
+
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.drawImage(img, ox, oy, drawW, drawH);
+  }
+
+  private updateCanvasFrame(scroller: HTMLElement) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const section = document.getElementById('about-section');
+    if (!section) return;
+
+    const sectionTop    = section.offsetTop;
+    const sectionHeight = section.scrollHeight;
+    const viewH         = scroller.clientHeight;
+    const scrollTop     = scroller.scrollTop;
+
+    // Scroll range: from when the section enters view to when it exits
+    const start = sectionTop;
+    const end   = sectionTop + sectionHeight - viewH;
+    const progress = Math.min(Math.max((scrollTop - start) / (end - start), 0), 1);
+
+    const frameIndex = Math.min(
+      Math.floor(progress * (this.TOTAL_FRAMES - 1)),
+      this.TOTAL_FRAMES - 1
+    );
+
+    if (frameIndex !== this.currentFrame) {
+      this.currentFrame = frameIndex;
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = requestAnimationFrame(() => this.drawFrame(frameIndex));
+    }
+
+    // ---- Drive About Us text overlay ----
+    // Text is fully visible from progress 0.28 → 0.72, fades in/out on the edges
+    const TEXT_IN_START  = 0.28;  // start fading in
+    const TEXT_IN_END    = 0.40;  // fully visible
+    const TEXT_OUT_START = 0.65;  // start fading out
+    const TEXT_OUT_END   = 0.78;  // fully gone
+
+    let opacity = 0;
+    let translateY = 40;
+    let scale = 0.92;
+
+    if (progress >= TEXT_IN_START && progress <= TEXT_OUT_END) {
+      if (progress < TEXT_IN_END) {
+        // Fade in
+        const t = (progress - TEXT_IN_START) / (TEXT_IN_END - TEXT_IN_START);
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out quad
+        opacity    = ease;
+        translateY = 40 * (1 - ease);
+        scale      = 0.92 + 0.08 * ease;
+      } else if (progress > TEXT_OUT_START) {
+        // Fade out
+        const t = (progress - TEXT_OUT_START) / (TEXT_OUT_END - TEXT_OUT_START);
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        opacity    = 1 - ease;
+        translateY = -30 * ease;
+        scale      = 1 - 0.06 * ease;
+      } else {
+        // Fully visible plateau
+        opacity    = 1;
+        translateY = 0;
+        scale      = 1;
+      }
+    }
+
+    this.aboutTextOpacity.set(Math.max(0, Math.min(1, opacity)));
+    this.aboutTextTranslateY.set(translateY);
+    this.aboutTextScale.set(scale);
   }
 
   setActiveNav(index: number) {
