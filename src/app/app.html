@@ -178,6 +178,7 @@
     <div class="about-scroll-canvas-wrapper">
       <div class="about-sticky-frame">
         <canvas #aboutCanvas id="about-canvas" class="about-canvas"></canvas>
+        <img src="assets/about page 2.png" alt="About Page" class="about-static-fallback-img" [class.show-static]="isNavClickScrolling" />
 
         <!-- ===== ABOUT US CONTENT OVERLAY ===== -->
         <div class="about-content-overlay"

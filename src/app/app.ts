@@ -271,8 +271,11 @@ export class App implements AfterViewInit, OnDestroy {
     ctx.drawImage(img, ox, oy, drawW, drawH);
   }
 
+  private isNavClickScrolling = false;
+
   private updateCanvasFrame(scroller: HTMLElement) {
     if (!isPlatformBrowser(this.platformId)) return;
+    if (this.isNavClickScrolling) return;
     const section = document.getElementById('about-section');
     if (!section) return;
 
@@ -342,32 +345,77 @@ export class App implements AfterViewInit, OnDestroy {
     );
 
     const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
+    if (!scroller) return;
+
     let targetEl: HTMLElement | null = null;
 
     if (index === 0) {
       targetEl = document.querySelector('.home-hero-section');
     } else if (index === 1) {
       targetEl = document.getElementById('about-section');
-    } else if (index === 2) {
-      targetEl = document.getElementById('product-section');
-    } else if (index === 3) {
+    } else if (index === 2 || index === 3) {
       targetEl = document.getElementById('product-section');
     } else if (index === 4) {
       targetEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
     }
 
-    if (targetEl) {
-      if (scroller) {
-        // Instant jump to target section, bypassing 800vh scroll animation delay
-        scroller.style.scrollBehavior = 'auto';
-        scroller.scrollTop = targetEl.offsetTop;
-        requestAnimationFrame(() => {
-          scroller.style.scrollBehavior = '';
-        });
-      } else {
-        targetEl.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
-      }
+    if (!targetEl) return;
+
+    // Temporarily collapse 800vh About section so scroll flows fast & smooth (450ms) without 800vh animation delay
+    scroller.classList.add('nav-scrolling');
+    this.isNavClickScrolling = true;
+
+    const startY = scroller.scrollTop;
+    const targetY = targetEl.offsetTop;
+
+    this.animateNavScroll(scroller, targetEl, startY, targetY, 450);
+  }
+
+  private animateNavScroll(
+    scroller: HTMLElement,
+    targetEl: HTMLElement,
+    startY: number,
+    targetY: number,
+    duration: number = 450
+  ) {
+    const diffY = targetY - startY;
+
+    if (Math.abs(diffY) < 5) {
+      scroller.scrollTop = targetY;
+      this.finishNavScroll(scroller, targetEl);
+      return;
     }
+
+    const startTime = performance.now();
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    const step = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeInOutCubic(progress);
+
+      scroller.scrollTop = startY + diffY * easedProgress;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        this.finishNavScroll(scroller, targetEl);
+      }
+    };
+
+    requestAnimationFrame(step);
+  }
+
+  private finishNavScroll(scroller: HTMLElement, targetEl: HTMLElement) {
+    scroller.classList.remove('nav-scrolling');
+    // Set final position to target element's full offsetTop while isNavClickScrolling is still true
+    scroller.scrollTop = targetEl.offsetTop;
+
+    // Reset isNavClickScrolling after scroll event has settled so canvas frame animation never triggers
+    setTimeout(() => {
+      this.isNavClickScrolling = false;
+    }, 150);
   }
 
   toggleBranchDropdown() {
