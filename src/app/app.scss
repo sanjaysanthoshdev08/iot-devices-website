@@ -91,17 +91,26 @@
   pointer-events: none;
 }
 
-/* ---------- NAVBAR ---------- */
+/* ---------- NAVBAR (Visible ONLY on Home page) ---------- */
 .navbar {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 50;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 24px 48px 0;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease;
+
+  /* Hide navbar when scrolled past Home top */
+  &.navbar-hidden {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    visibility: hidden;
+  }
 }
 
 .nav-left { flex: 1; }
@@ -236,7 +245,7 @@
   }
 }
 
-/* hero title with slow, smooth, silky motion, entrance animation, flowing gradient & 3D tilt */
+/* hero title with smooth motion, entrance animation, flowing gradient & 3D tilt */
 .hero-title {
   position: relative;
   font-family: 'Montserrat', 'Inter', sans-serif;
@@ -270,7 +279,7 @@
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
   will-change: transform, filter, background-position;
 
-  /* Drop shadow & slow, silky continuous animations */
+  /* Drop shadow & silky continuous animations */
   filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.4));
   animation: 
     heroTitleEntrance 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both,
@@ -735,32 +744,6 @@
   &:hover .icon-arrow { transform: translateX(3px); }
 }
 
-/* ---------- ABOUT PAGE SECTION ---------- */
-.about-page-section {
-  width: 100%;
-  min-height: 100vh;
-  background: #020610;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px 20px 80px;
-}
-
-.about-container {
-  width: 100%;
-  max-width: 1600px;
-  display: flex;
-  justify-content: center;
-}
-
-.about-page-img {
-  width: 100%;
-  height: auto;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 /* ---------- animation ---------- */
 @keyframes pulse-live {
   0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
@@ -768,31 +751,17 @@
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-/* ===== ABOUT SECTION — SCROLL-DRIVEN CANVAS ANIMATION ===== */
+/* ===== SINGLE ABOUT SECTION — SCROLL-DRIVEN CANVAS ANIMATION ===== */
 
 .about-page-section {
-  /* Extra tall so scroll can drive all 240 frames */
+  width: 100%;
+  /* Extra tall so natural scroll drives all 240 frames */
   height: 800vh;
   position: relative;
   background: #020610;
 }
 
-/* When navigating via navbar, freeze canvas scroll animation and display static about page 2.png image with text overlay */
-.viewport-wrapper.nav-scrolling {
-  .about-page-section {
-    height: 100vh !important;
-    opacity: 1 !important;
-    pointer-events: none !important;
-  }
-  .about-scroll-canvas-wrapper {
-    position: relative !important;
-  }
-  .about-content-overlay {
-    opacity: 1 !important;
-    transform: translateY(0) scale(1) !important;
-  }
-}
-
+/* Static fallback image shown when navigating via navbar click */
 .about-static-fallback-img {
   position: absolute;
   inset: 0;
@@ -874,7 +843,7 @@
   text-shadow: 0 2px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* ---- Body text lines — diamond shape (two triangles joined) ---- */
+/* ---- Body text lines — diamond shape ---- */
 .about-text {
   font-family: 'Inter', sans-serif;
   font-size: clamp(15px, 1.6vw, 18px);
@@ -884,19 +853,18 @@
   color: #ffffff;
   text-shadow: none;
 
-  /* Diamond shape: narrow → wide → narrow */
-  &:nth-child(2) { max-width: 55%; }   /* top narrow */
-  &:nth-child(3) { max-width: 78%; }   /* wider */
-  &:nth-child(4) { max-width: 100%; }  /* widest middle */
-  &:nth-child(5) { max-width: 78%; }   /* narrower */
-  &:nth-child(6) { max-width: 55%; }   /* bottom narrow */
+  &:nth-child(2) { max-width: 55%; }
+  &:nth-child(3) { max-width: 78%; }
+  &:nth-child(4) { max-width: 100%; }
+  &:nth-child(5) { max-width: 78%; }
+  &:nth-child(6) { max-width: 55%; }
 
   &:last-child {
     margin-bottom: 0;
   }
 }
 
-/* ===== PRODUCT PAGE SECTION ===== */
+/* ===== PRODUCT PAGE SECTION (Full image only) ===== */
 .product-page-section {
   width: 100%;
   min-height: 100vh;
@@ -923,25 +891,24 @@
   object-fit: contain;
 }
 
-/* ===== SMOOTH ABOUT-TO-PRODUCT TRANSITION OVERLAY ===== */
+/* ===== SMOOTH HOME -> ABOUT -> PRODUCT TRANSITION OVERLAY ===== */
 .about-to-product-transition {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 998;
+  z-index: 9999;
   overflow: hidden;
-  background: #020610;
+  background: transparent;
   pointer-events: none;
 
   .transition-about-slide {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
-    transform: translateY(0%);
-    transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1);
+    transform: translateY(100%);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform;
 
     .transition-about-img {
@@ -951,23 +918,16 @@
       object-position: center;
       display: block;
     }
-
-    .transition-text-overlay {
-      opacity: 1 !important;
-      transform: none !important;
-      pointer-events: none;
-    }
   }
 
   .transition-product-slide {
     position: absolute;
-    top: 100%;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     background: #020610;
-    transform: translateY(0%);
-    transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1);
+    transform: translateY(100%);
+    transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform;
     display: flex;
     justify-content: center;
@@ -988,13 +948,25 @@
     }
   }
 
-  &.slide-active {
+  /* Phase 1 & 2: About slides in to cover Home (Home -> About) and holds for viewing */
+  &.phase-holding {
     .transition-about-slide {
-      transform: translateY(-100%);
+      transform: translateY(0%);
     }
     .transition-product-slide {
+      transform: translateY(100%);
+    }
+  }
+
+  /* Phase 3: About slides up out of view, Product slides in to cover About (About -> Products) */
+  &.phase-product {
+    .transition-about-slide {
       transform: translateY(-100%);
+      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .transition-product-slide {
+      transform: translateY(0%);
+      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
     }
   }
 }
-

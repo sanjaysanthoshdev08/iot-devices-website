@@ -34,28 +34,21 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Contact', active: false }
   ]);
 
-  // Transition state when navigating from About to Products
+  // Navbar visibility — only show on Home page
+  isNavbarHidden = signal<boolean>(false);
+
+  // Transition state when navigating via navbar click (skip about scroll animation)
+  isNavClickScrolling = signal<boolean>(false);
+
+  // Transition overlay state for Home -> About -> Product slide sequence
   isNavTransitioningToProduct = signal<boolean>(false);
-  isTransitionSlideActive = signal<boolean>(false);
-  isAboutStaticShown = signal<boolean>(false);
-
-  // Product image lightbox modal
-  isProductModalOpen = signal<boolean>(false);
-
-  openProductModal() {
-    this.isProductModalOpen.set(true);
-  }
-
-  closeProductModal() {
-    this.isProductModalOpen.set(false);
-  }
+  transitionPhase = signal<'none' | 'about-entering' | 'about-holding' | 'product-entering'>('none');
 
   // Scroll animation frames
   private readonly TOTAL_FRAMES = 240;
   private frames: HTMLImageElement[] = [];
   private currentFrame = 0;
   private animationFrameId: number | null = null;
-  private scrollListener: (() => void) | null = null;
   private resizeListener: (() => void) | null = null;
 
   // About Us text overlay signals (driven by scroll progress)
@@ -189,8 +182,14 @@ export class App implements AfterViewInit, OnDestroy {
     if (target && target.scrollTop > 30) {
       this.boxesVisible.set(true);
     }
-    // Drive canvas animation via viewport-wrapper scroll
-    this.updateCanvasFrame(target);
+
+    // Navbar visible ONLY on Home page (scrollTop <= 60px)
+    this.isNavbarHidden.set(target.scrollTop > 60);
+
+    // Drive canvas animation via scroll ONLY during natural mouse scroll (not nav clicks)
+    if (!this.isNavClickScrolling()) {
+      this.updateCanvasFrame(target);
+    }
   }
 
   checkScrollPosition() {
@@ -276,11 +275,10 @@ export class App implements AfterViewInit, OnDestroy {
     ctx.drawImage(img, ox, oy, drawW, drawH);
   }
 
-  private isNavClickScrolling = false;
-
   private updateCanvasFrame(scroller: HTMLElement) {
     if (!isPlatformBrowser(this.platformId)) return;
-    if (this.isNavClickScrolling) return;
+    // Skip canvas animation when navigating via navbar click
+    if (this.isNavClickScrolling()) return;
     const section = document.getElementById('about-section');
     if (!section) return;
 
@@ -353,37 +351,42 @@ export class App implements AfterViewInit, OnDestroy {
     if (!scroller) return;
 
     if (index === 2 || index === 3) {
-      // Products clicked: transition smoothly from About (with about page 2.jpg) to Products
-      this.isNavClickScrolling = true;
-      this.isAboutStaticShown.set(true);
+      // Products clicked: smooth flow Home -> About -> Products
+      // 1. Immediately disable scroll animation & hide navbar
+      this.isNavClickScrolling.set(true);
+      this.isNavbarHidden.set(true);
 
-      // Render transition overlay (slide 1: About with about page 2.jpg, slide 2: Product)
+      // 2. Start transition overlay at 'about-entering'
       this.isNavTransitioningToProduct.set(true);
-      this.isTransitionSlideActive.set(false);
+      this.transitionPhase.set('about-entering');
 
-      // Position background scroller at Product section without smooth-scroll delay
-      const productEl = document.getElementById('product-section');
-      if (productEl) {
-        const origBehavior = scroller.style.scrollBehavior;
-        scroller.style.scrollBehavior = 'auto';
-        scroller.scrollTop = productEl.offsetTop;
-        scroller.style.scrollBehavior = origBehavior;
-      }
-
-      // Trigger GPU-accelerated smooth slide transition
+      // 3. Phase 1: About slides in to cover Home (Home -> About)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          this.isTransitionSlideActive.set(true);
+          this.transitionPhase.set('about-holding');
         });
       });
 
-      // Clear transition overlay after animation completes
+      // 4. Phase 2: After user clearly sees the About page ("about page 2.jpg"),
+      // position background scroller at Product section and start About -> Products transition
+      setTimeout(() => {
+        const productEl = document.getElementById('product-section');
+        if (productEl) {
+          const origBehavior = scroller.style.scrollBehavior;
+          scroller.style.scrollBehavior = 'auto';
+          scroller.scrollTop = productEl.offsetTop;
+          scroller.style.scrollBehavior = origBehavior;
+        }
+
+        this.transitionPhase.set('product-entering');
+      }, 1150);
+
+      // 5. Phase 3: Transition finishes smoothly on Products page
       setTimeout(() => {
         this.isNavTransitioningToProduct.set(false);
-        this.isTransitionSlideActive.set(false);
-        this.isAboutStaticShown.set(false);
-        this.isNavClickScrolling = false;
-      }, 900);
+        this.transitionPhase.set('none');
+        this.isNavClickScrolling.set(false);
+      }, 1900);
 
       return;
     }
@@ -391,6 +394,7 @@ export class App implements AfterViewInit, OnDestroy {
     if (index === 0) {
       const homeEl = document.querySelector('.home-hero-section');
       homeEl?.scrollIntoView({ behavior: 'smooth' });
+      this.isNavbarHidden.set(false);
     } else if (index === 1) {
       const aboutEl = document.getElementById('about-section');
       aboutEl?.scrollIntoView({ behavior: 'smooth' });

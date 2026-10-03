@@ -11,8 +11,8 @@
       <div class="bg-beam-left"></div>
       <div class="bg-beam-right"></div>
 
-      <!-- ===== TOP NAVBAR ===== -->
-      <header class="navbar">
+      <!-- ===== TOP NAVBAR (visible only on Home page) ===== -->
+      <header class="navbar" [class.navbar-hidden]="isNavbarHidden()">
         <div class="nav-left"></div>
 
         <nav class="nav-pill-container">
@@ -173,17 +173,17 @@
     </div>
   </section>
 
-  <!-- ===== ABOUT PAGE SECTION (Scroll down to see) ===== -->
+  <!-- ===== SINGLE ABOUT PAGE SECTION (Scroll-driven canvas animation when scrolling) ===== -->
   <section id="about-section" class="about-page-section">
     <div class="about-scroll-canvas-wrapper">
       <div class="about-sticky-frame">
-        <canvas #aboutCanvas id="about-canvas" class="about-canvas" [class.canvas-hidden]="isAboutStaticShown()"></canvas>
-        <img src="assets/about page 2.jpg" alt="About Page" class="about-static-fallback-img" [class.show-static]="isAboutStaticShown()" />
+        <canvas #aboutCanvas id="about-canvas" class="about-canvas" [class.canvas-hidden]="isNavClickScrolling()"></canvas>
+        <img src="assets/about page 2.jpg" alt="About Page" class="about-static-fallback-img" [class.show-static]="isNavClickScrolling()" />
 
         <!-- ===== ABOUT US CONTENT OVERLAY ===== -->
         <div class="about-content-overlay"
-             [style.opacity]="aboutTextOpacity()"
-             [style.transform]="'translateY(' + aboutTextTranslateY() + 'px) scale(' + aboutTextScale() + ')'">
+             [style.opacity]="isNavClickScrolling() ? 0 : aboutTextOpacity()"
+             [style.transform]="isNavClickScrolling() ? 'none' : ('translateY(' + aboutTextTranslateY() + 'px) scale(' + aboutTextScale() + ')')">
 
           <div class="about-content-inner">
             <h2 class="about-heading">About Us</h2>
@@ -201,28 +201,22 @@
     </div>
   </section>
 
-  <!-- ===== PRODUCT PAGE SECTION ===== -->
+  <!-- ===== PRODUCT PAGE SECTION (Full image only, no texts) ===== -->
   <section id="product-section" class="product-page-section">
     <div class="product-full-image-container">
       <img src="assets/product page image.png" alt="Product Page" class="product-full-image" />
     </div>
   </section>
 
-  <!-- ===== SMOOTH ABOUT-TO-PRODUCT TRANSITION OVERLAY ===== -->
-  <div class="about-to-product-transition" *ngIf="isNavTransitioningToProduct()" [class.slide-active]="isTransitionSlideActive()">
-    <!-- Slide 1: About Page displaying "about page 2.jpg" with exact reference text layout -->
+  <!-- ===== SMOOTH HOME -> ABOUT -> PRODUCT TRANSITION OVERLAY ===== -->
+  <div class="about-to-product-transition"
+       *ngIf="isNavTransitioningToProduct()"
+       [class.phase-holding]="transitionPhase() === 'about-holding'"
+       [class.phase-product]="transitionPhase() === 'product-entering'">
+
+    <!-- Slide 1: About Page displaying "about page 2.jpg" with baked-in text -->
     <div class="transition-about-slide">
       <img src="assets/about page 2.jpg" alt="About Us" class="transition-about-img" />
-      <div class="about-content-overlay transition-text-overlay">
-        <div class="about-content-inner">
-          <h2 class="about-heading">About Us</h2>
-          <p class="about-text">Smart monitoring built for better visibility,<br>control, and confidence.</p>
-          <p class="about-text">Get real-time insights into inverter, battery, grid, load, and<br>system performance.</p>
-          <p class="about-text">Monitor essential operating conditions through clear and meaningful data.</p>
-          <p class="about-text">Stay informed with accurate status updates and timely<br>system information.</p>
-          <p class="about-text">Designed to make power-system<br>monitoring simple, reliable, and connected.</p>
-        </div>
-      </div>
     </div>
 
     <!-- Slide 2: Products Page displaying full product image -->
