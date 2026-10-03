@@ -25,7 +25,7 @@ export class App implements AfterViewInit, OnDestroy {
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
 
-  // Navigation links
+  // Navigation links with active state
   navLinks = signal([
     { label: 'Home', active: true },
     { label: 'About', active: false },
@@ -34,10 +34,10 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Contact', active: false }
   ]);
 
-  // Navbar visibility — only show on Home page
+  // Navbar visibility
   isNavbarHidden = signal<boolean>(false);
 
-  // Transition state when navigating via navbar click (bypasses canvas scrub animation)
+  // Transition state when navigating via navbar click (locks active link & bypasses canvas scrub)
   isNavClickScrolling = signal<boolean>(false);
 
   // Scroll animation frames
@@ -179,12 +179,36 @@ export class App implements AfterViewInit, OnDestroy {
       this.boxesVisible.set(true);
     }
 
-    // Navbar visible ONLY on Home page (scrollTop <= 60px)
-    this.isNavbarHidden.set(target.scrollTop > 60);
-
-    // Drive canvas animation via scroll ONLY during natural mouse scroll (not nav clicks)
+    // Only update active nav link on manual mouse scroll (not during nav click animation)
     if (!this.isNavClickScrolling()) {
+      const scrollTop = target.scrollTop;
+      const aboutEl = document.getElementById('about-section');
+      const productEl = document.getElementById('product-section');
+
+      const viewH = target.clientHeight || window.innerHeight;
+      const aboutTop = aboutEl ? aboutEl.offsetTop : viewH;
+      const productTop = productEl ? productEl.offsetTop : viewH * 2;
+
+      let activeIndex = 0;
+      if (scrollTop >= productTop - viewH * 0.4) {
+        activeIndex = 2; // Products
+      } else if (scrollTop >= aboutTop - viewH * 0.4) {
+        activeIndex = 1; // About
+      } else {
+        activeIndex = 0; // Home
+      }
+
+      this.updateActiveNavIndex(activeIndex);
       this.updateCanvasFrame(target);
+    }
+  }
+
+  private updateActiveNavIndex(index: number) {
+    const current = this.navLinks();
+    if (current[index] && !current[index].active) {
+      this.navLinks.update(links =>
+        links.map((link, i) => ({ ...link, active: i === index }))
+      );
     }
   }
 
@@ -327,30 +351,26 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   setActiveNav(index: number) {
-    this.navLinks.update(links =>
-      links.map((link, i) => ({ ...link, active: i === index }))
-    );
+    // Lock underline immediately to clicked nav item
+    this.updateActiveNavIndex(index);
 
     const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
     if (!scroller) return;
 
     if (index === 2 || index === 3) {
-      // Products clicked: smooth, continuous, uninterrupted flow down: Home -> About -> Products
-      // 1. Immediately disable scroll animation & hide navbar
+      // Products clicked: smooth, continuous, slower flow down: Home -> About -> Products
       this.isNavClickScrolling.set(true);
-      this.isNavbarHidden.set(true);
 
       const productEl = document.getElementById('product-section');
       if (!productEl) return;
 
-      // Calculate continuous smooth scroll target
       const startScroll = scroller.scrollTop;
       const targetScroll = productEl.offsetTop;
       const distance = targetScroll - startScroll;
-      const duration = 1400; // 1.4s silky smooth continuous downward flow
+      // Duration set to 3600ms (3.6 seconds) for an ultra-smooth, slower, luxurious flow
+      const duration = 3600;
       let startTime: number | null = null;
 
-      // Smooth ease-in-out cubic curve
       const easeInOutCubic = (t: number) =>
         t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -365,7 +385,8 @@ export class App implements AfterViewInit, OnDestroy {
         if (progress < 1) {
           requestAnimationFrame(animateScroll);
         } else {
-          // Finished continuous flow down to Products
+          // Finished flow, lock active link to Products
+          this.updateActiveNavIndex(2);
           this.isNavClickScrolling.set(false);
         }
       };
@@ -375,12 +396,65 @@ export class App implements AfterViewInit, OnDestroy {
     }
 
     if (index === 0) {
-      const homeEl = document.querySelector('.home-hero-section');
-      homeEl?.scrollIntoView({ behavior: 'smooth' });
-      this.isNavbarHidden.set(false);
+      // Home clicked
+      this.isNavClickScrolling.set(true);
+      const startScroll = scroller.scrollTop;
+      const targetScroll = 0;
+      const distance = targetScroll - startScroll;
+      const duration = 2200;
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        scroller.scrollTop = startScroll + distance * easedProgress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          this.updateActiveNavIndex(0);
+          this.isNavClickScrolling.set(false);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
     } else if (index === 1) {
+      // About clicked
       const aboutEl = document.getElementById('about-section');
-      aboutEl?.scrollIntoView({ behavior: 'smooth' });
+      if (!aboutEl) return;
+      this.isNavClickScrolling.set(true);
+      const startScroll = scroller.scrollTop;
+      const targetScroll = aboutEl.offsetTop;
+      const distance = targetScroll - startScroll;
+      const duration = 2200;
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        scroller.scrollTop = startScroll + distance * easedProgress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          this.updateActiveNavIndex(1);
+          this.isNavClickScrolling.set(false);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
     } else if (index === 4) {
       const contactEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
       contactEl?.scrollIntoView({ behavior: 'smooth' });
