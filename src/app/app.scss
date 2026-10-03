@@ -858,3 +858,30 @@
   }
 }
 
+/* ===== PRODUCT PAGE SECTION ===== */
+.product-page-section {
+  width: 100%;
+  min-height: 100vh;
+  background: #020610;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  padding: 0;
+}
+
+.product-full-image-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-full-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+

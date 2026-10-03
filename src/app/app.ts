@@ -30,9 +30,20 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Home', active: true },
     { label: 'About', active: false },
     { label: 'Product', active: false },
-    { label: 'Featurss', active: false },
+    { label: 'Features', active: false },
     { label: 'Contact', active: false }
   ]);
+
+  // Product image lightbox modal
+  isProductModalOpen = signal<boolean>(false);
+
+  openProductModal() {
+    this.isProductModalOpen.set(true);
+  }
+
+  closeProductModal() {
+    this.isProductModalOpen.set(false);
+  }
 
   // Scroll animation frames
   private readonly TOTAL_FRAMES = 240;
@@ -329,13 +340,33 @@ export class App implements AfterViewInit, OnDestroy {
     this.navLinks.update(links =>
       links.map((link, i) => ({ ...link, active: i === index }))
     );
-    if (index === 1) {
-      const aboutEl = document.getElementById('about-section');
-      if (aboutEl) {
-        aboutEl.scrollIntoView({ behavior: 'smooth' });
+
+    const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
+    let targetEl: HTMLElement | null = null;
+
+    if (index === 0) {
+      targetEl = document.querySelector('.home-hero-section');
+    } else if (index === 1) {
+      targetEl = document.getElementById('about-section');
+    } else if (index === 2) {
+      targetEl = document.getElementById('product-section');
+    } else if (index === 3) {
+      targetEl = document.getElementById('product-section');
+    } else if (index === 4) {
+      targetEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
+    }
+
+    if (targetEl) {
+      if (scroller) {
+        // Instant jump to target section, bypassing 800vh scroll animation delay
+        scroller.style.scrollBehavior = 'auto';
+        scroller.scrollTop = targetEl.offsetTop;
+        requestAnimationFrame(() => {
+          scroller.style.scrollBehavior = '';
+        });
+      } else {
+        targetEl.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
       }
-    } else if (index === 0) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
