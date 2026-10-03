@@ -173,14 +173,14 @@
     </div>
   </section>
 
-  <!-- ===== SINGLE ABOUT PAGE SECTION (Scroll-driven canvas animation when scrolling) ===== -->
-  <section id="about-section" class="about-page-section">
+  <!-- ===== SINGLE ABOUT PAGE SECTION ===== -->
+  <section id="about-section" class="about-page-section" [class.nav-flowing]="isNavClickScrolling()">
     <div class="about-scroll-canvas-wrapper">
       <div class="about-sticky-frame">
         <canvas #aboutCanvas id="about-canvas" class="about-canvas" [class.canvas-hidden]="isNavClickScrolling()"></canvas>
         <img src="assets/about page 2.jpg" alt="About Page" class="about-static-fallback-img" [class.show-static]="isNavClickScrolling()" />
 
-        <!-- ===== ABOUT US CONTENT OVERLAY ===== -->
+        <!-- ===== ABOUT US CONTENT OVERLAY (visible during manual mouse scroll) ===== -->
         <div class="about-content-overlay"
              [style.opacity]="isNavClickScrolling() ? 0 : aboutTextOpacity()"
              [style.transform]="isNavClickScrolling() ? 'none' : ('translateY(' + aboutTextTranslateY() + 'px) scale(' + aboutTextScale() + ')')">
@@ -201,30 +201,11 @@
     </div>
   </section>
 
-  <!-- ===== PRODUCT PAGE SECTION (Full image only, no texts) ===== -->
+  <!-- ===== PRODUCT PAGE SECTION (Full image only, no text overlays) ===== -->
   <section id="product-section" class="product-page-section">
     <div class="product-full-image-container">
       <img src="assets/product page image.png" alt="Product Page" class="product-full-image" />
     </div>
   </section>
-
-  <!-- ===== SMOOTH HOME -> ABOUT -> PRODUCT TRANSITION OVERLAY ===== -->
-  <div class="about-to-product-transition"
-       *ngIf="isNavTransitioningToProduct()"
-       [class.phase-holding]="transitionPhase() === 'about-holding'"
-       [class.phase-product]="transitionPhase() === 'product-entering'">
-
-    <!-- Slide 1: About Page displaying "about page 2.jpg" with baked-in text -->
-    <div class="transition-about-slide">
-      <img src="assets/about page 2.jpg" alt="About Us" class="transition-about-img" />
-    </div>
-
-    <!-- Slide 2: Products Page displaying full product image -->
-    <div class="transition-product-slide">
-      <div class="product-full-image-container">
-        <img src="assets/product page image.png" alt="Product Page" class="product-full-image" />
-      </div>
-    </div>
-  </div>
 
 </div>

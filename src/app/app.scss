@@ -7,7 +7,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   background: #020610;
-  scroll-behavior: smooth;
+  scroll-behavior: auto; /* Handled smoothly by requestAnimationFrame */
 }
 
 /* ---------- HOME HERO SECTION ---------- */
@@ -755,10 +755,15 @@
 
 .about-page-section {
   width: 100%;
-  /* Extra tall so natural scroll drives all 240 frames */
+  /* Height for manual mouse wheel scroll */
   height: 800vh;
   position: relative;
   background: #020610;
+
+  /* During nav click flow down, fit to exact 100vh for continuous 1:1 section flow */
+  &.nav-flowing {
+    height: 100vh !important;
+  }
 }
 
 /* Static fallback image shown when navigating via navbar click */
@@ -889,84 +894,4 @@
   height: auto;
   display: block;
   object-fit: contain;
-}
-
-/* ===== SMOOTH HOME -> ABOUT -> PRODUCT TRANSITION OVERLAY ===== */
-.about-to-product-transition {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
-  overflow: hidden;
-  background: transparent;
-  pointer-events: none;
-
-  .transition-about-slide {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transform: translateY(100%);
-    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
-
-    .transition-about-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
-    }
-  }
-
-  .transition-product-slide {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: #020610;
-    transform: translateY(100%);
-    transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    .product-full-image-container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .product-full-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-  }
-
-  /* Phase 1 & 2: About slides in to cover Home (Home -> About) and holds for viewing */
-  &.phase-holding {
-    .transition-about-slide {
-      transform: translateY(0%);
-    }
-    .transition-product-slide {
-      transform: translateY(100%);
-    }
-  }
-
-  /* Phase 3: About slides up out of view, Product slides in to cover About (About -> Products) */
-  &.phase-product {
-    .transition-about-slide {
-      transform: translateY(-100%);
-      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .transition-product-slide {
-      transform: translateY(0%);
-      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-  }
 }

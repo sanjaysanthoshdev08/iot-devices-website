@@ -37,12 +37,8 @@ export class App implements AfterViewInit, OnDestroy {
   // Navbar visibility — only show on Home page
   isNavbarHidden = signal<boolean>(false);
 
-  // Transition state when navigating via navbar click (skip about scroll animation)
+  // Transition state when navigating via navbar click (bypasses canvas scrub animation)
   isNavClickScrolling = signal<boolean>(false);
-
-  // Transition overlay state for Home -> About -> Product slide sequence
-  isNavTransitioningToProduct = signal<boolean>(false);
-  transitionPhase = signal<'none' | 'about-entering' | 'about-holding' | 'product-entering'>('none');
 
   // Scroll animation frames
   private readonly TOTAL_FRAMES = 240;
@@ -204,7 +200,6 @@ export class App implements AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.preloadFrames();
-      // Redraw at correct DPR on resize / zoom change
       this.resizeListener = () => this.drawFrame(this.currentFrame);
       window.addEventListener('resize', this.resizeListener);
     }
@@ -228,7 +223,6 @@ export class App implements AfterViewInit, OnDestroy {
       img.onload = () => {
         loaded++;
         if (loaded === 1) {
-          // Draw first frame as soon as it's ready
           this.drawFrame(0);
         }
       };
@@ -247,22 +241,18 @@ export class App implements AfterViewInit, OnDestroy {
     const rect   = canvas.getBoundingClientRect();
     const dpr    = window.devicePixelRatio || 1;
 
-    // Set the canvas backing buffer to native screen resolution
     const targetW = Math.round(rect.width  * dpr);
     const targetH = Math.round(rect.height * dpr);
 
     if (canvas.width !== targetW || canvas.height !== targetH) {
       canvas.width  = targetW;
       canvas.height = targetH;
-      // Scale all draw calls so 1 CSS pixel = dpr backing pixels
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    // Highest-quality image smoothing
     ctx.imageSmoothingEnabled = true;
     (ctx as any).imageSmoothingQuality = 'high';
 
-    // Cover-fill: centre image, preserving aspect ratio
     const cssW  = rect.width;
     const cssH  = rect.height;
     const scale = Math.max(cssW / img.naturalWidth, cssH / img.naturalHeight);
@@ -277,7 +267,6 @@ export class App implements AfterViewInit, OnDestroy {
 
   private updateCanvasFrame(scroller: HTMLElement) {
     if (!isPlatformBrowser(this.platformId)) return;
-    // Skip canvas animation when navigating via navbar click
     if (this.isNavClickScrolling()) return;
     const section = document.getElementById('about-section');
     if (!section) return;
@@ -287,7 +276,6 @@ export class App implements AfterViewInit, OnDestroy {
     const viewH         = scroller.clientHeight;
     const scrollTop     = scroller.scrollTop;
 
-    // Scroll range: from when the section enters view to when it exits
     const start = sectionTop;
     const end   = sectionTop + sectionHeight - viewH;
     const progress = Math.min(Math.max((scrollTop - start) / (end - start), 0), 1);
@@ -303,12 +291,11 @@ export class App implements AfterViewInit, OnDestroy {
       this.animationFrameId = requestAnimationFrame(() => this.drawFrame(frameIndex));
     }
 
-    // ---- Drive About Us text overlay ----
-    // Text is fully visible from progress 0.28 → 0.72, fades in/out on the edges
-    const TEXT_IN_START  = 0.28;  // start fading in
-    const TEXT_IN_END    = 0.40;  // fully visible
-    const TEXT_OUT_START = 0.65;  // start fading out
-    const TEXT_OUT_END   = 0.78;  // fully gone
+    // Drive About Us text overlay
+    const TEXT_IN_START  = 0.28;
+    const TEXT_IN_END    = 0.40;
+    const TEXT_OUT_START = 0.65;
+    const TEXT_OUT_END   = 0.78;
 
     let opacity = 0;
     let translateY = 40;
@@ -316,21 +303,18 @@ export class App implements AfterViewInit, OnDestroy {
 
     if (progress >= TEXT_IN_START && progress <= TEXT_OUT_END) {
       if (progress < TEXT_IN_END) {
-        // Fade in
         const t = (progress - TEXT_IN_START) / (TEXT_IN_END - TEXT_IN_START);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out quad
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         opacity    = ease;
         translateY = 40 * (1 - ease);
         scale      = 0.92 + 0.08 * ease;
       } else if (progress > TEXT_OUT_START) {
-        // Fade out
         const t = (progress - TEXT_OUT_START) / (TEXT_OUT_END - TEXT_OUT_START);
         const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         opacity    = 1 - ease;
         translateY = -30 * ease;
         scale      = 1 - 0.06 * ease;
       } else {
-        // Fully visible plateau
         opacity    = 1;
         translateY = 0;
         scale      = 1;
@@ -351,43 +335,42 @@ export class App implements AfterViewInit, OnDestroy {
     if (!scroller) return;
 
     if (index === 2 || index === 3) {
-      // Products clicked: smooth flow Home -> About -> Products
+      // Products clicked: smooth, continuous, uninterrupted flow down: Home -> About -> Products
       // 1. Immediately disable scroll animation & hide navbar
       this.isNavClickScrolling.set(true);
       this.isNavbarHidden.set(true);
 
-      // 2. Start transition overlay at 'about-entering'
-      this.isNavTransitioningToProduct.set(true);
-      this.transitionPhase.set('about-entering');
+      const productEl = document.getElementById('product-section');
+      if (!productEl) return;
 
-      // 3. Phase 1: About slides in to cover Home (Home -> About)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.transitionPhase.set('about-holding');
-        });
-      });
+      // Calculate continuous smooth scroll target
+      const startScroll = scroller.scrollTop;
+      const targetScroll = productEl.offsetTop;
+      const distance = targetScroll - startScroll;
+      const duration = 1400; // 1.4s silky smooth continuous downward flow
+      let startTime: number | null = null;
 
-      // 4. Phase 2: After user clearly sees the About page ("about page 2.jpg"),
-      // position background scroller at Product section and start About -> Products transition
-      setTimeout(() => {
-        const productEl = document.getElementById('product-section');
-        if (productEl) {
-          const origBehavior = scroller.style.scrollBehavior;
-          scroller.style.scrollBehavior = 'auto';
-          scroller.scrollTop = productEl.offsetTop;
-          scroller.style.scrollBehavior = origBehavior;
+      // Smooth ease-in-out cubic curve
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        scroller.scrollTop = startScroll + distance * easedProgress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          // Finished continuous flow down to Products
+          this.isNavClickScrolling.set(false);
         }
+      };
 
-        this.transitionPhase.set('product-entering');
-      }, 1150);
-
-      // 5. Phase 3: Transition finishes smoothly on Products page
-      setTimeout(() => {
-        this.isNavTransitioningToProduct.set(false);
-        this.transitionPhase.set('none');
-        this.isNavClickScrolling.set(false);
-      }, 1900);
-
+      requestAnimationFrame(animateScroll);
       return;
     }
 
