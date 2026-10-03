@@ -29,10 +29,15 @@ export class App implements AfterViewInit, OnDestroy {
   navLinks = signal([
     { label: 'Home', active: true },
     { label: 'About', active: false },
-    { label: 'Product', active: false },
+    { label: 'Products', active: false },
     { label: 'Features', active: false },
     { label: 'Contact', active: false }
   ]);
+
+  // Transition state when navigating from About to Products
+  isNavTransitioningToProduct = signal<boolean>(false);
+  isTransitionSlideActive = signal<boolean>(false);
+  isAboutStaticShown = signal<boolean>(false);
 
   // Product image lightbox modal
   isProductModalOpen = signal<boolean>(false);
@@ -347,75 +352,52 @@ export class App implements AfterViewInit, OnDestroy {
     const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
     if (!scroller) return;
 
-    let targetEl: HTMLElement | null = null;
+    if (index === 2 || index === 3) {
+      // Products clicked: transition smoothly from About (with about page 2.jpg) to Products
+      this.isNavClickScrolling = true;
+      this.isAboutStaticShown.set(true);
 
-    if (index === 0) {
-      targetEl = document.querySelector('.home-hero-section');
-    } else if (index === 1) {
-      targetEl = document.getElementById('about-section');
-    } else if (index === 2 || index === 3) {
-      targetEl = document.getElementById('product-section');
-    } else if (index === 4) {
-      targetEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
-    }
+      // Render transition overlay (slide 1: About with about page 2.jpg, slide 2: Product)
+      this.isNavTransitioningToProduct.set(true);
+      this.isTransitionSlideActive.set(false);
 
-    if (!targetEl) return;
+      // Position background scroller at Product section without smooth-scroll delay
+      const productEl = document.getElementById('product-section');
+      if (productEl) {
+        const origBehavior = scroller.style.scrollBehavior;
+        scroller.style.scrollBehavior = 'auto';
+        scroller.scrollTop = productEl.offsetTop;
+        scroller.style.scrollBehavior = origBehavior;
+      }
 
-    // Temporarily collapse 800vh About section so scroll flows fast & smooth (450ms) without 800vh animation delay
-    scroller.classList.add('nav-scrolling');
-    this.isNavClickScrolling = true;
+      // Trigger GPU-accelerated smooth slide transition
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.isTransitionSlideActive.set(true);
+        });
+      });
 
-    const startY = scroller.scrollTop;
-    const targetY = targetEl.offsetTop;
+      // Clear transition overlay after animation completes
+      setTimeout(() => {
+        this.isNavTransitioningToProduct.set(false);
+        this.isTransitionSlideActive.set(false);
+        this.isAboutStaticShown.set(false);
+        this.isNavClickScrolling = false;
+      }, 900);
 
-    this.animateNavScroll(scroller, targetEl, startY, targetY, 450);
-  }
-
-  private animateNavScroll(
-    scroller: HTMLElement,
-    targetEl: HTMLElement,
-    startY: number,
-    targetY: number,
-    duration: number = 450
-  ) {
-    const diffY = targetY - startY;
-
-    if (Math.abs(diffY) < 5) {
-      scroller.scrollTop = targetY;
-      this.finishNavScroll(scroller, targetEl);
       return;
     }
 
-    const startTime = performance.now();
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    const step = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = easeInOutCubic(progress);
-
-      scroller.scrollTop = startY + diffY * easedProgress;
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        this.finishNavScroll(scroller, targetEl);
-      }
-    };
-
-    requestAnimationFrame(step);
-  }
-
-  private finishNavScroll(scroller: HTMLElement, targetEl: HTMLElement) {
-    scroller.classList.remove('nav-scrolling');
-    // Set final position to target element's full offsetTop while isNavClickScrolling is still true
-    scroller.scrollTop = targetEl.offsetTop;
-
-    // Reset isNavClickScrolling after scroll event has settled so canvas frame animation never triggers
-    setTimeout(() => {
-      this.isNavClickScrolling = false;
-    }, 150);
+    if (index === 0) {
+      const homeEl = document.querySelector('.home-hero-section');
+      homeEl?.scrollIntoView({ behavior: 'smooth' });
+    } else if (index === 1) {
+      const aboutEl = document.getElementById('about-section');
+      aboutEl?.scrollIntoView({ behavior: 'smooth' });
+    } else if (index === 4) {
+      const contactEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
+      contactEl?.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   toggleBranchDropdown() {

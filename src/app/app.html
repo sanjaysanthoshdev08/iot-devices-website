@@ -177,8 +177,8 @@
   <section id="about-section" class="about-page-section">
     <div class="about-scroll-canvas-wrapper">
       <div class="about-sticky-frame">
-        <canvas #aboutCanvas id="about-canvas" class="about-canvas"></canvas>
-        <img src="assets/about page 2.png" alt="About Page" class="about-static-fallback-img" [class.show-static]="isNavClickScrolling" />
+        <canvas #aboutCanvas id="about-canvas" class="about-canvas" [class.canvas-hidden]="isAboutStaticShown()"></canvas>
+        <img src="assets/about page 2.jpg" alt="About Page" class="about-static-fallback-img" [class.show-static]="isAboutStaticShown()" />
 
         <!-- ===== ABOUT US CONTENT OVERLAY ===== -->
         <div class="about-content-overlay"
@@ -187,11 +187,11 @@
 
           <div class="about-content-inner">
             <h2 class="about-heading">About Us</h2>
-            <p class="about-text">Smart monitoring built for better visibility, control, and confidence.</p>
-            <p class="about-text">Get real-time insights into inverter, battery, grid, load, and system performance.</p>
+            <p class="about-text">Smart monitoring built for better visibility,<br>control, and confidence.</p>
+            <p class="about-text">Get real-time insights into inverter, battery, grid, load, and<br>system performance.</p>
             <p class="about-text">Monitor essential operating conditions through clear and meaningful data.</p>
-            <p class="about-text">Stay informed with accurate status updates and timely system information.</p>
-            <p class="about-text">Designed to make power-system monitoring simple, reliable, and connected.</p>
+            <p class="about-text">Stay informed with accurate status updates and timely<br>system information.</p>
+            <p class="about-text">Designed to make power-system<br>monitoring simple, reliable, and connected.</p>
           </div>
 
         </div>
@@ -207,5 +207,30 @@
       <img src="assets/product page image.png" alt="Product Page" class="product-full-image" />
     </div>
   </section>
+
+  <!-- ===== SMOOTH ABOUT-TO-PRODUCT TRANSITION OVERLAY ===== -->
+  <div class="about-to-product-transition" *ngIf="isNavTransitioningToProduct()" [class.slide-active]="isTransitionSlideActive()">
+    <!-- Slide 1: About Page displaying "about page 2.jpg" with exact reference text layout -->
+    <div class="transition-about-slide">
+      <img src="assets/about page 2.jpg" alt="About Us" class="transition-about-img" />
+      <div class="about-content-overlay transition-text-overlay">
+        <div class="about-content-inner">
+          <h2 class="about-heading">About Us</h2>
+          <p class="about-text">Smart monitoring built for better visibility,<br>control, and confidence.</p>
+          <p class="about-text">Get real-time insights into inverter, battery, grid, load, and<br>system performance.</p>
+          <p class="about-text">Monitor essential operating conditions through clear and meaningful data.</p>
+          <p class="about-text">Stay informed with accurate status updates and timely<br>system information.</p>
+          <p class="about-text">Designed to make power-system<br>monitoring simple, reliable, and connected.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: Products Page displaying full product image -->
+    <div class="transition-product-slide">
+      <div class="product-full-image-container">
+        <img src="assets/product page image.png" alt="Product Page" class="product-full-image" />
+      </div>
+    </div>
+  </div>
 
 </div>
