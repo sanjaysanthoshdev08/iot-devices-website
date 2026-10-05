@@ -406,7 +406,7 @@ export class App implements AfterViewInit, OnDestroy {
       const startScroll = scroller.scrollTop;
       const targetScroll = productEl.offsetTop;
       const distance = targetScroll - startScroll;
-      const duration = 3600;
+      const duration = 2200;
       let startTime: number | null = null;
 
       const easeInOutCubic = (t: number) =>
@@ -442,7 +442,7 @@ export class App implements AfterViewInit, OnDestroy {
       const startScroll = scroller.scrollTop;
       const targetScroll = featuresEl.offsetTop;
       const distance = targetScroll - startScroll;
-      const duration = 3600;
+      const duration = 2200;
       let startTime: number | null = null;
 
       const easeInOutCubic = (t: number) =>
