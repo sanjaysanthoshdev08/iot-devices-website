@@ -37,6 +37,37 @@ export class App implements AfterViewInit, OnDestroy {
   // Navbar visibility
   isNavbarHidden = signal<boolean>(false);
 
+  // Login Modal State
+  isLoginModalOpen = signal<boolean>(false);
+  loginEmail = signal<string>('');
+  loginPassword = signal<string>('');
+  showPassword = signal<boolean>(false);
+  isSignUpMode = signal<boolean>(false);
+
+  openLoginModal() {
+    this.isLoginModalOpen.set(true);
+  }
+
+  closeLoginModal() {
+    this.isLoginModalOpen.set(false);
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword.update(v => !v);
+  }
+
+  toggleAuthMode() {
+    this.isSignUpMode.update(v => !v);
+  }
+
+  onLoginSubmit(event: Event) {
+    event.preventDefault();
+    const mode = this.isSignUpMode() ? 'Sign Up' : 'Login';
+    const email = this.loginEmail() || 'user@hykonindia.com';
+    alert(`${mode} successful for ${email}!`);
+    this.closeLoginModal();
+  }
+
   // Transition state when navigating via navbar click (locks active link & bypasses canvas scrub)
   isNavClickScrolling = signal<boolean>(false);
 
@@ -48,9 +79,9 @@ export class App implements AfterViewInit, OnDestroy {
   private resizeListener: (() => void) | null = null;
 
   // About Us text overlay signals (driven by scroll progress)
-  aboutTextOpacity    = signal<number>(0);
-  aboutTextTranslateY = signal<number>(40);
-  aboutTextScale      = signal<number>(0.92);
+  aboutTextOpacity    = signal<number>(1);
+  aboutTextTranslateY = signal<number>(0);
+  aboutTextScale      = signal<number>(1);
 
   // Avatars list
   avatars = [
@@ -179,18 +210,27 @@ export class App implements AfterViewInit, OnDestroy {
       this.boxesVisible.set(true);
     }
 
+    // Hide navbar once the user has scrolled past the home hero section
+    const homeEl = document.querySelector('.home-hero-section') as HTMLElement;
+    const homeHeight = homeEl ? homeEl.offsetHeight : (target.clientHeight || window.innerHeight);
+    this.isNavbarHidden.set(target.scrollTop >= homeHeight * 0.6);
+
     // Only update active nav link on manual mouse scroll (not during nav click animation)
     if (!this.isNavClickScrolling()) {
       const scrollTop = target.scrollTop;
       const aboutEl = document.getElementById('about-section');
       const productEl = document.getElementById('product-section');
+      const featuresEl = document.getElementById('features-section');
 
       const viewH = target.clientHeight || window.innerHeight;
       const aboutTop = aboutEl ? aboutEl.offsetTop : viewH;
       const productTop = productEl ? productEl.offsetTop : viewH * 2;
+      const featuresTop = featuresEl ? featuresEl.offsetTop : viewH * 3;
 
       let activeIndex = 0;
-      if (scrollTop >= productTop - viewH * 0.4) {
+      if (scrollTop >= featuresTop - viewH * 0.4) {
+        activeIndex = 3; // Features
+      } else if (scrollTop >= productTop - viewH * 0.4) {
         activeIndex = 2; // Products
       } else if (scrollTop >= aboutTop - viewH * 0.4) {
         activeIndex = 1; // About
@@ -304,8 +344,11 @@ export class App implements AfterViewInit, OnDestroy {
     const end   = sectionTop + sectionHeight - viewH;
     const progress = Math.min(Math.max((scrollTop - start) / (end - start), 0), 1);
 
+    // REVERSED: start at last frame (hands close + text visible) and play backwards
+    // so scrolling DOWN moves hands apart and fades text out.
+    const reversedProgress = 1 - progress;
     const frameIndex = Math.min(
-      Math.floor(progress * (this.TOTAL_FRAMES - 1)),
+      Math.floor(reversedProgress * (this.TOTAL_FRAMES - 1)),
       this.TOTAL_FRAMES - 1
     );
 
@@ -315,34 +358,30 @@ export class App implements AfterViewInit, OnDestroy {
       this.animationFrameId = requestAnimationFrame(() => this.drawFrame(frameIndex));
     }
 
-    // Drive About Us text overlay
-    const TEXT_IN_START  = 0.28;
-    const TEXT_IN_END    = 0.40;
-    const TEXT_OUT_START = 0.65;
-    const TEXT_OUT_END   = 0.78;
+    // REVERSED text overlay:
+    // Text is FULLY visible at scroll start (progress=0) and fades OUT as user scrolls down.
+    const TEXT_VISIBLE_END   = 0.30;  // text starts fading at 30% scroll
+    const TEXT_FADE_END      = 0.50;  // text fully gone by 50% scroll
 
     let opacity = 0;
-    let translateY = 40;
-    let scale = 0.92;
+    let translateY = 0;
+    let scale = 1;
 
-    if (progress >= TEXT_IN_START && progress <= TEXT_OUT_END) {
-      if (progress < TEXT_IN_END) {
-        const t = (progress - TEXT_IN_START) / (TEXT_IN_END - TEXT_IN_START);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        opacity    = ease;
-        translateY = 40 * (1 - ease);
-        scale      = 0.92 + 0.08 * ease;
-      } else if (progress > TEXT_OUT_START) {
-        const t = (progress - TEXT_OUT_START) / (TEXT_OUT_END - TEXT_OUT_START);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        opacity    = 1 - ease;
-        translateY = -30 * ease;
-        scale      = 1 - 0.06 * ease;
-      } else {
-        opacity    = 1;
-        translateY = 0;
-        scale      = 1;
-      }
+    if (progress < TEXT_VISIBLE_END) {
+      // Fully visible at the start
+      opacity    = 1;
+      translateY = 0;
+      scale      = 1;
+    } else if (progress <= TEXT_FADE_END) {
+      const t = (progress - TEXT_VISIBLE_END) / (TEXT_FADE_END - TEXT_VISIBLE_END);
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      opacity    = 1 - ease;
+      translateY = -30 * ease;
+      scale      = 1 - 0.06 * ease;
+    } else {
+      opacity    = 0;
+      translateY = -30;
+      scale      = 0.94;
     }
 
     this.aboutTextOpacity.set(Math.max(0, Math.min(1, opacity)));
@@ -357,8 +396,8 @@ export class App implements AfterViewInit, OnDestroy {
     const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
     if (!scroller) return;
 
-    if (index === 2 || index === 3) {
-      // Products clicked: smooth, continuous, slower flow down: Home -> About -> Products
+    if (index === 2) {
+      // Products clicked: smooth flow to Products section
       this.isNavClickScrolling.set(true);
 
       const productEl = document.getElementById('product-section');
@@ -367,7 +406,6 @@ export class App implements AfterViewInit, OnDestroy {
       const startScroll = scroller.scrollTop;
       const targetScroll = productEl.offsetTop;
       const distance = targetScroll - startScroll;
-      // Duration set to 3600ms (3.6 seconds) for an ultra-smooth, slower, luxurious flow
       const duration = 3600;
       let startTime: number | null = null;
 
@@ -388,6 +426,43 @@ export class App implements AfterViewInit, OnDestroy {
           // Finished flow, lock active link to Products
           this.updateActiveNavIndex(2);
           this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+      return;
+    } else if (index === 3) {
+      // Features clicked: smooth flow to Features section
+      this.isNavClickScrolling.set(true);
+
+      const featuresEl = document.getElementById('features-section');
+      if (!featuresEl) return;
+
+      const startScroll = scroller.scrollTop;
+      const targetScroll = featuresEl.offsetTop;
+      const distance = targetScroll - startScroll;
+      const duration = 3600;
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        scroller.scrollTop = startScroll + distance * easedProgress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          // Finished flow, lock active link to Features
+          this.updateActiveNavIndex(3);
+          this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
         }
       };
 
@@ -420,6 +495,7 @@ export class App implements AfterViewInit, OnDestroy {
         } else {
           this.updateActiveNavIndex(0);
           this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
         }
       };
 
@@ -428,6 +504,16 @@ export class App implements AfterViewInit, OnDestroy {
       // About clicked
       const aboutEl = document.getElementById('about-section');
       if (!aboutEl) return;
+
+      // Ensure About Us text and initial canvas frame are processed immediately when clicked
+      this.aboutTextOpacity.set(1);
+      this.aboutTextTranslateY.set(0);
+      this.aboutTextScale.set(1);
+      if (this.TOTAL_FRAMES > 0) {
+        this.currentFrame = this.TOTAL_FRAMES - 1;
+        this.drawFrame(this.TOTAL_FRAMES - 1);
+      }
+
       this.isNavClickScrolling.set(true);
       const startScroll = scroller.scrollTop;
       const targetScroll = aboutEl.offsetTop;
@@ -451,6 +537,7 @@ export class App implements AfterViewInit, OnDestroy {
         } else {
           this.updateActiveNavIndex(1);
           this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
         }
       };
 
