@@ -24,7 +24,7 @@
 
         <div class="nav-right">
           <a href="javascript:void(0)" class="nav-login" (click)="openLoginModal()">Log in</a>
-          <button class="btn-signup" (click)="openLoginModal()">
+          <button class="btn-signup" (click)="openSignUpModal()">
             <span>Sign up free</span>
             <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">
@@ -328,10 +328,10 @@
 
           <!-- Auth Mode Toggle Text -->
           <p class="signup-toggle-text" *ngIf="!isSignUpMode()">
-            Have an account? <a href="javascript:void(0)" class="signup-link" (click)="toggleAuthMode()">SignUp</a>
+            Have an account? <a href="javascript:void(0)" class="signup-link" (click)="openSignUpModal()">SignUp</a>
           </p>
           <p class="signup-toggle-text" *ngIf="isSignUpMode()">
-            Already have an account? <a href="javascript:void(0)" class="signup-link" (click)="toggleAuthMode()">Login</a>
+            Already have an account? <a href="javascript:void(0)" class="signup-link" (click)="openLoginModal()">Login</a>
           </p>
 
           <!-- Divider: or -->

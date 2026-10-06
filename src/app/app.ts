@@ -53,9 +53,14 @@ export class App implements AfterViewInit, OnDestroy {
   nameError = signal<string>('');
   confirmPasswordError = signal<string>('');
 
-  openLoginModal() {
+  openLoginModal(isSignUp: boolean = false) {
     this.clearErrors();
+    this.isSignUpMode.set(isSignUp);
     this.isLoginModalOpen.set(true);
+  }
+
+  openSignUpModal() {
+    this.openLoginModal(true);
   }
 
   closeLoginModal() {
