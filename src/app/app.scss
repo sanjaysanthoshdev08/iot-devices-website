@@ -1057,71 +1057,53 @@
 
 
 
-/* ===== LOGIN MODAL COMPONENT (Reference Image Layout with Cyan Home Page Gradients) ===== */
+/* ===== LOGIN PAGE / MODAL (Reference Image 2 with fixed Login page background.png) ===== */
 .login-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(2, 6, 16, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-image: url('/assets/Login%20page%20background.png');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  animation: modalFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalFadeIn 0.3s ease-out forwards;
 }
 
-.login-modal-wrapper {
+.ref-login-box {
   position: relative;
   width: 100%;
-  max-width: 980px;
+  max-width: 420px;
+  background: rgba(13, 16, 26, 0.72);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 40px 36px 36px 36px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: cardScaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
-/* Outer Ambient Cyan Glow Aura behind card */
-.modal-cyan-glow {
-  position: absolute;
-  inset: -40px;
-  border-radius: 40px;
-  background: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.25) 0%, transparent 65%),
-              radial-gradient(circle at 85% 50%, rgba(0, 240, 255, 0.18) 0%, transparent 65%);
-  filter: blur(35px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Central Login Card Container */
-.login-card-container {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  display: flex;
-  background: #070e1b;
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.15);
-  animation: cardScaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-
-  @media (max-width: 820px) {
-    flex-direction: column;
+  @media (max-width: 480px) {
+    padding: 32px 24px 28px 24px;
   }
 }
 
-/* Close Button (Top Right) */
-.modal-close-btn {
+.ref-modal-close {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 10;
-  width: 36px;
-  height: 36px;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94a3b8;
   display: flex;
   align-items: center;
@@ -1130,161 +1112,85 @@
   transition: all 0.2s ease;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   &:hover {
-    background: rgba(56, 189, 248, 0.2);
-    border-color: #38bdf8;
+    background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
     transform: rotate(90deg);
   }
 }
 
-/* Left Half of Login Card */
-.login-card-left {
-  flex: 1.1;
-  width: 52%;
-  position: relative;
-  overflow: hidden;
-  background: #111418;
+.ref-logo-icon {
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  @media (max-width: 820px) {
-    width: 100%;
-    min-height: 280px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
 }
 
-.login-left-img {
-  width: 200%;
-  height: 100%;
-  max-width: none;
-  object-fit: cover;
-  object-position: left center;
-  display: block;
-
-  @media (max-width: 820px) {
-    width: 100%;
-    height: auto;
-    object-position: center;
-  }
-}
-
-/* Right Half of Login Card */
-.login-card-right {
-  flex: 1;
-  width: 48%;
-  padding: 44px 38px;
-  background: #12151a;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  @media (max-width: 820px) {
-    width: 100%;
-    padding: 32px 24px;
-  }
-}
-
-.login-form-header {
-  margin-bottom: 24px;
-}
-
-.welcome-heading {
-  font-size: 23px;
-  font-weight: 800;
+.ref-title {
   color: #ffffff;
-  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  text-align: center;
   letter-spacing: -0.01em;
 }
 
-.cyan-gradient-text {
-  background: linear-gradient(90deg, #18b5d3 0%, #35e2f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.welcome-subtext {
-  color: #64748b;
-  font-size: 13px;
-  margin: 0;
-}
-
-/* Form inputs & fields */
-.login-form-body {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.form-label {
+.ref-subtitle {
   color: #94a3b8;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 28px 0;
+  text-align: center;
 }
 
-.forgot-link {
-  color: #8896a8;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #24cded;
-  }
-}
-
-.input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.form-input {
+.ref-form {
   width: 100%;
-  background: #1f232a;
-  border: 1.5px solid rgba(38, 208, 235, 0.4);
-  border-radius: 12px;
-  padding: 12px 42px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ref-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.ref-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 13px 16px;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   outline: none;
-  box-shadow: 0 0 16px rgba(38, 208, 235, 0.15);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 
   &::placeholder {
-    color: #475569;
+    color: #64748b;
   }
 
   &:focus {
-    border-color: #26d0eb;
-    background: #242932;
-    box-shadow: 0 0 20px rgba(38, 208, 235, 0.4);
+    border-color: rgba(129, 140, 248, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 14px rgba(129, 140, 248, 0.25);
   }
 }
 
-.eye-toggle-btn {
+.ref-password-input {
+  padding-right: 44px;
+}
+
+.ref-eye-btn {
   position: absolute;
-  right: 14px;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: transparent;
   border: none;
   color: #64748b;
@@ -1296,34 +1202,87 @@
   transition: color 0.2s;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   &:hover {
-    color: #26d0eb;
+    color: #94a3b8;
   }
 }
 
-/* Primary Cyan Pill Login Button */
-.btn-cyan-pill-login {
+.ref-checkbox-row {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.ref-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ref-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s ease;
+
+  &:checked {
+    background: #6366f1;
+    border-color: #6366f1;
+  }
+
+  &:checked::before {
+    content: "";
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
+}
+
+.ref-checkbox-text {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.ref-btn-login {
   width: 100%;
-  margin-top: 8px;
-  background: linear-gradient(90deg, #18b5d3 0%, #38e4f9 100%);
-  color: #04141c;
+  background: #ffffff;
+  color: #0f172a;
   border: none;
-  border-radius: 100px;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 700;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 6px 22px rgba(24, 181, 211, 0.45);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(56, 228, 249, 0.6);
+    background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
   }
 
   &:active {
@@ -1331,56 +1290,55 @@
   }
 }
 
-/* Social Buttons & Footer Toggle */
-.social-login-section {
-  margin-top: 22px;
+.ref-divider {
+  width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 14px;
+  margin: 22px 0 18px 0;
 }
 
-.social-buttons-row {
+.ref-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ref-divider-text {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ref-social-row {
+  width: 100%;
   display: flex;
   gap: 12px;
 }
 
-.btn-social {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #1f232a;
+.ref-social-btn {
+  flex: 1;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    border-color: rgba(38, 208, 235, 0.5);
-    background: rgba(38, 208, 235, 0.15);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
   }
-}
 
-.auth-toggle-footer {
-  color: #64748b;
-  font-size: 12px;
-  margin: 0;
-
-  .cyan-link {
-    color: #26d0eb;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition: color 0.2s;
-
-    &:hover {
-      color: #38e4f9;
-      text-decoration: underline;
-    }
+  &:active {
+    transform: translateY(0);
   }
 }
 
@@ -1390,7 +1348,7 @@
 }
 
 @keyframes cardScaleUp {
-  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 

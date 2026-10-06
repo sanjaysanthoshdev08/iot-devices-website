@@ -43,6 +43,7 @@ export class App implements AfterViewInit, OnDestroy {
   loginPassword = signal<string>('');
   showPassword = signal<boolean>(false);
   isSignUpMode = signal<boolean>(false);
+  rememberMe = signal<boolean>(false);
 
   openLoginModal() {
     this.isLoginModalOpen.set(true);
