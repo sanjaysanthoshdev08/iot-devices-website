@@ -41,16 +41,26 @@ export class App implements AfterViewInit, OnDestroy {
   isLoginModalOpen = signal<boolean>(false);
   loginEmail = signal<string>('');
   loginPassword = signal<string>('');
+  loginName = signal<string>('');
+  loginConfirmPassword = signal<string>('');
   showPassword = signal<boolean>(false);
   isSignUpMode = signal<boolean>(false);
   rememberMe = signal<boolean>(false);
 
+  // Validation Error Signals
+  emailError = signal<string>('');
+  passwordError = signal<string>('');
+  nameError = signal<string>('');
+  confirmPasswordError = signal<string>('');
+
   openLoginModal() {
+    this.clearErrors();
     this.isLoginModalOpen.set(true);
   }
 
   closeLoginModal() {
     this.isLoginModalOpen.set(false);
+    this.clearErrors();
   }
 
   togglePasswordVisibility() {
@@ -59,14 +69,66 @@ export class App implements AfterViewInit, OnDestroy {
 
   toggleAuthMode() {
     this.isSignUpMode.update(v => !v);
+    this.clearErrors();
+  }
+
+  clearErrors() {
+    this.emailError.set('');
+    this.passwordError.set('');
+    this.nameError.set('');
+    this.confirmPasswordError.set('');
   }
 
   onLoginSubmit(event: Event) {
     event.preventDefault();
-    const mode = this.isSignUpMode() ? 'Sign Up' : 'Login';
-    const email = this.loginEmail() || 'user@hykonindia.com';
-    alert(`${mode} successful for ${email}!`);
-    this.closeLoginModal();
+    this.clearErrors();
+
+    let hasError = false;
+
+    if (this.isSignUpMode()) {
+      if (!this.loginName().trim()) {
+        this.nameError.set('Name is required');
+        hasError = true;
+      }
+      if (!this.loginEmail().trim()) {
+        this.emailError.set('Email is required');
+        hasError = true;
+      } else if (!this.loginEmail().includes('@')) {
+        this.emailError.set('Please enter a valid email address');
+        hasError = true;
+      }
+      if (!this.loginPassword()) {
+        this.passwordError.set('Password is required');
+        hasError = true;
+      }
+      if (this.loginPassword() !== this.loginConfirmPassword()) {
+        this.confirmPasswordError.set('Passwords do not match');
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      alert(`Account created successfully for ${this.loginEmail()}!`);
+      this.closeLoginModal();
+    } else {
+      if (!this.loginEmail().trim()) {
+        this.emailError.set('Email is required');
+        hasError = true;
+      } else if (!this.loginEmail().includes('@')) {
+        this.emailError.set('Please enter a valid email address');
+        hasError = true;
+      }
+
+      if (!this.loginPassword()) {
+        this.passwordError.set('Password is required');
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      alert(`Login successful for ${this.loginEmail()}!`);
+      this.closeLoginModal();
+    }
   }
 
   // Transition state when navigating via navbar click (locks active link & bypasses canvas scrub)
