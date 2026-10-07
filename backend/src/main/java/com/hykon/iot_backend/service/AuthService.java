@@ -6,6 +6,7 @@ import com.hykon.iot_backend.entity.RoleName;
 import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.repository.RoleRepository;
 import com.hykon.iot_backend.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,13 +15,16 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(
             UserRepository userRepository,
-            RoleRepository roleRepository
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -45,8 +49,8 @@ public class AuthService {
         user.setName(name);
         user.setEmail(email);
 
-        // Password hashing will be added in Step 17.
-        user.setPassword(request.getPassword());
+        // Store only the BCrypt hash, never the raw password.
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         user.setRole(userRole);
         user.setStatus("ACTIVE");
