@@ -28,6 +28,14 @@ public class User {
     @Column(nullable = false, length = 20)
     private String status;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+        name = "role_id",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "fk_users_role")
+    )
+    private Role role;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -84,6 +92,14 @@ public class User {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public LocalDateTime getCreatedAt() {
