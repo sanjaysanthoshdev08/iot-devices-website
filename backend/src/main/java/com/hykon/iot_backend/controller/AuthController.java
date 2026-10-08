@@ -2,6 +2,7 @@ package com.hykon.iot_backend.controller;
 
 import com.hykon.iot_backend.dto.LoginRequest;
 import com.hykon.iot_backend.dto.LoginResponse;
+import com.hykon.iot_backend.dto.LogoutResponse;
 import com.hykon.iot_backend.dto.RefreshTokenRequest;
 import com.hykon.iot_backend.dto.RefreshTokenResponse;
 import com.hykon.iot_backend.dto.RegisterRequest;
@@ -71,6 +72,18 @@ public class AuthController {
                         refreshResult.getAccessToken(),
                         refreshResult.getRefreshToken()
                 );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponse> logout(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        authService.logout(request.getRefreshToken());
+
+        LogoutResponse response =
+                new LogoutResponse("Logout successful");
 
         return ResponseEntity.ok(response);
     }

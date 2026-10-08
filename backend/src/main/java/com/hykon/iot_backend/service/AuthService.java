@@ -1,6 +1,7 @@
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.dto.RegisterRequest;
+import com.hykon.iot_backend.entity.RefreshToken;
 import com.hykon.iot_backend.entity.Role;
 import com.hykon.iot_backend.entity.RoleName;
 import com.hykon.iot_backend.entity.User;
@@ -16,15 +17,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -56,5 +60,20 @@ public class AuthService {
         user.setStatus("ACTIVE");
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void logout(String refreshTokenValue) {
+
+        RefreshToken refreshToken =
+                refreshTokenService.findByToken(refreshTokenValue);
+
+        if (!refreshTokenService.isTokenValid(refreshToken)) {
+            throw new IllegalArgumentException(
+                    "Refresh token is expired or already revoked"
+            );
+        }
+
+        refreshTokenService.revokeToken(refreshToken);
     }
 }
