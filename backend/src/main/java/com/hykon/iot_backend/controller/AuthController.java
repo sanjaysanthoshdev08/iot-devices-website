@@ -2,6 +2,8 @@ package com.hykon.iot_backend.controller;
 
 import com.hykon.iot_backend.dto.LoginRequest;
 import com.hykon.iot_backend.dto.LoginResponse;
+import com.hykon.iot_backend.dto.RefreshTokenRequest;
+import com.hykon.iot_backend.dto.RefreshTokenResponse;
 import com.hykon.iot_backend.dto.RegisterRequest;
 import com.hykon.iot_backend.dto.RegisterResponse;
 import com.hykon.iot_backend.entity.User;
@@ -55,5 +57,21 @@ public class AuthController {
 
         return ResponseEntity
                 .ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        LoginService.RefreshResult refreshResult =
+                loginService.refresh(request.getRefreshToken());
+
+        RefreshTokenResponse response =
+                new RefreshTokenResponse(
+                        refreshResult.getAccessToken(),
+                        refreshResult.getRefreshToken()
+                );
+
+        return ResponseEntity.ok(response);
     }
 }

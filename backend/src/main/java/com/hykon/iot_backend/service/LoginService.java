@@ -60,6 +60,35 @@ public class LoginService {
         );
     }
 
+    public RefreshResult refresh(String refreshTokenValue) {
+
+        // Find the existing refresh token in the database.
+        RefreshToken oldRefreshToken =
+                refreshTokenService.findByToken(refreshTokenValue);
+
+        // Validate that the token is active and not expired.
+        if (!refreshTokenService.isTokenValid(oldRefreshToken)) {
+            throw new IllegalArgumentException(
+                    "Refresh token is expired or revoked"
+            );
+        }
+
+        // Get the user associated with the refresh token.
+        User user = oldRefreshToken.getUser();
+
+        // Generate a new access token for the same user.
+        String accessToken = jwtService.generateAccessToken(user);
+
+        // Revoke the old refresh token and create a new one.
+        RefreshToken newRefreshToken =
+                refreshTokenService.rotateRefreshToken(oldRefreshToken);
+
+        return new RefreshResult(
+                accessToken,
+                newRefreshToken.getToken()
+        );
+    }
+
     public static class LoginResult {
 
         private final User user;
@@ -78,6 +107,28 @@ public class LoginService {
 
         public User getUser() {
             return user;
+        }
+
+        public String getAccessToken() {
+            return accessToken;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+    }
+
+    public static class RefreshResult {
+
+        private final String accessToken;
+        private final String refreshToken;
+
+        public RefreshResult(
+                String accessToken,
+                String refreshToken
+        ) {
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
         }
 
         public String getAccessToken() {

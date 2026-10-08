@@ -62,4 +62,30 @@ public class RefreshTokenService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Invalid refresh token"));
     }
+
+    @Transactional
+    public void revokeToken(RefreshToken refreshToken) {
+
+        refreshToken.setRevoked(true);
+
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    @Transactional
+    public RefreshToken rotateRefreshToken(RefreshToken oldRefreshToken) {
+
+        if (!isTokenValid(oldRefreshToken)) {
+            throw new IllegalArgumentException(
+                    "Refresh token is expired or revoked"
+            );
+        }
+
+        User user = oldRefreshToken.getUser();
+
+        // Revoke the old refresh token so it cannot be reused.
+        revokeToken(oldRefreshToken);
+
+        // Create and persist a completely new refresh token.
+        return createRefreshToken(user);
+    }
 }
