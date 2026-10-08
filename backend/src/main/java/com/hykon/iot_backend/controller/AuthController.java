@@ -49,7 +49,8 @@ public class AuthController {
 
         LoginResponse response = new LoginResponse(
                 loginResult.getUser(),
-                loginResult.getAccessToken()
+                loginResult.getAccessToken(),
+                loginResult.getRefreshToken()
         );
 
         return ResponseEntity

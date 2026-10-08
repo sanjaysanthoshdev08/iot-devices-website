@@ -10,18 +10,24 @@ public class LoginResponse {
     private String role;
     private String status;
     private String accessToken;
+    private String refreshToken;
     private String tokenType;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(User user, String accessToken) {
+    public LoginResponse(
+            User user,
+            String accessToken,
+            String refreshToken
+    ) {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
         this.role = user.getRole().getName().name();
         this.status = user.getStatus();
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.tokenType = "Bearer";
     }
 
@@ -47,6 +53,10 @@ public class LoginResponse {
 
     public String getAccessToken() {
         return accessToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
 
     public String getTokenType() {
