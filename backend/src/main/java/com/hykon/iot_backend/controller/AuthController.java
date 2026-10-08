@@ -1,6 +1,7 @@
 package com.hykon.iot_backend.controller;
 
 import com.hykon.iot_backend.dto.RegisterRequest;
+import com.hykon.iot_backend.dto.RegisterResponse;
 import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -19,13 +20,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(
+    public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request
     ) {
         User user = authService.register(request);
 
+        RegisterResponse response = new RegisterResponse(user);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(user);
+                .body(response);
     }
 }
