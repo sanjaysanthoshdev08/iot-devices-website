@@ -44,9 +44,13 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
-        User user = loginService.login(request);
+        LoginService.LoginResult loginResult =
+                loginService.login(request);
 
-        LoginResponse response = new LoginResponse(user);
+        LoginResponse response = new LoginResponse(
+                loginResult.getUser(),
+                loginResult.getAccessToken()
+        );
 
         return ResponseEntity
                 .ok(response);

@@ -9,16 +9,20 @@ public class LoginResponse {
     private String email;
     private String role;
     private String status;
+    private String accessToken;
+    private String tokenType;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(User user) {
+    public LoginResponse(User user, String accessToken) {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
         this.role = user.getRole().getName().name();
         this.status = user.getStatus();
+        this.accessToken = accessToken;
+        this.tokenType = "Bearer";
     }
 
     public Long getId() {
@@ -39,5 +43,13 @@ public class LoginResponse {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public String getTokenType() {
+        return tokenType;
     }
 }
