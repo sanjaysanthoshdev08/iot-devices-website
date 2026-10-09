@@ -3,6 +3,7 @@ package com.hykon.iot_backend.config;
 import com.hykon.iot_backend.repository.UserRepository;
 import com.hykon.iot_backend.security.JwtAuthenticationFilter;
 import com.hykon.iot_backend.service.JwtService;
+
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,83 +17,100 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
-@Bean
-public JwtAuthenticationFilter jwtAuthenticationFilter(
-        JwtService jwtService,
-        UserRepository userRepository
-) {
-    return new JwtAuthenticationFilter(jwtService, userRepository);
-}
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(
+            JwtService jwtService,
+            UserRepository userRepository
+    ) {
+        return new JwtAuthenticationFilter(jwtService, userRepository);
+    }
 
-// Keep the JWT filter registered only in Spring Security's filter chain.
-@Bean
-public FilterRegistrationBean<JwtAuthenticationFilter>
-jwtAuthenticationFilterRegistration(
-        JwtAuthenticationFilter jwtAuthenticationFilter
-) {
-    FilterRegistrationBean<JwtAuthenticationFilter> registration =
-            new FilterRegistrationBean<>(jwtAuthenticationFilter);
+    // Keep the JWT filter registered only in Spring Security's filter chain.
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter>
+    jwtAuthenticationFilterRegistration(
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(jwtAuthenticationFilter);
 
-    registration.setEnabled(false);
+        registration.setEnabled(false);
 
-    return registration;
-}
+        return registration;
+    }
 
-@Bean
-public SecurityFilterChain securityFilterChain(
-        HttpSecurity http,
-        JwtAuthenticationFilter jwtAuthenticationFilter
-) throws Exception {
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
 
-    http
-        .csrf(csrf -> csrf.disable())
-        .formLogin(form -> form.disable())
-        .httpBasic(basic -> basic.disable())
-        .sessionManagement(session ->
-            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
-        .exceptionHandling(exceptions ->
-            exceptions.authenticationEntryPoint(
-                (request, response, authException) -> {
-                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                    response.setContentType("application/json");
-                    response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write(
-                        "{\"status\":401,\"error\":\"Unauthorized\","
-                        + "\"message\":\"Authentication is required\"}"
-                    );
-                }
+        http
+            .csrf(csrf -> csrf.disable())
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-        )
-        .authorizeHttpRequests(auth -> auth
-            // Public authentication endpoints: POST only.
-            .requestMatchers(
-                HttpMethod.POST,
-                "/api/v1/auth/register",
-                "/api/v1/auth/login",
-                "/api/v1/auth/refresh",
-                "/api/v1/auth/logout"
-            ).permitAll()
+            .exceptionHandling(exceptions ->
+                exceptions
+                    // 401: authentication is missing or unsuccessful.
+                    .authenticationEntryPoint(
+                        (request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
 
-            // Permit Spring Boot's error endpoint.
-            .requestMatchers("/error").permitAll()
+                            response.getWriter().write(
+                                "{\"status\":401,\"error\":\"Unauthorized\","
+                                + "\"message\":\"Authentication is required\"}"
+                            );
+                        }
+                    )
 
-            // Admin endpoints require the ADMIN role.
-            .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                    // NEW: 403 when an authenticated user lacks permission.
+                    .accessDeniedHandler(
+                        (request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
 
-            // User endpoints allow USER and ADMIN roles.
-            .requestMatchers("/api/v1/user/**")
-                .hasAnyRole("USER", "ADMIN")
+                            response.getWriter().write(
+                                "{\"status\":403,\"error\":\"Forbidden\","
+                                + "\"message\":\"You do not have permission "
+                                + "to access this resource\"}"
+                            );
+                        }
+                    )
+            )
+            .authorizeHttpRequests(auth -> auth
+                // Public authentication endpoints: POST only.
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/auth/register",
+                    "/api/v1/auth/login",
+                    "/api/v1/auth/refresh",
+                    "/api/v1/auth/logout"
+                ).permitAll()
 
-            // All remaining endpoints require authentication.
-            .anyRequest().authenticated()
-        )
-        .addFilterBefore(
-            jwtAuthenticationFilter,
-            UsernamePasswordAuthenticationFilter.class
-        );
+                // Permit Spring Boot's error endpoint.
+                .requestMatchers("/error").permitAll()
 
-    return http.build();
-}
+                // Admin endpoints require the ADMIN role.
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
+                // User endpoints allow USER and ADMIN roles.
+                .requestMatchers("/api/v1/user/**")
+                    .hasAnyRole("USER", "ADMIN")
+
+                // All remaining endpoints require authentication.
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
+
+        return http.build();
+    }
 }

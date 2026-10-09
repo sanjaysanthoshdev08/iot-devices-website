@@ -1,6 +1,7 @@
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.entity.RefreshToken;
+import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,7 +61,7 @@ public class RefreshTokenService {
 
         return refreshTokenRepository.findByToken(token)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid refresh token"));
+                        new InvalidTokenException("Invalid refresh token"));
     }
 
     @Transactional
@@ -75,7 +76,7 @@ public class RefreshTokenService {
     public RefreshToken rotateRefreshToken(RefreshToken oldRefreshToken) {
 
         if (!isTokenValid(oldRefreshToken)) {
-            throw new IllegalArgumentException(
+            throw new InvalidTokenException(
                     "Refresh token is expired or revoked"
             );
         }

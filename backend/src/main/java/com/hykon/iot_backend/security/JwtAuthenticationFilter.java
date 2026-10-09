@@ -1,4 +1,3 @@
-
 package com.hykon.iot_backend.security;
 
 import com.hykon.iot_backend.entity.User;
@@ -60,57 +59,59 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        final String email;
+
+        // Validate the JWT separately from database access.
         try {
-            // Validate the JWT signature and expiration.
             if (!jwtService.isTokenValid(token)) {
                 sendUnauthorized(response);
                 return;
             }
 
-            // Identify the user from the signed token.
-            String email = jwtService.extractEmail(token);
+            email = jwtService.extractEmail(token);
 
-            if (email == null || email.isBlank()) {
-                sendUnauthorized(response);
-                return;
-            }
-
-            // Load the user and current role from PostgreSQL.
-            User user = userRepository.findByEmailWithRole(email)
-                    .orElse(null);
-
-            // Reject deleted users and inactive accounts.
-            if (user == null
-                    || !"ACTIVE".equalsIgnoreCase(user.getStatus())
-                    || user.getRole() == null
-                    || user.getRole().getName() == null) {
-                sendUnauthorized(response);
-                return;
-            }
-
-            // Use the current database role, not the JWT role claim.
-            String currentRole = user.getRole().getName().name();
-
-            var authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + currentRole)
-            );
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            user.getEmail(),
-                            null,
-                            authorities
-                    );
-
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authentication);
-
-        } catch (Exception exception) {
-            SecurityContextHolder.clearContext();
+        } catch (io.jsonwebtoken.JwtException
+                 | IllegalArgumentException exception) {
             sendUnauthorized(response);
             return;
         }
+
+        if (email == null || email.isBlank()) {
+            sendUnauthorized(response);
+            return;
+        }
+
+        // Load the user and current role from PostgreSQL.
+        // Database exceptions are not treated as invalid JWTs.
+        User user = userRepository.findByEmailWithRole(email)
+                .orElse(null);
+
+        // Reject deleted users and inactive accounts.
+        if (user == null
+                || !"ACTIVE".equalsIgnoreCase(user.getStatus())
+                || user.getRole() == null
+                || user.getRole().getName() == null) {
+            sendUnauthorized(response);
+            return;
+        }
+
+        // Use the current database role, not the JWT role claim.
+        String currentRole = user.getRole().getName().name();
+
+        var authorities = List.of(
+                new SimpleGrantedAuthority("ROLE_" + currentRole)
+        );
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        user.getEmail(),
+                        null,
+                        authorities
+                );
+
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }

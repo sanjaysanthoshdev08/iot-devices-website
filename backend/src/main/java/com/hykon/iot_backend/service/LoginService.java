@@ -1,6 +1,8 @@
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.dto.LoginRequest;
+import com.hykon.iot_backend.exception.InvalidCredentialsException;
+import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.entity.RefreshToken;
 import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.repository.UserRepository;
@@ -33,17 +35,17 @@ public class LoginService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid email or password"));
+                        new InvalidCredentialsException("Invalid email or password"));
 
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            throw new IllegalArgumentException("User account is not active");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         )) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         // Generate JWT access token after successful authentication.
@@ -68,7 +70,7 @@ public class LoginService {
 
         // Validate that the token is active and not expired.
         if (!refreshTokenService.isTokenValid(oldRefreshToken)) {
-            throw new IllegalArgumentException(
+            throw new InvalidTokenException(
                     "Refresh token is expired or revoked"
             );
         }

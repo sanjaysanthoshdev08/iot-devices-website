@@ -1,6 +1,8 @@
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.dto.RegisterRequest;
+import com.hykon.iot_backend.exception.InvalidTokenException;
+import com.hykon.iot_backend.exception.DuplicateResourceException;
 import com.hykon.iot_backend.entity.RefreshToken;
 import com.hykon.iot_backend.entity.Role;
 import com.hykon.iot_backend.entity.RoleName;
@@ -42,7 +44,7 @@ public class AuthService {
         }
 
         if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new DuplicateResourceException("Email is already registered");
         }
 
         Role userRole = roleRepository.findByName(RoleName.USER)
@@ -69,7 +71,7 @@ public class AuthService {
                 refreshTokenService.findByToken(refreshTokenValue);
 
         if (!refreshTokenService.isTokenValid(refreshToken)) {
-            throw new IllegalArgumentException(
+            throw new InvalidTokenException(
                     "Refresh token is expired or already revoked"
             );
         }
