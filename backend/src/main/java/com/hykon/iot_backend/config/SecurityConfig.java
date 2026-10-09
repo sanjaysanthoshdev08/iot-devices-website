@@ -77,6 +77,13 @@ public SecurityFilterChain securityFilterChain(
             // Permit Spring Boot's error endpoint.
             .requestMatchers("/error").permitAll()
 
+            // Admin endpoints require the ADMIN role.
+            .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+            // User endpoints allow USER and ADMIN roles.
+            .requestMatchers("/api/v1/user/**")
+                .hasAnyRole("USER", "ADMIN")
+
             // All remaining endpoints require authentication.
             .anyRequest().authenticated()
         )
@@ -87,4 +94,5 @@ public SecurityFilterChain securityFilterChain(
 
     return http.build();
 }
+
 }
