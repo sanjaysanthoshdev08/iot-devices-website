@@ -126,7 +126,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
 
         response.getWriter().write(
-                "{\"status\":401,\"error\":\"Unauthorized\","
+                "{\"success\":false,\"status\":401,\"error\":\"Unauthorized\","
                         + "\"message\":\"Invalid or expired access token\"}"
         );
     }

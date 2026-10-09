@@ -38,6 +38,7 @@ public class GlobalExceptionHandler {
         );
 
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Validation failed");
         body.put("message", "Please correct the invalid request fields.");
@@ -51,6 +52,7 @@ public class GlobalExceptionHandler {
             ConstraintViolationException ex) {
 
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Validation failed");
         body.put("message", "One or more request values are invalid.");
@@ -177,6 +179,7 @@ public class GlobalExceptionHandler {
             String message) {
 
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
         body.put("status", status.value());
         body.put("error", error);
         body.put("message", message);

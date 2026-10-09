@@ -8,6 +8,7 @@ import com.hykon.iot_backend.dto.RefreshTokenResponse;
 import com.hykon.iot_backend.dto.RegisterRequest;
 import com.hykon.iot_backend.dto.RegisterResponse;
 import com.hykon.iot_backend.entity.User;
+import com.hykon.iot_backend.response.ApiResponse;
 import com.hykon.iot_backend.service.AuthService;
 import com.hykon.iot_backend.service.LoginService;
 import jakarta.validation.Valid;
@@ -31,24 +32,22 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(
             @Valid @RequestBody RegisterRequest request
     ) {
         User user = authService.register(request);
-
         RegisterResponse response = new RegisterResponse(user);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(response);
+                .body(ApiResponse.success("Registration successful", response));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request
     ) {
-        LoginService.LoginResult loginResult =
-                loginService.login(request);
+        LoginService.LoginResult loginResult = loginService.login(request);
 
         LoginResponse response = new LoginResponse(
                 loginResult.getUser(),
@@ -57,34 +56,34 @@ public class AuthController {
         );
 
         return ResponseEntity
-                .ok(response);
+                .ok(ApiResponse.success("Login successful", response));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<RefreshTokenResponse> refresh(
+    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refresh(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
         LoginService.RefreshResult refreshResult =
                 loginService.refresh(request.getRefreshToken());
 
-        RefreshTokenResponse response =
-                new RefreshTokenResponse(
-                        refreshResult.getAccessToken(),
-                        refreshResult.getRefreshToken()
-                );
+        RefreshTokenResponse response = new RefreshTokenResponse(
+                refreshResult.getAccessToken(),
+                refreshResult.getRefreshToken()
+        );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+                .ok(ApiResponse.success("Token refreshed successfully", response));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<LogoutResponse> logout(
+    public ResponseEntity<ApiResponse<LogoutResponse>> logout(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
         authService.logout(request.getRefreshToken());
 
-        LogoutResponse response =
-                new LogoutResponse("Logout successful");
+        LogoutResponse response = new LogoutResponse("Logout successful");
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+                .ok(ApiResponse.success("Logout successful", response));
     }
 }
