@@ -1,3 +1,4 @@
+
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.entity.User;
@@ -48,6 +49,12 @@ public class JwtService {
     public String extractEmail(String token) {
 
         return extractAllClaims(token).getSubject();
+    }
+
+    // NEW: Extract the user's role from the JWT.
+    public String extractRole(String token) {
+
+        return extractAllClaims(token).get("role", String.class);
     }
 
     public boolean isTokenValid(String token) {
