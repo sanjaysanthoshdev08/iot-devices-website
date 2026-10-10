@@ -1,3 +1,4 @@
+
 package com.hykon.iot_backend.config;
 
 import com.hykon.iot_backend.repository.UserRepository;
@@ -62,13 +63,14 @@ public class SecurityConfig {
                             response.setCharacterEncoding("UTF-8");
 
                             response.getWriter().write(
-                                "{\"status\":401,\"error\":\"Unauthorized\","
+                                "{\"success\":false,\"status\":401,"
+                                + "\"error\":\"Unauthorized\","
                                 + "\"message\":\"Authentication is required\"}"
                             );
                         }
                     )
 
-                    // NEW: 403 when an authenticated user lacks permission.
+                    // 403: authenticated user lacks the required permission.
                     .accessDeniedHandler(
                         (request, response, accessDeniedException) -> {
                             response.setStatus(HttpStatus.FORBIDDEN.value());
@@ -76,7 +78,8 @@ public class SecurityConfig {
                             response.setCharacterEncoding("UTF-8");
 
                             response.getWriter().write(
-                                "{\"status\":403,\"error\":\"Forbidden\","
+                                "{\"success\":false,\"status\":403,"
+                                + "\"error\":\"Forbidden\","
                                 + "\"message\":\"You do not have permission "
                                 + "to access this resource\"}"
                             );
@@ -84,6 +87,15 @@ public class SecurityConfig {
                     )
             )
             .authorizeHttpRequests(auth -> auth
+
+                // Public Swagger UI and OpenAPI documentation.
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/**"
+                ).permitAll()
+
                 // Public authentication endpoints: POST only.
                 .requestMatchers(
                     HttpMethod.POST,
