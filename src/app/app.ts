@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
+import { AuthService } from './services/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
+
 export interface HykonBranch {
   id: string;
   unitName: string;
@@ -22,7 +25,10 @@ export interface HykonBranch {
   styleUrl: './app.scss'
 })
 export class App implements AfterViewInit, OnDestroy {
-  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
+ constructor(
+  @Inject(PLATFORM_ID) private platformId: object,
+  private readonly authService: AuthService
+) {}
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   // Navigation links with active state
@@ -53,10 +59,17 @@ export class App implements AfterViewInit, OnDestroy {
   nameError = signal<string>('');
   confirmPasswordError = signal<string>('');
 
+  // Authentication request state
+  isSubmitting = signal<boolean>(false);
+  authError = signal<string>('');
+  authSuccess = signal<string>('');
+
   openLoginModal(isSignUp: boolean = false) {
     this.clearErrors();
     this.isSignUpMode.set(isSignUp);
     this.isLoginModalOpen.set(true);
+    
+  
   }
 
   openSignUpModal() {
