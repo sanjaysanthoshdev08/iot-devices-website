@@ -594,6 +594,144 @@
         </div>
       </div>
 
+      <!-- ===== CENTER POWER PANEL GROUP (Recreation of Reference Image) ===== -->
+      <div class="features-hud-overlay-center">
+        <div class="center-panel-wrapper">
+
+          <!-- Background Wing Panels (Efficiency Gauge Left + Icons Grid Right) -->
+          <div class="center-back-wings-card">
+            <!-- Left Wing: Efficiency Vertical Gauge -->
+            <div class="wing-left-efficiency">
+              <div class="vert-gauge-wrap">
+                <div class="vert-gauge-track">
+                  <div class="vert-gauge-fill"></div>
+                </div>
+                <div class="vert-gauge-labels">
+                  <span>100%</span>
+                  <span>80%</span>
+                  <span>60%</span>
+                  <span>30%</span>
+                </div>
+              </div>
+              <span class="wing-eff-title">Efficiency</span>
+            </div>
+
+            <!-- Right Wing: 2x2 Rounded Icon Panel -->
+            <div class="wing-right-icons">
+              <div class="wing-icon-btn app-store-btn" title="Apps">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M12 3L5 19"></path>
+                  <path d="M19 19L14 7"></path>
+                  <path d="M3 15h18"></path>
+                </svg>
+              </div>
+              <div class="wing-icon-btn" title="Mobile Device">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"></line>
+                </svg>
+              </div>
+              <div class="wing-icon-btn" title="Display">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <div class="wing-icon-btn" title="Media / Stream">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="4"></rect>
+                  <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
+                </svg>
+              </div>
+              <div class="wing-icon-btn" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Foreground Tall POWER Card (Phone Form-Factor) -->
+          <div class="center-power-phone-card">
+            <!-- Top Phone Speaker Notch -->
+            <div class="phone-speaker-notch"></div>
+
+            <!-- Card Header -->
+            <div class="power-card-header">
+              <h3 class="power-card-title">POWER</h3>
+            </div>
+
+            <!-- Section 1: Power (Watts) -->
+            <div class="power-metric-block">
+              <span class="power-metric-label">Power (Watts)</span>
+              <div class="power-value-row">
+                <span class="power-zap-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                </span>
+                <span class="power-kw-val">2.5 kW</span>
+                <span class="power-down-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <div class="power-card-divider"></div>
+
+            <!-- Section 2: Active Load -->
+            <div class="power-metric-block">
+              <span class="power-metric-label">Active Load:</span>
+              <div class="active-load-val">2.5 kW</div>
+            </div>
+
+            <div class="power-card-divider"></div>
+
+            <!-- Section 3: Capacity -->
+            <div class="power-capacity-block">
+              <div class="capacity-header-row">
+                <span class="capacity-label">Capacity:</span>
+                <span class="capacity-pct-val">45%</span>
+              </div>
+              <div class="capacity-track">
+                <div class="capacity-fill-bar"></div>
+              </div>
+            </div>
+
+            <div class="power-card-divider"></div>
+
+            <!-- Section 4: Efficiency Strip -->
+            <div class="power-efficiency-block">
+              <span class="efficiency-block-label">Efficiency:</span>
+              <div class="multicolor-eff-strip">
+                <div class="eff-segment eff-green"></div>
+                <div class="eff-segment eff-lime"></div>
+                <div class="eff-segment eff-yellow"></div>
+                <div class="eff-segment eff-orange"></div>
+                <div class="eff-segment eff-red"></div>
+              </div>
+              <div class="eff-strip-ticks">
+                <span>0%</span>
+                <span>Estimated</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vertical Glowing Connection Line to the Energy Orb -->
+          <div class="power-orb-tether">
+            <div class="tether-line"></div>
+            <div class="tether-orb-node"></div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- ===== RIGHT SIDE HUD CARDS (Recreation of Reference Image) ===== -->
       <div class="features-hud-overlay">
         <div class="features-hud-cluster">

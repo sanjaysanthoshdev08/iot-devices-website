@@ -1591,6 +1591,390 @@
   }
 }
 
+/* ===== FEATURES CENTER POWER PANEL (Exact recreation of center reference image) ===== */
+.features-hud-overlay-center {
+  position: absolute;
+  top: clamp(20px, 4.5vh, 48px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+
+  @media (max-width: 992px) {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin: 25px auto 10px;
+    pointer-events: auto;
+  }
+}
+
+.center-panel-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Background Wing Panels (Efficiency Gauge Left + Icons Grid Right) */
+.center-back-wings-card {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(310px, 24vw, 360px);
+  height: 165px;
+  background: rgba(8, 20, 36, 0.74);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  border-radius: 18px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 240, 255, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  z-index: 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    border-color: rgba(0, 240, 255, 0.6);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 25px rgba(0, 240, 255, 0.2);
+  }
+}
+
+/* Left Wing: Vertical Efficiency Gauge */
+.wing-left-efficiency {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 60px;
+
+  .vert-gauge-wrap {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .vert-gauge-track {
+    width: 14px;
+    height: 95px;
+    background: rgba(4, 14, 26, 0.85);
+    border: 1.2px solid rgba(56, 189, 248, 0.4);
+    border-radius: 4px;
+    padding: 1.5px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
+  }
+
+  .vert-gauge-fill {
+    width: 100%;
+    height: 65%;
+    background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+    border-radius: 2px;
+    box-shadow: 0 0 10px #22c55e;
+    animation: pulseEffGauge 3s ease-in-out infinite alternate;
+  }
+
+  .vert-gauge-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 95px;
+    font-size: 7.5px;
+    font-family: monospace;
+    color: #94a3b8;
+  }
+
+  .wing-eff-title {
+    color: #cbd5e1;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+}
+
+@keyframes pulseEffGauge {
+  0% {
+    filter: brightness(0.95);
+  }
+  100% {
+    filter: brightness(1.2);
+  }
+}
+
+/* Right Wing: 2x2 Rounded Icon Panel */
+.wing-right-icons {
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
+  gap: 8px;
+  justify-content: center;
+  width: 75px;
+
+  .wing-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: rgba(6, 18, 32, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7dd3fc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      border-color: #00f0ff;
+      color: #ffffff;
+      transform: scale(1.1);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+
+    &.app-store-btn {
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+  }
+}
+
+/* Foreground Tall POWER Card (Phone Form-Factor) */
+.center-power-phone-card {
+  position: relative;
+  z-index: 2;
+  width: clamp(180px, 14vw, 215px);
+  background: rgba(6, 18, 34, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.8px solid rgba(56, 189, 248, 0.55);
+  border-radius: 22px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 240, 255, 0.22), inset 0 0 15px rgba(0, 240, 255, 0.06);
+  padding: 8px 14px 14px;
+  box-sizing: border-box;
+  color: #ffffff;
+  animation: hudCardFadeIn 0.8s ease-out forwards;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+
+  &:hover {
+    border-color: rgba(0, 240, 255, 0.85);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.85), 0 0 32px rgba(0, 240, 255, 0.35);
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  .phone-speaker-notch {
+    width: 44px;
+    height: 4px;
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 2px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    margin: 0 auto 8px;
+  }
+
+  .power-card-header {
+    text-align: center;
+    margin-bottom: 7px;
+
+    .power-card-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+      margin: 0;
+      text-transform: uppercase;
+    }
+  }
+
+  .power-metric-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .power-metric-label {
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .power-value-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .power-zap-icon {
+        color: #22c55e;
+        width: 14px;
+        height: 14px;
+        filter: drop-shadow(0 0 6px #22c55e);
+        display: flex;
+        align-items: center;
+      }
+
+      .power-kw-val {
+        color: #ffffff;
+        font-size: 19px;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', sans-serif;
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+      }
+
+      .power-down-arrow {
+        color: #ef4444;
+        width: 14px;
+        height: 14px;
+        filter: drop-shadow(0 0 4px #ef4444);
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .active-load-val {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', sans-serif;
+      text-align: center;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+  }
+
+  .power-card-divider {
+    height: 1px;
+    background: rgba(56, 189, 248, 0.18);
+    margin: 6px 0;
+  }
+
+  .power-capacity-block {
+    .capacity-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      margin-bottom: 3px;
+
+      .capacity-label {
+        color: #94a3b8;
+        font-weight: 500;
+      }
+
+      .capacity-pct-val {
+        color: #00f0ff;
+        font-weight: 700;
+        font-family: monospace;
+        text-shadow: 0 0 6px #00f0ff;
+      }
+    }
+
+    .capacity-track {
+      height: 6px;
+      background: rgba(4, 14, 26, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .capacity-fill-bar {
+      width: 45%;
+      height: 100%;
+      background: #00f0ff;
+      box-shadow: 0 0 6px #00f0ff;
+    }
+  }
+
+  .power-efficiency-block {
+    .efficiency-block-label {
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .multicolor-eff-strip {
+      height: 7px;
+      border-radius: 3px;
+      display: flex;
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      background: rgba(3, 10, 20, 0.8);
+
+      .eff-segment {
+        flex: 1;
+        height: 100%;
+
+        &.eff-green {
+          background: #22c55e;
+        }
+        &.eff-lime {
+          background: #84cc16;
+        }
+        &.eff-yellow {
+          background: #eab308;
+        }
+        &.eff-orange {
+          background: #f97316;
+        }
+        &.eff-red {
+          background: #ef4444;
+        }
+      }
+    }
+
+    .eff-strip-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5px;
+      color: #64748b;
+      font-family: monospace;
+      margin-top: 3px;
+    }
+  }
+}
+
+/* Vertical Glowing Connection Line to the Energy Orb */
+.power-orb-tether {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -2px;
+  z-index: 1;
+
+  .tether-line {
+    width: 1.5px;
+    height: clamp(55px, 7.5vh, 90px);
+    background: linear-gradient(180deg, #00f0ff 0%, rgba(0, 240, 255, 0.8) 70%, #ffffff 100%);
+    box-shadow: 0 0 8px #00f0ff, 0 0 14px rgba(0, 240, 255, 0.6);
+  }
+
+  .tether-orb-node {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 12px #00f0ff, 0 0 20px #00f0ff;
+    transform: translateY(-3px);
+  }
+}
+
 /* ===== FEATURES RIGHT HUD OVERLAY (Exact recreation of reference image) ===== */
 .features-hud-overlay {
   position: absolute;
