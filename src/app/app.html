@@ -236,6 +236,647 @@
            (error)="$any($event.target).src = 'assets/features page image.png'" 
            alt="Features Page" 
            class="features-image" />
+
+      <!-- ===== LEFT SIDE HUD CARDS (Recreation of Reference Image) ===== -->
+      <div class="features-hud-overlay-left">
+        <div class="features-hud-cluster-left">
+
+          <!-- 1. VOLTAGE BOX (Top-Right in Left Cluster) -->
+          <div class="hud-box hud-box-voltage">
+            <!-- Left mini icon dock -->
+            <div class="hud-dock-sidebar">
+              <button class="dock-icon-btn active" title="Voltage">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Processor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                  <line x1="9" y1="1" x2="9" y2="4"></line>
+                  <line x1="15" y1="1" x2="15" y2="4"></line>
+                  <line x1="9" y1="20" x2="9" y2="23"></line>
+                  <line x1="15" y1="20" x2="15" y2="23"></line>
+                  <line x1="20" y1="9" x2="23" y2="9"></line>
+                  <line x1="20" y1="15" x2="23" y2="15"></line>
+                  <line x1="1" y1="9" x2="4" y2="9"></line>
+                  <line x1="1" y1="15" x2="4" y2="15"></line>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Network">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Grid">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Card Content -->
+            <div class="hud-card-body">
+              <!-- Header -->
+              <div class="hud-header">
+                <div class="hud-title-wrap">
+                  <span class="hud-title-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </span>
+                  <h3 class="hud-title">VOLTAGE</h3>
+                </div>
+                <!-- Status dots indicator -->
+                <div class="voltage-led-indicator">
+                  <span class="v-led green"></span>
+                  <span class="v-led green"></span>
+                  <span class="v-led yellow"></span>
+                  <span class="v-led red"></span>
+                </div>
+              </div>
+
+              <!-- Dual Voltage Readouts -->
+              <div class="voltage-readouts-row">
+                <div class="v-readout-col">
+                  <span class="v-readout-label">Input Voltage:</span>
+                  <div class="v-readout-val">230V</div>
+                </div>
+                <div class="v-transfer-arrow">
+                  <svg viewBox="0 0 40 16" class="arrow-svg">
+                    <path d="M 6 8 L 34 8" stroke="#00f0ff" stroke-width="1.8" stroke-dasharray="2 2"></path>
+                    <polygon points="4,8 10,4 10,12" fill="#00f0ff"></polygon>
+                    <polygon points="36,8 30,4 30,12" fill="#00f0ff"></polygon>
+                  </svg>
+                </div>
+                <div class="v-readout-col">
+                  <span class="v-readout-label">Output Voltage:</span>
+                  <div class="v-readout-val">220V</div>
+                </div>
+              </div>
+
+              <!-- Real-time Sine Wave Graph -->
+              <div class="sine-scope-container">
+                <div class="scope-grid-bg">
+                  <div class="scope-y-axis">
+                    <span>230V</span>
+                    <span>200V</span>
+                    <span>100V</span>
+                    <span>0V</span>
+                    <span>-100V</span>
+                  </div>
+                  <svg class="sine-wave-svg" viewBox="0 0 260 50" preserveAspectRatio="none">
+                    <line x1="0" y1="25" x2="260" y2="25" stroke="rgba(56, 189, 248, 0.2)" stroke-dasharray="2 3"></line>
+                    <path d="M 0 25 Q 26 5, 52 25 T 104 25 T 156 25 T 208 25 T 260 25" 
+                          fill="none" 
+                          stroke="#00f0ff" 
+                          stroke-width="2" 
+                          class="sine-path"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Three Round Analog Gauges -->
+              <div class="voltage-gauges-row">
+                <!-- Gauge 1 -->
+                <div class="v-gauge-box">
+                  <span class="corner-tick tick-tl"></span>
+                  <span class="corner-tick tick-tr"></span>
+                  <span class="corner-tick tick-bl"></span>
+                  <span class="corner-tick tick-br"></span>
+                  <div class="gauge-arc-wrap">
+                    <svg viewBox="0 0 60 40" class="gauge-svg">
+                      <path d="M 8 34 A 24 24 0 0 1 52 34" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="4"></path>
+                      <path d="M 8 34 A 24 24 0 0 1 45 20" fill="none" stroke="#00f0ff" stroke-width="4" stroke-dasharray="80" stroke-linecap="round"></path>
+                      <path d="M 45 20 A 24 24 0 0 1 52 34" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+                      <line x1="30" y1="34" x2="43" y2="18" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"></line>
+                      <circle cx="30" cy="34" r="2.5" fill="#00f0ff"></circle>
+                    </svg>
+                  </div>
+                  <span class="gauge-label">220V</span>
+                </div>
+
+                <!-- Gauge 2 -->
+                <div class="v-gauge-box">
+                  <span class="corner-tick tick-tl"></span>
+                  <span class="corner-tick tick-tr"></span>
+                  <span class="corner-tick tick-bl"></span>
+                  <span class="corner-tick tick-br"></span>
+                  <div class="gauge-arc-wrap">
+                    <svg viewBox="0 0 60 40" class="gauge-svg">
+                      <path d="M 8 34 A 24 24 0 0 1 52 34" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="4"></path>
+                      <path d="M 8 34 A 24 24 0 0 1 42 16" fill="none" stroke="#00f0ff" stroke-width="4" stroke-dasharray="80" stroke-linecap="round"></path>
+                      <path d="M 42 16 A 24 24 0 0 1 52 34" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+                      <line x1="30" y1="34" x2="38" y2="15" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"></line>
+                      <circle cx="30" cy="34" r="2.5" fill="#00f0ff"></circle>
+                    </svg>
+                  </div>
+                  <span class="gauge-label">220V</span>
+                </div>
+
+                <!-- Gauge 3 -->
+                <div class="v-gauge-box">
+                  <span class="corner-tick tick-tl"></span>
+                  <span class="corner-tick tick-tr"></span>
+                  <span class="corner-tick tick-bl"></span>
+                  <span class="corner-tick tick-br"></span>
+                  <div class="gauge-arc-wrap">
+                    <svg viewBox="0 0 60 40" class="gauge-svg">
+                      <path d="M 8 34 A 24 24 0 0 1 52 34" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="4"></path>
+                      <path d="M 8 34 A 24 24 0 0 1 40 18" fill="none" stroke="#00f0ff" stroke-width="4" stroke-dasharray="80" stroke-linecap="round"></path>
+                      <line x1="30" y1="34" x2="36" y2="17" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"></line>
+                      <circle cx="30" cy="34" r="2.5" fill="#00f0ff"></circle>
+                    </svg>
+                  </div>
+                  <span class="gauge-label">50Hz</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. CURRENT BOX (Middle-Left in Left Cluster, overlapping Voltage) -->
+          <div class="hud-box hud-box-current">
+            <!-- Header -->
+            <div class="hud-header">
+              <h3 class="hud-title">CURRENT</h3>
+              <div class="current-capsule-meter">
+                <span class="c-bar"></span>
+                <span class="c-bar"></span>
+                <span class="c-bar"></span>
+              </div>
+            </div>
+
+            <div class="current-content-grid">
+              <!-- Top Row: Current Reading + Channels -->
+              <div class="current-top-row">
+                <div class="current-main-readout">
+                  <span class="c-readout-label">Current:</span>
+                  <div class="c-readout-val">12.5 A</div>
+                </div>
+
+                <div class="current-channels-box">
+                  <div class="ch-row">
+                    <span class="ch-name">CH1</span>
+                    <div class="ch-bar-wrap">
+                      <span class="ch-fill w-65"></span>
+                    </div>
+                    <span class="ch-pct">65%</span>
+                  </div>
+                  <div class="ch-row">
+                    <span class="ch-name">CH2</span>
+                    <div class="ch-bar-wrap">
+                      <span class="ch-fill w-85"></span>
+                    </div>
+                    <span class="ch-pct">85%</span>
+                  </div>
+                  <div class="ch-row">
+                    <span class="ch-name">CH3</span>
+                    <div class="ch-bar-wrap">
+                      <span class="ch-fill w-45"></span>
+                    </div>
+                    <span class="ch-pct">45%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Load Progress Bar -->
+              <div class="load-bar-section">
+                <div class="load-header">
+                  <span class="load-title">Load</span>
+                </div>
+                <div class="load-progress-bar">
+                  <div class="load-fill-cyan"></div>
+                  <div class="load-fill-red"></div>
+                </div>
+              </div>
+
+              <!-- Current Waveform Oscilloscope -->
+              <div class="current-scope-container">
+                <div class="c-scope-axis">
+                  <span>15.00</span>
+                  <span>9.50</span>
+                  <span>0</span>
+                  <span>-5.00</span>
+                  <span>-10.0</span>
+                </div>
+                <div class="c-scope-graph">
+                  <svg class="c-waveform-svg" viewBox="0 0 230 45" preserveAspectRatio="none">
+                    <line x1="0" y1="26" x2="230" y2="26" stroke="rgba(56, 189, 248, 0.2)" stroke-dasharray="2 3"></line>
+                    <path d="M 0 26 L 30 26 L 42 6 L 62 42 L 80 14 L 98 34 L 116 22 L 134 28 L 152 25 L 180 26 L 230 26" 
+                          fill="none" 
+                          stroke="#00f0ff" 
+                          stroke-width="1.8" 
+                          filter="drop-shadow(0 0 4px #00f0ff)"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. INVERTER/UPS MODE BOX (Bottom-Right in Left Cluster, overlapping Current) -->
+          <div class="hud-box hud-box-inverter">
+            <!-- Header -->
+            <div class="hud-header">
+              <h3 class="hud-title">INVERTER/UPS MODE</h3>
+              <div class="inverter-gear-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Inverter/UPS Mode Pill Bar -->
+            <div class="inverter-mode-pill-bar">
+              <span>Inverter/UPS Mode</span>
+            </div>
+
+            <!-- Schematic Circuit Diagram -->
+            <div class="inverter-schematic-diagram">
+              <!-- Left Column: Grid or Battery -->
+              <div class="schematic-source-col">
+                <div class="schematic-node">
+                  <span class="node-label">Grid</span>
+                  <div class="node-icon-box">
+                    <svg viewBox="0 0 24 24" class="node-svg" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M12 2L4 22h16L12 2z"></path>
+                      <line x1="7" y1="14" x2="17" y2="14"></line>
+                      <line x1="9" y1="9" x2="15" y2="9"></line>
+                      <line x1="4" y1="14" x2="20" y2="14"></line>
+                    </svg>
+                  </div>
+                </div>
+
+                <span class="source-or-divider">Or</span>
+
+                <div class="schematic-node">
+                  <div class="node-icon-box battery-node">
+                    <svg viewBox="0 0 24 24" class="node-svg" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <rect x="2" y="7" width="20" height="13" rx="2"></rect>
+                      <line x1="6" y1="4" x2="8" y2="4"></line>
+                      <line x1="16" y1="4" x2="18" y2="4"></line>
+                      <polygon points="12 9 10 13 13 13 11 17 15 12 12 12" fill="currentColor"></polygon>
+                    </svg>
+                  </div>
+                  <span class="node-label">Battery</span>
+                </div>
+              </div>
+
+              <!-- Connecting flow lines -->
+              <div class="schematic-flow-arrow">
+                <svg viewBox="0 0 24 50" class="flow-svg">
+                  <path d="M 0 12 L 20 12" stroke="#00f0ff" stroke-width="1.6"></path>
+                  <polygon points="20,9 24,12 20,15" fill="#00f0ff"></polygon>
+                  <path d="M 0 38 L 12 38 L 12 16 L 20 16" stroke="#38bdf8" stroke-width="1.4" fill="none"></path>
+                </svg>
+              </div>
+
+              <!-- Center: Inverter Box (with AC/DC symbol) -->
+              <div class="schematic-inverter-col">
+                <span class="node-label">Inverter</span>
+                <div class="inverter-symbol-box">
+                  <svg viewBox="0 0 36 36" class="inverter-symbol-svg">
+                    <rect x="2" y="2" width="32" height="32" fill="rgba(6, 24, 46, 0.9)" stroke="#00f0ff" stroke-width="1.8"></rect>
+                    <line x1="2" y1="34" x2="34" y2="2" stroke="#00f0ff" stroke-width="1.4"></line>
+                    <line x1="7" y1="22" x2="15" y2="22" stroke="#38bdf8" stroke-width="1.8"></line>
+                    <line x1="7" y1="26" x2="15" y2="26" stroke="#38bdf8" stroke-width="1.8"></line>
+                    <path d="M 20 12 Q 23 8, 26 12 T 32 12" fill="none" stroke="#00f0ff" stroke-width="1.8"></path>
+                  </svg>
+                </div>
+
+                <div class="inverter-down-flow">
+                  <svg viewBox="0 0 12 16" class="down-arrow-svg">
+                    <line x1="6" y1="0" x2="6" y2="12" stroke="#4ade80" stroke-width="1.6"></line>
+                    <polygon points="3,11 6,16 9,11" fill="#4ade80"></polygon>
+                  </svg>
+                  <span class="pill-status-chip">ON LINE</span>
+                </div>
+              </div>
+
+              <!-- Connecting flow line to Status -->
+              <div class="schematic-flow-arrow">
+                <svg viewBox="0 0 24 50" class="flow-svg">
+                  <path d="M 0 18 L 20 18" stroke="#4ade80" stroke-width="1.6"></path>
+                  <polygon points="20,15 24,18 20,21" fill="#4ade80"></polygon>
+                  <path d="M 8 18 L 8 36 L 20 36" stroke="#4ade80" stroke-width="1.4" fill="none"></path>
+                </svg>
+              </div>
+
+              <!-- Right: Device Status Node + Badges -->
+              <div class="schematic-status-col">
+                <div class="schematic-node">
+                  <span class="node-label">Status</span>
+                  <div class="node-icon-box status-node">
+                    <svg viewBox="0 0 24 24" class="node-svg" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                      <line x1="8" y1="6" x2="16" y2="6"></line>
+                      <circle cx="8" cy="11" r="1" fill="currentColor"></circle>
+                      <circle cx="12" cy="11" r="1" fill="currentColor"></circle>
+                      <circle cx="16" cy="11" r="1" fill="currentColor"></circle>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="status-chips-stack">
+                  <span class="pill-status-chip">ON LINE</span>
+                  <span class="pill-status-chip">BATTERY ACTIVE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== RIGHT SIDE HUD CARDS (Recreation of Reference Image) ===== -->
+      <div class="features-hud-overlay">
+        <div class="features-hud-cluster">
+
+          <!-- 1. PROTECTION BOX (Top-Left) -->
+          <div class="hud-box hud-box-protection">
+            <!-- Left mini icon dock -->
+            <div class="hud-dock-sidebar">
+              <button class="dock-icon-btn active" title="Power">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Processor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                  <line x1="9" y1="1" x2="9" y2="4"></line>
+                  <line x1="15" y1="1" x2="15" y2="4"></line>
+                  <line x1="9" y1="20" x2="9" y2="23"></line>
+                  <line x1="15" y1="20" x2="15" y2="23"></line>
+                  <line x1="20" y1="9" x2="23" y2="9"></line>
+                  <line x1="20" y1="15" x2="23" y2="15"></line>
+                  <line x1="1" y1="9" x2="4" y2="9"></line>
+                  <line x1="1" y1="15" x2="4" y2="15"></line>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Users">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Grid">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button class="dock-icon-btn" title="Network">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Card Main Content -->
+            <div class="hud-card-body">
+              <!-- Header -->
+              <div class="hud-header">
+                <div class="hud-title-wrap">
+                  <span class="hud-title-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </span>
+                  <h3 class="hud-title">PROTECTION</h3>
+                </div>
+                <div class="hud-power-indicator" title="Status: Normal">
+                  <span class="p-bar active"></span>
+                  <span class="p-bar active"></span>
+                  <span class="p-bar active"></span>
+                  <span class="p-bar active"></span>
+                </div>
+              </div>
+
+              <!-- Main protection details -->
+              <div class="protection-content-grid">
+                <!-- Status Rows -->
+                <div class="protection-rows">
+                  <div class="prot-row">
+                    <span class="prot-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    </span>
+                    <span class="prot-label">Overload Protection</span>
+                    <span class="prot-status"><span class="check-mark">✓</span> OK</span>
+                  </div>
+
+                  <div class="prot-row">
+                    <span class="prot-icon circuit-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="2" y1="12" x2="8" y2="12"></line>
+                        <line x1="8" y1="7" x2="8" y2="17"></line>
+                        <line x1="16" y1="7" x2="16" y2="17"></line>
+                        <line x1="16" y1="12" x2="22" y2="12"></line>
+                      </svg>
+                    </span>
+                    <span class="prot-label">Short Circuit</span>
+                    <span class="prot-status"><span class="check-mark">✓</span> OK</span>
+                  </div>
+
+                  <div class="prot-row">
+                    <span class="prot-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                      </svg>
+                    </span>
+                    <span class="prot-label">Thermal</span>
+                    <span class="prot-status"><span class="check-mark">✓</span> OK</span>
+                  </div>
+
+                  <div class="prot-row">
+                    <span class="prot-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      </svg>
+                    </span>
+                    <span class="prot-label">Surge Status</span>
+                    <span class="prot-status"><span class="check-mark">✓</span> OK</span>
+                  </div>
+
+                  <div class="prot-row">
+                    <span class="prot-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                      </svg>
+                    </span>
+                    <span class="prot-label">Surge Status</span>
+                    <span class="prot-status"><span class="check-mark">✓</span> OK</span>
+                  </div>
+                </div>
+
+                <!-- Shield Icons Column -->
+                <div class="protection-shields-col">
+                  <div class="shield-badge">
+                    <svg viewBox="0 0 24 24" class="shield-svg">
+                      <path class="shield-base" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <polyline class="shield-check" points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                  </div>
+                  <div class="shield-badge">
+                    <svg viewBox="0 0 24 24" class="shield-svg">
+                      <path class="shield-base" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <polyline class="shield-check" points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. BATTERY BOX (Middle-Right) -->
+          <div class="hud-box hud-box-battery">
+            <!-- Header -->
+            <div class="hud-header">
+              <h3 class="hud-title">BATTERY</h3>
+              <div class="battery-capsule-meter">
+                <div class="meter-bar-fill"></div>
+              </div>
+            </div>
+
+            <!-- Body: Battery visual + Tech metrics -->
+            <div class="battery-content-grid">
+              <!-- Left: Glowing Battery Icon -->
+              <div class="battery-graphic-wrap">
+                <div class="battery-cell-container">
+                  <div class="battery-terminal-top"></div>
+                  <div class="battery-cell-body">
+                    <div class="battery-liquid-glow"></div>
+                    <svg class="battery-bolt" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Bracketed Data Box -->
+              <div class="battery-tech-frame">
+                <!-- Tech corner ticks -->
+                <span class="corner-tick tick-tl"></span>
+                <span class="corner-tick tick-tr"></span>
+                <span class="corner-tick tick-bl"></span>
+                <span class="corner-tick tick-br"></span>
+
+                <div class="battery-metrics-list">
+                  <div class="metric-row">
+                    <span class="metric-key">Charge:</span>
+                    <span class="metric-val">87%</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Voltage:</span>
+                    <span class="metric-val">48V</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Estimated Backup:</span>
+                    <span class="metric-val">4h 30m</span>
+                  </div>
+                  <div class="metric-separator"></div>
+                  <div class="metric-row">
+                    <span class="metric-key">Health:</span>
+                    <span class="metric-val">87%</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Health Metric:</span>
+                    <span class="metric-val">4h 10m</span>
+                  </div>
+                  <div class="metric-row">
+                    <span class="metric-key">Health Metric:</span>
+                    <span class="metric-val">= 40%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. SPECIFICATIONS BOX (Bottom-Left) -->
+          <div class="hud-box hud-box-specifications">
+            <!-- Header -->
+            <div class="hud-header">
+              <h3 class="hud-title">SPECIFICATIONS</h3>
+            </div>
+
+            <!-- Body: Specs data table -->
+            <div class="specs-table-container">
+              <div class="specs-row">
+                <span class="s-col-name">Capacity</span>
+                <span class="s-col-val">5kVA / 4000W</span>
+                <span class="s-col-meta">Total Output</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Frequency</span>
+                <span class="s-col-val">50Hz</span>
+                <span class="s-col-meta">Electrical Specs</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Frequency</span>
+                <span class="s-col-val">60Hz</span>
+                <span class="s-col-meta">Response Fore Sine Wave</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Waveform</span>
+                <span class="s-col-val">Pure Sine Wave</span>
+                <span class="s-col-meta">Power Modes</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Rated Voltage</span>
+                <span class="s-col-val">230V</span>
+                <span class="s-col-meta">Health Status</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Maximum Load</span>
+                <span class="s-col-val">4100W</span>
+                <span class="s-col-meta">Protection System</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Frequency</span>
+                <span class="s-col-val">50Hz</span>
+                <span class="s-col-meta">Harmonic Specs</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Efficiency</span>
+                <span class="s-col-val">98%</span>
+                <span class="s-col-meta">Performance Status</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Response Time</span>
+                <span class="s-col-val">≤10ms</span>
+                <span class="s-col-meta">Power Interconnect</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Protection</span>
+                <span class="s-col-val">IP54</span>
+                <span class="s-col-meta">Thermal Status</span>
+              </div>
+              <div class="specs-row">
+                <span class="s-col-name">Model ID</span>
+                <span class="s-col-val">HY-X5000</span>
+                <span class="s-col-meta">Technical Specs</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </section>
 

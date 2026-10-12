@@ -1035,6 +1035,12 @@
   justify-content: center;
   overflow: hidden;
   z-index: 5;
+
+  @media (max-width: 992px) {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
 }
 
 .features-image-container {
@@ -1053,6 +1059,1111 @@
   display: block;
   object-fit: cover;
   object-position: center;
+}
+
+/* ===== FEATURES LEFT HUD OVERLAY (Exact recreation of left reference image) ===== */
+.features-hud-overlay-left {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding-left: clamp(16px, 4.2vw, 85px);
+  pointer-events: none;
+  z-index: 10;
+
+  @media (max-width: 992px) {
+    position: relative;
+    padding: 40px 16px 20px;
+    justify-content: center;
+    pointer-events: auto;
+  }
+}
+
+.features-hud-cluster-left {
+  position: relative;
+  width: clamp(380px, 45vw, 560px);
+  height: clamp(520px, 83vh, 670px);
+  pointer-events: auto;
+
+  @media (max-width: 992px) {
+    width: 100%;
+    max-width: 440px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* 1. VOLTAGE BOX (Top-Right in left cluster) */
+.hud-box-voltage {
+  position: absolute;
+  top: 2%;
+  right: 0;
+  width: clamp(290px, 64%, 360px);
+  z-index: 2;
+  display: flex;
+  overflow: hidden;
+  animation-delay: 0.15s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+  }
+
+  .voltage-led-indicator {
+    display: flex;
+    gap: 3.5px;
+    align-items: center;
+
+    .v-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+
+      &.green {
+        background: #4ade80;
+        box-shadow: 0 0 6px #4ade80;
+      }
+      &.yellow {
+        background: #facc15;
+        box-shadow: 0 0 6px #facc15;
+      }
+      &.red {
+        background: #ef4444;
+        box-shadow: 0 0 6px #ef4444;
+      }
+    }
+  }
+
+  .voltage-readouts-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+    padding: 0 4px;
+
+    .v-readout-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .v-readout-label {
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 500;
+    }
+
+    .v-readout-val {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', sans-serif;
+      letter-spacing: -0.5px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
+    }
+
+    .v-transfer-arrow {
+      width: 36px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .arrow-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.6));
+      }
+    }
+  }
+
+  .sine-scope-container {
+    background: rgba(4, 14, 26, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 5px;
+    padding: 5px 6px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+
+    .scope-grid-bg {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .scope-y-axis {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 38px;
+      font-size: 7.5px;
+      color: #64748b;
+      font-family: monospace;
+      text-align: right;
+      width: 24px;
+    }
+
+    .sine-wave-svg {
+      flex: 1;
+      height: 38px;
+      filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.7));
+    }
+  }
+
+  .voltage-gauges-row {
+    display: flex;
+    gap: 7px;
+    justify-content: space-between;
+
+    .v-gauge-box {
+      flex: 1;
+      position: relative;
+      background: rgba(5, 16, 30, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 5px;
+      padding: 4px 2px 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .gauge-arc-wrap {
+        width: 100%;
+        max-width: 52px;
+        height: 30px;
+
+        .gauge-svg {
+          width: 100%;
+          height: 100%;
+          filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.4));
+        }
+      }
+
+      .gauge-label {
+        color: #e2e8f0;
+        font-size: 9px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+      }
+    }
+  }
+}
+
+/* 2. CURRENT BOX (Middle-Left in left cluster, overlapping Voltage) */
+.hud-box-current {
+  position: absolute;
+  top: 28%;
+  left: 0;
+  width: clamp(280px, 60%, 350px);
+  z-index: 3;
+  padding: 12px 14px 13px;
+  animation-delay: 0.3s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+  }
+
+  .current-capsule-meter {
+    display: flex;
+    gap: 2.5px;
+    align-items: center;
+    background: rgba(5, 14, 26, 0.85);
+    border: 1px solid rgba(74, 222, 128, 0.45);
+    border-radius: 3px;
+    padding: 2px 3.5px;
+
+    .c-bar {
+      width: 5px;
+      height: 7px;
+      border-radius: 1px;
+      background: #4ade80;
+      box-shadow: 0 0 5px #4ade80;
+    }
+  }
+
+  .current-content-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .current-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .current-main-readout {
+    .c-readout-label {
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 500;
+      display: block;
+    }
+
+    .c-readout-val {
+      color: #ffffff;
+      font-size: 21px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', sans-serif;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
+    }
+  }
+
+  .current-channels-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 108px;
+
+    .ch-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 8.5px;
+
+      .ch-name {
+        color: #7dd3fc;
+        font-weight: 600;
+        width: 19px;
+      }
+
+      .ch-bar-wrap {
+        flex: 1;
+        height: 5px;
+        background: rgba(5, 14, 26, 0.8);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        border-radius: 2px;
+        overflow: hidden;
+
+        .ch-fill {
+          display: block;
+          height: 100%;
+          background: #00f0ff;
+          box-shadow: 0 0 4px #00f0ff;
+
+          &.w-65 { width: 65%; }
+          &.w-85 { width: 85%; }
+          &.w-45 { width: 45%; }
+        }
+      }
+
+      .ch-pct {
+        color: #94a3b8;
+        font-family: monospace;
+        font-size: 8px;
+        width: 22px;
+        text-align: right;
+      }
+    }
+  }
+
+  .load-bar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    .load-title {
+      font-size: 9.5px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .load-progress-bar {
+      height: 8px;
+      background: rgba(5, 14, 26, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 3px;
+      display: flex;
+      overflow: hidden;
+
+      .load-fill-cyan {
+        width: 72%;
+        height: 100%;
+        background: linear-gradient(90deg, #0ea5e9, #00f0ff);
+        box-shadow: 0 0 6px #00f0ff;
+      }
+
+      .load-fill-red {
+        width: 28%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), #ef4444);
+      }
+    }
+  }
+
+  .current-scope-container {
+    display: flex;
+    gap: 6px;
+    background: rgba(4, 14, 26, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 5px;
+    padding: 5px 6px;
+
+    .c-scope-axis {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 38px;
+      font-size: 7.5px;
+      color: #64748b;
+      font-family: monospace;
+      text-align: right;
+      width: 24px;
+    }
+
+    .c-scope-graph {
+      flex: 1;
+      height: 38px;
+
+      .c-waveform-svg {
+        width: 100%;
+        height: 100%;
+      }
+    }
+  }
+}
+
+/* 3. INVERTER/UPS MODE BOX (Bottom-Right in left cluster, overlapping Current) */
+.hud-box-inverter {
+  position: absolute;
+  bottom: 2%;
+  right: 0;
+  width: clamp(300px, 68%, 385px);
+  z-index: 4;
+  padding: 10px 14px 12px;
+  animation-delay: 0.45s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    width: 100%;
+  }
+
+  .inverter-gear-icon {
+    width: 16px;
+    height: 16px;
+    color: #00f0ff;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.6));
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .inverter-mode-pill-bar {
+    background: rgba(14, 34, 56, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 4px;
+    padding: 3px;
+    text-align: center;
+    color: #4ade80;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 7px;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
+  }
+
+  .inverter-schematic-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .schematic-source-col,
+  .schematic-inverter-col,
+  .schematic-status-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .node-label {
+    font-size: 9px;
+    color: #7dd3fc;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .node-icon-box {
+    width: 32px;
+    height: 26px;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 4px;
+    background: rgba(6, 20, 36, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00f0ff;
+
+    .node-svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &.battery-node {
+      color: #38bdf8;
+    }
+
+    &.status-node {
+      color: #4ade80;
+    }
+  }
+
+  .source-or-divider {
+    font-size: 8.5px;
+    color: #94a3b8;
+    font-style: italic;
+    margin: 2px 0;
+  }
+
+  .schematic-flow-arrow {
+    width: 20px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .flow-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.5));
+    }
+  }
+
+  .inverter-symbol-box {
+    width: 34px;
+    height: 34px;
+
+    .inverter-symbol-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.5));
+    }
+  }
+
+  .inverter-down-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 4px;
+
+    .down-arrow-svg {
+      width: 10px;
+      height: 12px;
+      margin-bottom: 2px;
+    }
+  }
+
+  .pill-status-chip {
+    background: rgba(6, 30, 24, 0.85);
+    border: 1px solid rgba(74, 222, 128, 0.5);
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 7.5px;
+    font-weight: 800;
+    color: #4ade80;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.25);
+    text-shadow: 0 0 5px #4ade80;
+  }
+
+  .status-chips-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    align-items: center;
+  }
+}
+
+/* ===== FEATURES RIGHT HUD OVERLAY (Exact recreation of reference image) ===== */
+.features-hud-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: clamp(16px, 4.2vw, 85px);
+  pointer-events: none;
+  z-index: 10;
+
+  @media (max-width: 992px) {
+    position: relative;
+    padding: 60px 16px 40px;
+    justify-content: center;
+    pointer-events: auto;
+  }
+}
+
+.features-hud-cluster {
+  position: relative;
+  width: clamp(380px, 45vw, 560px);
+  height: clamp(520px, 83vh, 670px);
+  pointer-events: auto;
+
+  @media (max-width: 992px) {
+    width: 100%;
+    max-width: 440px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* Base Glassmorphism HUD Card */
+.hud-box {
+  background: rgba(8, 20, 36, 0.74);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(56, 189, 248, 0.42);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 240, 255, 0.12), inset 0 0 15px rgba(0, 240, 255, 0.04);
+  color: #ffffff;
+  box-sizing: border-box;
+  animation: hudCardFadeIn 0.8s ease-out forwards;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+
+  &:hover {
+    border-color: rgba(0, 240, 255, 0.8);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.25);
+    transform: translateY(-4px) scale(1.01);
+  }
+}
+
+@keyframes hudCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 1. PROTECTION BOX (Top-Left in cluster) */
+.hud-box-protection {
+  position: absolute;
+  top: 2%;
+  left: 0;
+  width: clamp(290px, 64%, 360px);
+  z-index: 2;
+  display: flex;
+  overflow: hidden;
+  animation-delay: 0.1s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+  }
+}
+
+.hud-dock-sidebar {
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  background: rgba(4, 12, 22, 0.65);
+  border-right: 1px solid rgba(56, 189, 248, 0.25);
+
+  .dock-icon-btn {
+    background: none;
+    border: none;
+    color: #38bdf8;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.65;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    &:hover,
+    &.active {
+      opacity: 1;
+      color: #00f0ff;
+      transform: scale(1.15);
+      filter: drop-shadow(0 0 6px #00f0ff);
+    }
+  }
+}
+
+.hud-card-body {
+  flex: 1;
+  padding: 10px 12px 12px;
+}
+
+.hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .hud-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-title-icon {
+    display: inline-flex;
+    width: 15px;
+    height: 15px;
+    color: #00f0ff;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.7));
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .hud-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
+  }
+
+  .hud-power-indicator {
+    display: flex;
+    gap: 2.5px;
+    align-items: center;
+    background: rgba(5, 14, 26, 0.85);
+    border: 1px solid rgba(74, 222, 128, 0.45);
+    border-radius: 3px;
+    padding: 2px 3.5px;
+
+    .p-bar {
+      width: 5px;
+      height: 7px;
+      border-radius: 1px;
+      background: rgba(74, 222, 128, 0.2);
+
+      &.active {
+        background: #4ade80;
+        box-shadow: 0 0 6px #4ade80;
+      }
+    }
+  }
+}
+
+.protection-content-grid {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.protection-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(12, 28, 48, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 5px;
+  padding: 4px 7px;
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(0, 240, 255, 0.45);
+  }
+
+  .prot-icon {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    color: #38bdf8;
+    margin-right: 5px;
+    flex-shrink: 0;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .prot-label {
+    flex: 1;
+    font-weight: 500;
+    font-size: 10.5px;
+    white-space: nowrap;
+    color: #e2e8f0;
+  }
+
+  .prot-status {
+    font-size: 10px;
+    font-weight: 700;
+    color: #4ade80;
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    text-shadow: 0 0 6px rgba(74, 222, 128, 0.7);
+
+    .check-mark {
+      font-size: 11px;
+    }
+  }
+}
+
+.protection-shields-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+
+  .shield-badge {
+    width: 38px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+
+  .shield-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.65));
+
+    .shield-base {
+      fill: rgba(0, 240, 255, 0.14);
+      stroke: #00f0ff;
+      stroke-width: 1.8;
+    }
+
+    .shield-check {
+      fill: none;
+      stroke: #00f0ff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  }
+}
+
+/* 2. BATTERY BOX (Middle-Right in cluster, overlapping Protection) */
+.hud-box-battery {
+  position: absolute;
+  top: 28%;
+  right: 0;
+  width: clamp(270px, 58%, 340px);
+  z-index: 3;
+  padding: 12px 15px 14px;
+  animation-delay: 0.25s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+  }
+
+  .battery-capsule-meter {
+    width: 32px;
+    height: 12px;
+    border: 1.5px solid #4ade80;
+    border-radius: 3px;
+    position: relative;
+    padding: 1px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: 2px;
+      width: 2px;
+      height: 5px;
+      background: #4ade80;
+      border-radius: 0 1px 1px 0;
+    }
+
+    .meter-bar-fill {
+      width: 87%;
+      height: 100%;
+      background: #4ade80;
+      border-radius: 1px;
+      box-shadow: 0 0 6px #4ade80;
+    }
+  }
+}
+
+.battery-content-grid {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.battery-graphic-wrap {
+  width: 58px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.battery-cell-container {
+  width: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.battery-terminal-top {
+  width: 18px;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+.battery-cell-body {
+  width: 46px;
+  height: 96px;
+  border: 2px solid #00f0ff;
+  border-radius: 7px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(3, 14, 28, 0.85);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.4), inset 0 0 12px rgba(0, 240, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battery-liquid-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 87%;
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.8) 0%, rgba(14, 165, 233, 0.95) 100%);
+  box-shadow: 0 0 14px #00f0ff;
+  animation: pulseBatteryLiquid 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulseBatteryLiquid {
+  0% {
+    filter: brightness(0.95);
+  }
+  100% {
+    filter: brightness(1.25);
+  }
+}
+
+.battery-bolt {
+  position: relative;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  color: #020617;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+}
+
+.battery-tech-frame {
+  flex: 1;
+  position: relative;
+  padding: 7px 10px;
+  background: rgba(5, 16, 30, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 5px;
+
+  .corner-tick {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-color: #00f0ff;
+    border-style: solid;
+  }
+
+  .tick-tl {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+
+  .tick-tr {
+    top: -1px;
+    right: -1px;
+    border-width: 2px 2px 0 0;
+  }
+
+  .tick-bl {
+    bottom: -1px;
+    left: -1px;
+    border-width: 0 0 2px 2px;
+  }
+
+  .tick-br {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+}
+
+.battery-metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .metric-key {
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 10px;
+  }
+
+  .metric-val {
+    color: #e0f2fe;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 10.5px;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  }
+
+  .metric-separator {
+    height: 1px;
+    background: rgba(56, 189, 248, 0.18);
+    margin: 2px 0;
+  }
+}
+
+/* 3. SPECIFICATIONS BOX (Bottom-Left in cluster, overlapping Battery) */
+.hud-box-specifications {
+  position: absolute;
+  bottom: 2%;
+  left: 0;
+  width: clamp(300px, 68%, 385px);
+  z-index: 4;
+  padding: 10px 14px 12px;
+  animation-delay: 0.4s;
+
+  @media (max-width: 992px) {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+  }
+
+  .specs-table-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5px;
+    max-height: 155px;
+    overflow-y: auto;
+    padding-right: 3px;
+
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 15, 30, 0.5);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.5);
+      border-radius: 3px;
+    }
+  }
+
+  .specs-row {
+    display: grid;
+    grid-template-columns: 1.15fr 1.25fr 1.4fr;
+    gap: 6px;
+    padding: 2.5px 6px;
+    background: rgba(12, 28, 48, 0.5);
+    border-radius: 3px;
+    font-size: 9.5px;
+    align-items: center;
+    border-left: 2px solid transparent;
+    transition: all 0.2s ease;
+
+    &:nth-child(even) {
+      background: rgba(8, 20, 36, 0.35);
+    }
+
+    &:hover {
+      background: rgba(0, 240, 255, 0.12);
+      border-left-color: #00f0ff;
+    }
+
+    .s-col-name {
+      color: #7dd3fc;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .s-col-val {
+      color: #ffffff;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      text-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
+    }
+
+    .s-col-meta {
+      color: #94a3b8;
+      font-size: 9px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+  }
 }
 
 
