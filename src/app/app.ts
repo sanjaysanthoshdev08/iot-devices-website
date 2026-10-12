@@ -25,10 +25,10 @@ export interface HykonBranch {
   styleUrl: './app.scss'
 })
 export class App implements AfterViewInit, OnDestroy {
- constructor(
-  @Inject(PLATFORM_ID) private platformId: object,
-  private readonly authService: AuthService
-) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: object,
+    private readonly authService: AuthService
+  ) { }
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   // Navigation links with active state
@@ -68,8 +68,8 @@ export class App implements AfterViewInit, OnDestroy {
     this.clearErrors();
     this.isSignUpMode.set(isSignUp);
     this.isLoginModalOpen.set(true);
-    
-  
+
+
   }
 
   openSignUpModal() {
@@ -160,9 +160,9 @@ export class App implements AfterViewInit, OnDestroy {
   private resizeListener: (() => void) | null = null;
 
   // About Us text overlay signals (driven by scroll progress)
-  aboutTextOpacity    = signal<number>(1);
+  aboutTextOpacity = signal<number>(1);
   aboutTextTranslateY = signal<number>(0);
-  aboutTextScale      = signal<number>(1);
+  aboutTextScale = signal<number>(1);
 
   // Avatars list
   avatars = [
@@ -243,7 +243,7 @@ export class App implements AfterViewInit, OnDestroy {
 
   selectedBranchId = signal<string>('kochi-kinfra');
   showBranchDropdown = signal<boolean>(false);
-  
+
   // Side boxes pop-up animation state on scroll
   boxesVisible = signal<boolean>(false);
 
@@ -383,14 +383,14 @@ export class App implements AfterViewInit, OnDestroy {
     const img = this.frames[index];
     if (!img || !img.complete || img.naturalWidth === 0) return;
 
-    const rect   = canvas.getBoundingClientRect();
-    const dpr    = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
 
-    const targetW = Math.round(rect.width  * dpr);
+    const targetW = Math.round(rect.width * dpr);
     const targetH = Math.round(rect.height * dpr);
 
     if (canvas.width !== targetW || canvas.height !== targetH) {
-      canvas.width  = targetW;
+      canvas.width = targetW;
       canvas.height = targetH;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
@@ -398,13 +398,13 @@ export class App implements AfterViewInit, OnDestroy {
     ctx.imageSmoothingEnabled = true;
     (ctx as any).imageSmoothingQuality = 'high';
 
-    const cssW  = rect.width;
-    const cssH  = rect.height;
+    const cssW = rect.width;
+    const cssH = rect.height;
     const scale = Math.max(cssW / img.naturalWidth, cssH / img.naturalHeight);
-    const drawW = img.naturalWidth  * scale;
+    const drawW = img.naturalWidth * scale;
     const drawH = img.naturalHeight * scale;
-    const ox    = (cssW - drawW) / 2;
-    const oy    = (cssH - drawH) / 2;
+    const ox = (cssW - drawW) / 2;
+    const oy = (cssH - drawH) / 2;
 
     ctx.clearRect(0, 0, cssW, cssH);
     ctx.drawImage(img, ox, oy, drawW, drawH);
@@ -416,13 +416,13 @@ export class App implements AfterViewInit, OnDestroy {
     const section = document.getElementById('about-section');
     if (!section) return;
 
-    const sectionTop    = section.offsetTop;
+    const sectionTop = section.offsetTop;
     const sectionHeight = section.scrollHeight;
-    const viewH         = scroller.clientHeight;
-    const scrollTop     = scroller.scrollTop;
+    const viewH = scroller.clientHeight;
+    const scrollTop = scroller.scrollTop;
 
     const start = sectionTop;
-    const end   = sectionTop + sectionHeight - viewH;
+    const end = sectionTop + sectionHeight - viewH;
     const progress = Math.min(Math.max((scrollTop - start) / (end - start), 0), 1);
 
     // REVERSED: start at last frame (hands close + text visible) and play backwards
@@ -441,8 +441,8 @@ export class App implements AfterViewInit, OnDestroy {
 
     // REVERSED text overlay:
     // Text is FULLY visible at scroll start (progress=0) and fades OUT as user scrolls down.
-    const TEXT_VISIBLE_END   = 0.30;  // text starts fading at 30% scroll
-    const TEXT_FADE_END      = 0.50;  // text fully gone by 50% scroll
+    const TEXT_VISIBLE_END = 0.30;  // text starts fading at 30% scroll
+    const TEXT_FADE_END = 0.50;  // text fully gone by 50% scroll
 
     let opacity = 0;
     let translateY = 0;
@@ -450,19 +450,19 @@ export class App implements AfterViewInit, OnDestroy {
 
     if (progress < TEXT_VISIBLE_END) {
       // Fully visible at the start
-      opacity    = 1;
+      opacity = 1;
       translateY = 0;
-      scale      = 1;
+      scale = 1;
     } else if (progress <= TEXT_FADE_END) {
       const t = (progress - TEXT_VISIBLE_END) / (TEXT_FADE_END - TEXT_VISIBLE_END);
       const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      opacity    = 1 - ease;
+      opacity = 1 - ease;
       translateY = -30 * ease;
-      scale      = 1 - 0.06 * ease;
+      scale = 1 - 0.06 * ease;
     } else {
-      opacity    = 0;
+      opacity = 0;
       translateY = -30;
-      scale      = 0.94;
+      scale = 0.94;
     }
 
     this.aboutTextOpacity.set(Math.max(0, Math.min(1, opacity)));

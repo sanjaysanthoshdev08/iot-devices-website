@@ -232,7 +232,10 @@
   <!-- ===== FEATURES PAGE SECTION ===== -->
   <section id="features-section" class="features-page-section">
     <div class="features-image-container">
-      <img src="assets/features page image.png" alt="Features Page" class="features-image" />
+      <img src="assets/features page imag.png" 
+           (error)="$any($event.target).src = 'assets/features page image.png'" 
+           alt="Features Page" 
+           class="features-image" />
     </div>
   </section>
 
