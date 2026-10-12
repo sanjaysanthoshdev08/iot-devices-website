@@ -36,8 +36,7 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Home', active: true },
     { label: 'About', active: false },
     { label: 'Products', active: false },
-    { label: 'Features', active: false },
-    { label: 'Contact', active: false }
+    { label: 'Features', active: false }
   ]);
 
   // Navbar visibility
@@ -345,8 +344,23 @@ export class App implements AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.preloadFrames();
-      this.resizeListener = () => this.drawFrame(this.currentFrame);
+      this.updateFeaturesScale();
+      this.resizeListener = () => {
+        this.drawFrame(this.currentFrame);
+        this.updateFeaturesScale();
+      };
       window.addEventListener('resize', this.resizeListener);
+    }
+  }
+
+  updateFeaturesScale() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const container = document.getElementById('features-section');
+    if (container) {
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      const scale = Math.min(w / 1376, h / 768);
+      document.documentElement.style.setProperty('--features-scale', String(scale));
     }
   }
 
@@ -623,9 +637,6 @@ export class App implements AfterViewInit, OnDestroy {
       };
 
       requestAnimationFrame(animateScroll);
-    } else if (index === 4) {
-      const contactEl = document.getElementById('contact-section') || document.querySelector('.card-transfer-widget');
-      contactEl?.scrollIntoView({ behavior: 'smooth' });
     }
   }
 
