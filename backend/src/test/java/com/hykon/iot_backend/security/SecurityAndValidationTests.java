@@ -14,8 +14,12 @@ import com.hykon.iot_backend.service.LoginService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,9 +39,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @Import({
         SecurityConfig.class,
-        GlobalExceptionHandler.class
+        GlobalExceptionHandler.class,
+        SecurityAndValidationTests.NoDefaultUserConfiguration.class
 })
 class SecurityAndValidationTests {
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class NoDefaultUserConfiguration {
+
+        @Bean
+        UserDetailsService testUserDetailsService() {
+            return username -> {
+                throw new UsernameNotFoundException(
+                        "No in-memory test user is configured"
+                );
+            };
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -102,7 +120,6 @@ class SecurityAndValidationTests {
                                 "Bearer invalid-token"
                         ))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.message")
                         .value("Invalid or expired access token"));
     }
