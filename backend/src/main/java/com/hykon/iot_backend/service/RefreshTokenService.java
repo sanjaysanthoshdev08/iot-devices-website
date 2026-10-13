@@ -1,8 +1,9 @@
+
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.entity.RefreshToken;
-import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.entity.User;
+import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class RefreshTokenService {
                 && refreshToken.getExpiresAt().isAfter(LocalDateTime.now());
     }
 
+    // Existing method retained.
     public RefreshToken findByToken(String token) {
 
         return refreshTokenRepository.findByToken(token)
@@ -64,6 +66,16 @@ public class RefreshTokenService {
                         new InvalidTokenException("Invalid refresh token"));
     }
 
+    // New method: retrieve and lock the token row for the refresh transaction.
+    @Transactional
+    public RefreshToken findByTokenForUpdate(String token) {
+
+        return refreshTokenRepository.findByTokenForUpdate(token)
+                .orElseThrow(() ->
+                        new InvalidTokenException("Invalid refresh token"));
+    }
+
+    // Existing method retained.
     @Transactional
     public void revokeToken(RefreshToken refreshToken) {
 
@@ -72,6 +84,7 @@ public class RefreshTokenService {
         refreshTokenRepository.save(refreshToken);
     }
 
+    // Existing method retained.
     @Transactional
     public RefreshToken rotateRefreshToken(RefreshToken oldRefreshToken) {
 

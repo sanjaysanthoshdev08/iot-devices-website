@@ -1,4 +1,3 @@
-
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.entity.RefreshToken;
@@ -46,8 +45,10 @@ class LoginServiceTest {
         oldRefreshToken.setToken("test-refresh-token");
         oldRefreshToken.setUser(inactiveUser);
 
-        when(refreshTokenService.findByToken("test-refresh-token"))
-                .thenReturn(oldRefreshToken);
+        // Use the updated method that locks the refresh-token row.
+        when(refreshTokenService.findByTokenForUpdate(
+                "test-refresh-token"
+        )).thenReturn(oldRefreshToken);
 
         when(refreshTokenService.isTokenValid(oldRefreshToken))
                 .thenReturn(true);
@@ -71,4 +72,3 @@ class LoginServiceTest {
                 .rotateRefreshToken(any(RefreshToken.class));
     }
 }
-
