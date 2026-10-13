@@ -837,10 +837,29 @@
             <span class="field-error-text" *ngIf="confirmPasswordError()">{{ confirmPasswordError() }}</span>
           </div>
 
-          <!-- Log in / Sign Up Button -->
-          <button type="submit" class="btn-split-login">
-            {{ isSignUpMode() ? 'Sign Up' : 'Log in' }}
-          </button>
+          
+<!-- Backend response messages -->
+<p class="field-error-text" *ngIf="authError()" role="alert">
+  {{ authError() }}
+</p>
+
+<p *ngIf="authSuccess()" role="status">
+  {{ authSuccess() }}
+</p>
+
+<!-- Log in / Sign Up Button -->
+<button
+  type="submit"
+  class="btn-split-login"
+  [disabled]="isSubmitting()"
+>
+  {{
+    isSubmitting()
+      ? 'Please wait...'
+      : (isSignUpMode() ? 'Sign Up' : 'Log in')
+  }}
+</button>
+
 
           <!-- Auth Mode Toggle Text -->
           <p class="signup-toggle-text" *ngIf="!isSignUpMode()">

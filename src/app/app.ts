@@ -96,6 +96,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.confirmPasswordError.set('');
   }
 
+  
   onLoginSubmit(event: Event) {
     event.preventDefault();
     this.clearErrors();
@@ -103,10 +104,12 @@ export class App implements AfterViewInit, OnDestroy {
     let hasError = false;
 
     if (this.isSignUpMode()) {
+      // Signup validation
       if (!this.loginName().trim()) {
         this.nameError.set('Name is required');
         hasError = true;
       }
+
       if (!this.loginEmail().trim()) {
         this.emailError.set('Email is required');
         hasError = true;
@@ -114,10 +117,12 @@ export class App implements AfterViewInit, OnDestroy {
         this.emailError.set('Please enter a valid email address');
         hasError = true;
       }
+
       if (!this.loginPassword()) {
         this.passwordError.set('Password is required');
         hasError = true;
       }
+
       if (this.loginPassword() !== this.loginConfirmPassword()) {
         this.confirmPasswordError.set('Passwords do not match');
         hasError = true;
@@ -125,9 +130,62 @@ export class App implements AfterViewInit, OnDestroy {
 
       if (hasError) return;
 
-      alert(`Account created successfully for ${this.loginEmail()}!`);
-      this.closeLoginModal();
+      // Connect Signup to the Spring Boot backend
+      this.isSubmitting.set(true);
+      this.authError.set('');
+      this.authSuccess.set('');
+
+      this.authService.register({
+        name: this.loginName().trim(),
+        email: this.loginEmail().trim().toLowerCase(),
+        password: this.loginPassword(),
+        confirmPassword: this.loginConfirmPassword()
+      }).subscribe({
+        next: (response) => {
+          this.isSubmitting.set(false);
+
+          this.authSuccess.set(
+            response.message ||
+            'Registration successful. You can now log in.'
+          );
+
+          this.loginName.set('');
+          this.loginEmail.set('');
+          this.loginPassword.set('');
+          this.loginConfirmPassword.set('');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isSubmitting.set(false);
+
+          const body = error.error;
+          const errors = body?.errors;
+
+          if (errors?.name) {
+            this.nameError.set(errors.name);
+          }
+
+          if (errors?.email) {
+            this.emailError.set(errors.email);
+          }
+
+          if (errors?.password) {
+            this.passwordError.set(errors.password);
+          }
+
+          if (errors?.confirmPassword) {
+            this.confirmPasswordError.set(errors.confirmPassword);
+          }
+
+          this.authError.set(
+            errors
+              ? ''
+              : body?.message || 'Registration failed. Please try again.'
+          );
+        }
+      });
+
     } else {
+      // Login validation
       if (!this.loginEmail().trim()) {
         this.emailError.set('Email is required');
         hasError = true;
@@ -143,8 +201,46 @@ export class App implements AfterViewInit, OnDestroy {
 
       if (hasError) return;
 
-      alert(`Login successful for ${this.loginEmail()}!`);
-      this.closeLoginModal();
+      // Connect Login to the Spring Boot backend
+      this.isSubmitting.set(true);
+      this.authError.set('');
+      this.authSuccess.set('');
+
+      this.authService.login({
+        email: this.loginEmail().trim().toLowerCase(),
+        password: this.loginPassword()
+      }).subscribe({
+        next: (response) => {
+          this.isSubmitting.set(false);
+
+          this.authSuccess.set(
+            response.message || 'Login successful.'
+          );
+
+          // Clear the password after successful authentication
+          this.loginPassword.set('');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isSubmitting.set(false);
+
+          const body = error.error;
+          const errors = body?.errors;
+
+          if (errors?.email) {
+            this.emailError.set(errors.email);
+          }
+
+          if (errors?.password) {
+            this.passwordError.set(errors.password);
+          }
+
+          this.authError.set(
+            errors
+              ? ''
+              : body?.message || 'Login failed. Please try again.'
+          );
+        }
+      });
     }
   }
 
