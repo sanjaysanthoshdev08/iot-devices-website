@@ -1,3 +1,4 @@
+
 package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.dto.LoginRequest;
@@ -35,17 +36,23 @@ public class LoginService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new InvalidCredentialsException("Invalid email or password"));
+                        new InvalidCredentialsException(
+                                "Invalid email or password"
+                        ));
 
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            throw new InvalidCredentialsException("Invalid email or password");
+            throw new InvalidCredentialsException(
+                    "Invalid email or password"
+            );
         }
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         )) {
-            throw new InvalidCredentialsException("Invalid email or password");
+            throw new InvalidCredentialsException(
+                    "Invalid email or password"
+            );
         }
 
         // Generate JWT access token after successful authentication.
@@ -78,7 +85,14 @@ public class LoginService {
         // Get the user associated with the refresh token.
         User user = oldRefreshToken.getUser();
 
-        // Generate a new access token for the same user.
+        // Do not issue new tokens to inactive accounts.
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            throw new InvalidTokenException(
+                    "The user account is inactive"
+            );
+        }
+
+        // Generate a new access token for the active user.
         String accessToken = jwtService.generateAccessToken(user);
 
         // Revoke the old refresh token and create a new one.
