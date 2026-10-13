@@ -9,6 +9,7 @@ import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class LoginService {
@@ -69,11 +70,14 @@ public class LoginService {
         );
     }
 
+    @Transactional
     public RefreshResult refresh(String refreshTokenValue) {
 
-        // Find the existing refresh token in the database.
+        // Find and lock the existing refresh-token row.
         RefreshToken oldRefreshToken =
-                refreshTokenService.findByToken(refreshTokenValue);
+                refreshTokenService.findByTokenForUpdate(
+                        refreshTokenValue
+                );
 
         // Validate that the token is active and not expired.
         if (!refreshTokenService.isTokenValid(oldRefreshToken)) {
