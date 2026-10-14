@@ -53,7 +53,8 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Home', active: true },
     { label: 'About', active: false },
     { label: 'Products', active: false },
-    { label: 'Features', active: false }
+    { label: 'Features', active: false },
+    { label: 'Contact', active: false }
   ]);
 
   // Navbar visibility
@@ -79,6 +80,16 @@ export class App implements AfterViewInit, OnDestroy {
   isSubmitting = signal<boolean>(false);
   authError = signal<string>('');
   authSuccess = signal<string>('');
+
+  // Contact Section Form State
+  contactFirstName = signal<string>('');
+  contactLastName = signal<string>('');
+  contactEmail = signal<string>('');
+  contactPhone = signal<string>('');
+  contactMessage = signal<string>('');
+  contactSubmitting = signal<boolean>(false);
+  contactSubmitSuccess = signal<string>('');
+  contactSubmitError = signal<string>('');
 
   openLoginModal(isSignUp: boolean = false) {
     this.clearErrors();
@@ -488,8 +499,13 @@ this.closeLoginModal();
       const productTop = productEl ? productEl.offsetTop : viewH * 2;
       const featuresTop = featuresEl ? featuresEl.offsetTop : viewH * 3;
 
+      const contactEl = document.getElementById('contact-section');
+      const contactTop = contactEl ? contactEl.offsetTop : viewH * 4;
+
       let activeIndex = 0;
-      if (scrollTop >= featuresTop - viewH * 0.4) {
+      if (scrollTop >= contactTop - viewH * 0.4) {
+        activeIndex = 4; // Contact
+      } else if (scrollTop >= featuresTop - viewH * 0.4) {
         activeIndex = 3; // Features
       } else if (scrollTop >= productTop - viewH * 0.4) {
         activeIndex = 2; // Products
@@ -818,6 +834,38 @@ this.closeLoginModal();
       };
 
       requestAnimationFrame(animateScroll);
+    } else if (index === 4) {
+      // Contact clicked: smooth scroll to contact section
+      const contactEl = document.getElementById('contact-section');
+      if (!contactEl) return;
+
+      this.isNavClickScrolling.set(true);
+      const startScroll = scroller.scrollTop;
+      const targetScroll = contactEl.offsetTop;
+      const distance = targetScroll - startScroll;
+      const duration = 1800;
+      let startTime: number | null = null;
+
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        scroller.scrollTop = startScroll + distance * easedProgress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          this.updateActiveNavIndex(4);
+          this.isNavClickScrolling.set(false);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
     }
   }
 
@@ -833,5 +881,35 @@ this.closeLoginModal();
   onContactBranch() {
     const branch = this.selectedBranch();
     alert(`Connecting to ${branch.unitName} (${branch.place})...`);
+  }
+
+  onContactSubmit(event: Event) {
+    event.preventDefault();
+    if (this.contactSubmitting()) return;
+
+    const firstName = this.contactFirstName().trim();
+    const lastName = this.contactLastName().trim();
+    const email = this.contactEmail().trim();
+    const message = this.contactMessage().trim();
+
+    if (!firstName || !lastName || !email || !message) {
+      this.contactSubmitError.set('Please fill in all required fields.');
+      return;
+    }
+
+    this.contactSubmitting.set(true);
+    this.contactSubmitError.set('');
+    this.contactSubmitSuccess.set('');
+
+    // Simulate form submission (no backend endpoint yet — extend as needed)
+    setTimeout(() => {
+      this.contactSubmitting.set(false);
+      this.contactSubmitSuccess.set('Thank you! Your message has been sent successfully.');
+      this.contactFirstName.set('');
+      this.contactLastName.set('');
+      this.contactEmail.set('');
+      this.contactPhone.set('');
+      this.contactMessage.set('');
+    }, 1200);
   }
 }
