@@ -222,15 +222,19 @@ export class App implements AfterViewInit, OnDestroy {
         password: this.loginPassword()
       }).subscribe({
         next: (response) => {
-          this.isSubmitting.set(false);
+this.isSubmitting.set(false);
+this.authSuccess.set(response.message || 'Login successful.');
+this.loginPassword.set('');
 
-          this.authSuccess.set(
-            response.message || 'Login successful.'
-          );
+// Close the Login modal after successful login.
+this.closeLoginModal();
 
-          // Clear the password after successful authentication
-          this.loginPassword.set('');
-        },
+// Return to the Home page.
+window.scrollTo({
+top: 0,
+behavior: 'smooth'
+});
+},
         error: (error: HttpErrorResponse) => {
           this.isSubmitting.set(false);
 
