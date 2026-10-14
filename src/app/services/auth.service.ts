@@ -80,13 +80,15 @@ export interface LogoutResponse {
   message: string;
 }
 
+const STORAGE_KEY = 'hykon_auth_session';
+
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  // Tokens remain in memory, not browser storage.
+  // Authentication state
   private readonly accessTokenState = signal<string | null>(null);
   private refreshTokenValue: string | null = null;
 
@@ -102,6 +104,10 @@ export class AuthService {
   readonly userRole = computed(
     () => this.currentUserState()?.role ?? null
   );
+
+  constructor() {
+    this.restoreSessionFromStorage();
+  }
 
   // Read the current access token when making protected API requests.
   getAccessToken(): string | null {
@@ -156,6 +162,7 @@ export class AuthService {
           // Store the newly issued tokens after successful rotation.
           this.accessTokenState.set(response.data.accessToken);
           this.refreshTokenValue = response.data.refreshToken;
+          this.persistSession();
         }),
         catchError((error: unknown) => {
           // A failed refresh requires the user to authenticate again.
@@ -200,12 +207,70 @@ export class AuthService {
       role: response.role,
       status: response.status,
     });
+
+    this.persistSession();
   }
 
-  // Remove all in-memory authentication information.
+  // Persist session to browser storage for persistence across reloads.
+  private persistSession(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    try {
+      const accessToken = this.accessTokenState();
+      const user = this.currentUserState();
+      if (accessToken && user) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            accessToken,
+            refreshToken: this.refreshTokenValue,
+            user,
+          })
+        );
+      }
+    } catch {
+      // Storage unavailable or disabled
+    }
+  }
+
+  // Restore session from browser storage if present.
+  private restoreSessionFromStorage(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.accessToken && parsed?.user) {
+          this.accessTokenState.set(parsed.accessToken);
+          this.refreshTokenValue = parsed.refreshToken ?? null;
+          this.currentUserState.set(parsed.user);
+        }
+      }
+    } catch {
+      this.clearStorage();
+    }
+  }
+
+  // Remove storage entry.
+  private clearStorage(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage unavailable
+    }
+  }
+
+  // Remove all authentication information.
   clearSession(): void {
     this.accessTokenState.set(null);
     this.refreshTokenValue = null;
     this.currentUserState.set(null);
+    this.clearStorage();
   }
 }

@@ -23,15 +23,51 @@
         </nav>
 
         <div class="nav-right">
-          <a href="javascript:void(0)" class="nav-login" (click)="openLoginModal()">Log in</a>
-          <button class="btn-signup" (click)="openSignUpModal()">
-            <span>Sign up free</span>
-            <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
+          <ng-container *ngIf="!isAuthenticated(); else authUserTpl">
+            <a href="javascript:void(0)" class="nav-login" (click)="openLoginModal()">Log in</a>
+            <button class="btn-signup" (click)="openSignUpModal()">
+              <span>Sign up free</span>
+              <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </ng-container>
+
+          <ng-template #authUserTpl>
+            <div class="profile-menu-container" #profileContainerRef>
+              <button
+                type="button"
+                class="profile-avatar-btn"
+                [attr.aria-expanded]="showProfileDropdown()"
+                aria-haspopup="true"
+                aria-label="User profile menu"
+                (click)="toggleProfileDropdown($event)">
+                <span class="avatar-letter">{{ userInitial() }}</span>
+              </button>
+
+              <div class="profile-dropdown-menu" *ngIf="showProfileDropdown()" role="menu">
+                <div class="profile-dropdown-user-info" *ngIf="currentUser()">
+                  <div class="user-info-name">{{ currentUser()?.name }}</div>
+                  <div class="user-info-email">{{ currentUser()?.email }}</div>
+                </div>
+                <div class="profile-dropdown-divider" *ngIf="currentUser()"></div>
+                <button
+                  type="button"
+                  class="profile-dropdown-item logout-btn"
+                  role="menuitem"
+                  (click)="onLogout()">
+                  <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          </ng-template>
         </div>
       </header>
 

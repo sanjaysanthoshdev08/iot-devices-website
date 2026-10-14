@@ -1,4 +1,4 @@
-import { Component, signal, computed, HostListener, ViewChild, ElementRef, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, signal, computed, HostListener, ViewChild, ElementRef, AfterViewInit, OnDestroy, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
@@ -25,12 +25,28 @@ export interface HykonBranch {
   styleUrl: './app.scss'
 })
 export class App implements AfterViewInit, OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient);
+
   constructor(
-  @Inject(PLATFORM_ID) private platformId: object,
-  private readonly authService: AuthService,
-  private readonly http: HttpClient
-) { }
+    @Inject(PLATFORM_ID) private platformId: object
+  ) { }
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('profileContainerRef') profileContainerRef!: ElementRef<HTMLElement>;
+
+  // Authentication state exposed from AuthService
+  readonly isAuthenticated = this.authService.isAuthenticated;
+  readonly currentUser = this.authService.currentUser;
+
+  // Profile avatar initial letter (uppercase)
+  readonly userInitial = computed(() => {
+    const user = this.currentUser();
+    const name = user?.name || user?.email || 'U';
+    return name.trim().charAt(0).toUpperCase();
+  });
+
+  // Profile dropdown menu state
+  showProfileDropdown = signal<boolean>(false);
 
   // Navigation links with active state
   navLinks = signal([
@@ -79,6 +95,62 @@ export class App implements AfterViewInit, OnDestroy {
   closeLoginModal() {
     this.isLoginModalOpen.set(false);
     this.clearErrors();
+  }
+
+  toggleProfileDropdown(event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.showProfileDropdown.update(v => !v);
+  }
+
+  closeProfileDropdown() {
+    this.showProfileDropdown.set(false);
+  }
+
+  onLogout() {
+    this.closeProfileDropdown();
+    this.authService.logout().subscribe({
+      next: () => {
+        this.redirectToHome();
+      },
+      error: () => {
+        this.authService.clearSession();
+        this.redirectToHome();
+      }
+    });
+  }
+
+  redirectToHome() {
+    this.setActiveNav(0);
+    this.isNavbarHidden.set(false);
+    if (isPlatformBrowser(this.platformId)) {
+      const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
+      if (scroller) {
+        scroller.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.showProfileDropdown()) {
+      const target = event.target as Node;
+      if (this.profileContainerRef?.nativeElement && !this.profileContainerRef.nativeElement.contains(target)) {
+        this.closeProfileDropdown();
+      }
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.showProfileDropdown()) {
+      this.closeProfileDropdown();
+    }
+    if (this.isLoginModalOpen()) {
+      this.closeLoginModal();
+    }
   }
 
   togglePasswordVisibility() {
@@ -230,12 +302,9 @@ this.loginPassword.set('');
 // Close the Login modal after successful login.
 this.closeLoginModal();
 
-// Return to the Home page.
-window.scrollTo({
-top: 0,
-behavior: 'smooth'
-});
-},
+          // Return to the Home page.
+          this.redirectToHome();
+        },
         error: (error: HttpErrorResponse) => {
           this.isSubmitting.set(false);
 
