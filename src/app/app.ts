@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 export interface HykonBranch {
   id: string;
@@ -26,9 +26,10 @@ export interface HykonBranch {
 })
 export class App implements AfterViewInit, OnDestroy {
   constructor(
-    @Inject(PLATFORM_ID) private platformId: object,
-    private readonly authService: AuthService
-  ) { }
+  @Inject(PLATFORM_ID) private platformId: object,
+  private readonly authService: AuthService,
+  private readonly http: HttpClient
+) { }
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   // Navigation links with active state
