@@ -141,19 +141,30 @@ export class App implements AfterViewInit, OnDestroy {
         password: this.loginPassword(),
         confirmPassword: this.loginConfirmPassword()
       }).subscribe({
+        
+        
         next: (response) => {
           this.isSubmitting.set(false);
 
-          this.authSuccess.set(
-            response.message ||
-            'Registration successful. You can now log in.'
-          );
-
+          // Clear Signup fields after successful registration.
           this.loginName.set('');
           this.loginEmail.set('');
           this.loginPassword.set('');
           this.loginConfirmPassword.set('');
+
+          // Switch from Signup mode to Login mode.
+          this.isSignUpMode.set(false);
+
+          // Clear previous validation errors.
+          this.clearErrors();
+
+          // Show registration success message.
+          this.authSuccess.set(
+            response.message ||
+            'Registration successful. You can now log in.'
+          );
         },
+
         error: (error: HttpErrorResponse) => {
           this.isSubmitting.set(false);
 
