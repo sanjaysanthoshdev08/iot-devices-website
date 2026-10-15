@@ -70,7 +70,8 @@ export class App implements AfterViewInit, OnDestroy {
     { label: 'Home', active: true },
     { label: 'About', active: false },
     { label: 'Products', active: false },
-    { label: 'Features', active: false }
+    { label: 'Features', active: false },
+    { label: 'Contact', active: false }
   ]);
 
 
@@ -510,14 +511,18 @@ this.closeLoginModal();
       const aboutEl = document.getElementById('about-section');
       const productEl = document.getElementById('product-section');
       const featuresEl = document.getElementById('features-section');
+      const contactEl = document.getElementById('contact-section');
 
       const viewH = target.clientHeight || window.innerHeight;
       const aboutTop = aboutEl ? aboutEl.offsetTop : viewH;
       const productTop = productEl ? productEl.offsetTop : viewH * 2;
       const featuresTop = featuresEl ? featuresEl.offsetTop : viewH * 3;
+      const contactTop = contactEl ? contactEl.offsetTop : viewH * 4;
 
       let activeIndex = 0;
-      if (scrollTop >= featuresTop - viewH * 0.4) {
+      if (scrollTop >= contactTop - viewH * 0.4) {
+        activeIndex = 4; // Contact
+      } else if (scrollTop >= featuresTop - viewH * 0.4) {
         activeIndex = 3; // Features
       } else if (scrollTop >= productTop - viewH * 0.4) {
         activeIndex = 2; // Products
@@ -849,15 +854,15 @@ this.closeLoginModal();
 
       requestAnimationFrame(animateScroll);
     } else if (index === 4) {
-      // Smooth scroll to infinity section if index 4 requested
-      const infinityEl = document.getElementById('infinity-section');
-      if (!infinityEl) return;
+      // Contact clicked: smooth scroll to Contact section
+      const contactEl = document.getElementById('contact-section');
+      if (!contactEl) return;
 
       this.isNavClickScrolling.set(true);
       const startScroll = scroller.scrollTop;
-      const targetScroll = infinityEl.offsetTop;
+      const targetScroll = contactEl.offsetTop;
       const distance = targetScroll - startScroll;
-      const duration = 1800;
+      const duration = 2200;
       let startTime: number | null = null;
 
       const easeInOutCubic = (t: number) =>
@@ -874,7 +879,9 @@ this.closeLoginModal();
         if (progress < 1) {
           requestAnimationFrame(animateScroll);
         } else {
+          this.updateActiveNavIndex(4);
           this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
         }
       };
 
