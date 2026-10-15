@@ -927,17 +927,38 @@ this.closeLoginModal();
   }
 
   // =========================================================================
-  // INFINITY PARTICLE SYSTEM (16:9 SPREAD PARTICLES ENGINE)
-  // Preserves 100% pixel-perfect fidelity of 'a page after the features page.png'
-  // with particles that spread and disperse individually instead of floating.
+  // INFINITY NATURAL STRAND & PARTICLE ENGINE (16:9)
+  // Preserves 100% visual fidelity of 'a page after the features page.png'
+  // with natural organic strand flexing, line rippling, and spreading particles.
   // =========================================================================
 
-  private infinityCanvasCtx: CanvasRenderingContext2D | null = null;
-  private infinityTempCanvas: HTMLCanvasElement | null = null;
-  private infinityTempCtx: CanvasRenderingContext2D | null = null;
+  private infinityGl: WebGLRenderingContext | null = null;
+  private infinity2dCtx: CanvasRenderingContext2D | null = null;
   private infinityImage: HTMLImageElement | null = null;
+  private infinityTexture: WebGLTexture | null = null;
+  private infinityProgram: WebGLProgram | null = null;
+  private infinityQuadBuffer: WebGLBuffer | null = null;
 
-  private infinitySpreadParticles: {
+  // Mask grid to detect if mouse is over the blue infinity strands
+  private infinityMaskCols = 160;
+  private infinityMaskRows = 90;
+  private infinitySymbolMask: Uint8Array = new Uint8Array(0);
+
+  // Impulse wave system for natural strand flexing & line movement
+  private readonly MAX_IMPULSES = 16;
+  private infinityImpulses: {
+    x: number;
+    y: number;
+    dirX: number;
+    dirY: number;
+    radius: number;
+    age: number;
+    life: number;
+  }[] = [];
+  private infinityNextImpulseIdx = 0;
+
+  // Floating strand spark particles
+  private infinitySparkParticles: {
     normX: number;
     normY: number;
     ox: number;
@@ -947,10 +968,7 @@ this.closeLoginModal();
     vx: number;
     vy: number;
     r: number;
-    color: string;
-    isCore: boolean;
-    scatterAngle: number;
-    scatterSpeed: number;
+    alpha: number;
     active: boolean;
   }[] = [];
 
@@ -959,12 +977,13 @@ this.closeLoginModal();
   private infinityAnimId: number | null = null;
   private infinityResizeObserver: ResizeObserver | null = null;
   private infinityMouseInside = false;
-  private infinityMouseX = -9999;
-  private infinityMouseY = -9999;
-  private infinityPrevMouseX = -9999;
-  private infinityPrevMouseY = -9999;
+  private infinityMouseNormX = -1;
+  private infinityMouseNormY = -1;
+  private infinityPrevMouseNormX = -1;
+  private infinityPrevMouseNormY = -1;
   private infinityMouseVx = 0;
   private infinityMouseVy = 0;
+  private infinityLastFrameTime = 0;
   private prefersReducedMotion = false;
   private infinityReducedMotionQuery?: MediaQueryList;
   private infinityMediaListener?: (e: MediaQueryListEvent) => void;
@@ -981,34 +1000,53 @@ this.closeLoginModal();
       this.infinityReducedMotionQuery.addEventListener('change', this.infinityMediaListener);
     }
 
+    // Initialize circular impulse pool
+    for (let i = 0; i < this.MAX_IMPULSES; i++) {
+      this.infinityImpulses.push({
+        x: 0,
+        y: 0,
+        dirX: 0,
+        dirY: 0,
+        radius: 0.16,
+        age: 999,
+        life: 0
+      });
+    }
+
     const img = new Image();
     img.src = encodeURI('assets/a page after the features page.png');
     img.onload = () => {
       this.infinityImage = img;
-      this.setupInfinitySpreadEngine(img);
+      this.setupNaturalStrandEngine(img);
     };
     img.onerror = () => {
       const fallback = new Image();
       fallback.src = 'assets/a%20page%20after%20the%20features%20page.png';
       fallback.onload = () => {
         this.infinityImage = fallback;
-        this.setupInfinitySpreadEngine(fallback);
+        this.setupNaturalStrandEngine(fallback);
       };
     };
   }
 
-  private setupInfinitySpreadEngine(img: HTMLImageElement) {
+  private setupNaturalStrandEngine(img: HTMLImageElement) {
     if (!this.infinityCanvasRef || !this.infinityContainerRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const container = this.infinityContainerRef.nativeElement;
 
-    this.infinityCanvasCtx = canvas.getContext('2d');
-    if (!this.infinityCanvasCtx) return;
+    // 1. Build mask from the image to pinpoint exact strand/particle areas
+    this.buildStrandMask(img);
 
-    this.extractSpreadParticles(img);
+    // 2. Initialize WebGL for fluid strand line wave dynamics
+    const gl = canvas.getContext('webgl', { antialias: true, alpha: false, depth: false }) ||
+               canvas.getContext('experimental-webgl');
 
-    this.infinityTempCanvas = document.createElement('canvas');
-    this.infinityTempCtx = this.infinityTempCanvas.getContext('2d');
+    if (gl) {
+      this.infinityGl = gl as WebGLRenderingContext;
+      this.initNaturalStrandWebGL(gl as WebGLRenderingContext, img);
+    } else {
+      this.infinity2dCtx = canvas.getContext('2d');
+    }
 
     const updateDimensions = () => {
       const rect = container.getBoundingClientRect();
@@ -1023,17 +1061,16 @@ this.closeLoginModal();
 
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
-      this.infinityCanvasCtx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      if (this.infinityTempCanvas && this.infinityTempCtx) {
-        this.infinityTempCanvas.width = canvas.width;
-        this.infinityTempCanvas.height = canvas.height;
-        this.infinityTempCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (this.infinityGl) {
+        this.infinityGl.viewport(0, 0, canvas.width, canvas.height);
+      } else if (this.infinity2dCtx) {
+        this.infinity2dCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      // Update particle anchor coordinates
-      for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
-        const p = this.infinitySpreadParticles[i];
+      // Update spark anchor coordinates
+      for (let i = 0; i < this.infinitySparkParticles.length; i++) {
+        const p = this.infinitySparkParticles[i];
         p.ox = p.normX * w;
         p.oy = p.normY * h;
         if (!p.active) {
@@ -1042,7 +1079,7 @@ this.closeLoginModal();
         }
       }
 
-      this.renderInfinitySpreadFrame();
+      this.renderNaturalStrandFrame(0.016);
     };
 
     updateDimensions();
@@ -1052,318 +1089,354 @@ this.closeLoginModal();
     });
     this.infinityResizeObserver.observe(container);
 
-    this.startInfinityAnimationLoop();
+    this.infinityLastFrameTime = performance.now();
+    this.startNaturalStrandAnimationLoop();
   }
 
-  private extractSpreadParticles(img: HTMLImageElement) {
-    // 16:9 sampling resolution
-    const sampleW = 1024;
-    const sampleH = 576;
+  private buildStrandMask(img: HTMLImageElement) {
+    const cols = this.infinityMaskCols;
+    const rows = this.infinityMaskRows;
 
     const off = document.createElement('canvas');
-    off.width = sampleW;
-    off.height = sampleH;
+    off.width = cols;
+    off.height = rows;
     const offCtx = off.getContext('2d', { willReadFrequently: true });
     if (!offCtx) return;
 
-    offCtx.drawImage(img, 0, 0, sampleW, sampleH);
-    const data = offCtx.getImageData(0, 0, sampleW, sampleH).data;
+    offCtx.drawImage(img, 0, 0, cols, rows);
+    const data = offCtx.getImageData(0, 0, cols, rows).data;
 
-    const particles: typeof this.infinitySpreadParticles = [];
+    this.infinitySymbolMask = new Uint8Array(cols * rows);
+    const sparks: typeof this.infinitySparkParticles = [];
 
-    // Dense particle grid across the infinity symbol
-    for (let y = 0; y < sampleH; y += 2) {
-      for (let x = 0; x < sampleW; x += 2) {
-        const idx = (y * sampleW + x) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const brightness = r * 0.299 + g * 0.587 + b * 0.114;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const idx = (r * cols + c) * 4;
+        const red = data[idx];
+        const green = data[idx + 1];
+        const blue = data[idx + 2];
+        const brightness = red * 0.299 + green * 0.587 + blue * 0.114;
 
-        // Filter: only capture the blue glowing infinity symbol
-        if (b < 40 && brightness < 30) continue;
+        if (blue > 42 && brightness > 30) {
+          this.infinitySymbolMask[r * cols + c] = 1;
 
-        let radius = 1.0;
-        let isCore = false;
-        let alpha = 0.85;
-
-        if (brightness >= 150) {
-          radius = 1.6 + Math.random() * 1.4;
-          isCore = true;
-          alpha = 1.0;
-        } else if (brightness >= 90) {
-          radius = 1.1 + Math.random() * 0.8;
-          isCore = brightness > 125;
-          alpha = 0.9;
-        } else if (brightness >= 45) {
-          if (x % 3 !== 0 || y % 3 !== 0) continue;
-          radius = 0.8 + Math.random() * 0.6;
-          alpha = 0.75;
+          // Collect bright spark nodes along the strands
+          if (brightness > 130 && Math.random() < 0.22) {
+            sparks.push({
+              normX: c / cols,
+              normY: r / rows,
+              ox: 0,
+              oy: 0,
+              x: 0,
+              y: 0,
+              vx: 0,
+              vy: 0,
+              r: 1.2 + Math.random() * 1.6,
+              alpha: 0.65 + Math.random() * 0.35,
+              active: false
+            });
+          }
         } else {
-          if (x % 4 !== 0 || y % 4 !== 0) continue;
-          radius = 0.6 + Math.random() * 0.4;
-          alpha = 0.6;
+          this.infinitySymbolMask[r * cols + c] = 0;
         }
-
-        const colorStr = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
-        const angleOffset = (Math.random() - 0.5) * 0.7; // slight angular dispersal
-        const speedFactor = 0.75 + Math.random() * 0.5;
-
-        particles.push({
-          normX: x / sampleW,
-          normY: y / sampleH,
-          ox: 0,
-          oy: 0,
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          r: radius,
-          color: colorStr,
-          isCore,
-          scatterAngle: angleOffset,
-          scatterSpeed: speedFactor,
-          active: false
-        });
       }
     }
 
-    this.infinitySpreadParticles = particles;
+    this.infinitySparkParticles = sparks;
+  }
+
+  private initNaturalStrandWebGL(gl: WebGLRenderingContext, img: HTMLImageElement) {
+    // Vertex shader: Full-screen quad passing UV coordinates
+    const vsSource = `
+      attribute vec2 a_position;
+      varying vec2 v_uv;
+      void main() {
+        v_uv = (a_position + 1.0) * 0.5;
+        // Flip Y to match natural texture image orientation
+        v_uv.y = 1.0 - v_uv.y;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    // Fragment shader: Natural strand flexing, line wave oscillation & particle flare
+    const fsSource = `
+      precision mediump float;
+      uniform sampler2D u_image;
+      uniform float u_aspect;
+      uniform vec2 u_impulsePos[16];
+      uniform vec2 u_impulseDir[16];
+      uniform float u_impulseRadius[16];
+      uniform float u_impulseAge[16];
+      uniform float u_impulseLife[16];
+      varying vec2 v_uv;
+
+      void main() {
+        vec2 totalDisp = vec2(0.0);
+
+        for (int i = 0; i < 16; i++) {
+          if (u_impulseLife[i] > 0.0) {
+            vec2 d = v_uv - u_impulsePos[i];
+            d.x *= u_aspect;
+            float dist = length(d);
+            float r = u_impulseRadius[i];
+
+            if (dist < r) {
+              float normDist = dist / r;
+              // Smooth cubic falloff across the strand zone
+              float falloff = (1.0 - normDist * normDist);
+              falloff = falloff * falloff;
+
+              float age = u_impulseAge[i];
+              // Damped harmonic oscillation simulating organic strand flexibility
+              float decay = exp(-age * 4.6);
+              float wave = sin(age * 13.5 - normDist * 3.6);
+
+              vec2 dir = u_impulseDir[i];
+              // Subtle perpendicular curl to simulate physical strand curvature
+              vec2 curl = vec2(-dir.y, dir.x) * 0.24;
+
+              totalDisp += (dir + curl) * falloff * wave * decay * 0.024;
+            }
+          }
+        }
+
+        // Sample the exact reference image with organic displaced UVs
+        vec2 sampleUV = clamp(v_uv - totalDisp, vec2(0.001), vec2(0.999));
+        vec4 color = texture2D(u_image, sampleUV);
+
+        // Organic strand brightness flare when agitated by the cursor
+        float dispMag = length(totalDisp);
+        if (dispMag > 0.0004) {
+          float blueStrandMask = smoothstep(0.12, 0.45, color.b);
+          color.rgb += vec3(0.0, 0.35, 0.75) * dispMag * 10.0 * blueStrandMask;
+        }
+
+        gl_FragColor = color;
+      }
+    `;
+
+    const vertShader = this.compileStrandShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragShader = this.compileStrandShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    if (!vertShader || !fragShader) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vertShader);
+    gl.attachShader(program, fragShader);
+    gl.linkProgram(program);
+    this.infinityProgram = program;
+
+    // Full-screen quad buffer
+    const quadVerts = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1
+    ]);
+    this.infinityQuadBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityQuadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+
+    // Upload exact reference image texture
+    this.infinityTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.infinityTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  }
+
+  private compileStrandShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+    const shader = gl.createShader(type);
+    if (!shader) return null;
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.warn('Shader compile failed:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
   }
 
   onInfinityMouseMove(event: MouseEvent) {
     if (!this.infinityCanvasRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const curX = event.clientX - rect.left;
-    const curY = event.clientY - rect.top;
+    const curNormX = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const curNormY = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
 
     if (!this.infinityMouseInside) {
       this.infinityMouseInside = true;
-      this.infinityPrevMouseX = curX;
-      this.infinityPrevMouseY = curY;
+      this.infinityPrevMouseNormX = curNormX;
+      this.infinityPrevMouseNormY = curNormY;
     }
 
-    const deltaX = curX - this.infinityPrevMouseX;
-    const deltaY = curY - this.infinityPrevMouseY;
-    this.infinityPrevMouseX = curX;
-    this.infinityPrevMouseY = curY;
+    const deltaX = curNormX - this.infinityPrevMouseNormX;
+    const deltaY = curNormY - this.infinityPrevMouseNormY;
+    this.infinityPrevMouseNormX = curNormX;
+    this.infinityPrevMouseNormY = curNormY;
 
-    this.infinityMouseX = curX;
-    this.infinityMouseY = curY;
+    this.infinityMouseNormX = curNormX;
+    this.infinityMouseNormY = curNormY;
 
     this.infinityMouseVx = this.infinityMouseVx * 0.5 + deltaX * 0.5;
     this.infinityMouseVy = this.infinityMouseVy * 0.5 + deltaY * 0.5;
 
     const speed = Math.hypot(this.infinityMouseVx, this.infinityMouseVy);
-    const maxSpeed = 20;
-    if (speed > maxSpeed) {
-      this.infinityMouseVx = (this.infinityMouseVx / speed) * maxSpeed;
-      this.infinityMouseVy = (this.infinityMouseVy / speed) * maxSpeed;
+
+    // Check if mouse is directly over the blue infinity strands/symbol
+    const maskC = Math.floor(curNormX * this.infinityMaskCols);
+    const maskR = Math.floor(curNormY * this.infinityMaskRows);
+    const maskIdx = maskR * this.infinityMaskCols + maskC;
+    const isOverStrands = this.infinitySymbolMask[maskIdx] === 1;
+
+    // Only create organic impulses if over the blue infinity symbol
+    if (isOverStrands && (speed > 0.002 || !this.hasRecentImpulseAt(curNormX, curNormY))) {
+      this.spawnStrandImpulse(curNormX, curNormY, this.infinityMouseVx, this.infinityMouseVy);
     }
+  }
+
+  private hasRecentImpulseAt(nx: number, ny: number): boolean {
+    for (let i = 0; i < this.MAX_IMPULSES; i++) {
+      const imp = this.infinityImpulses[i];
+      if (imp.life > 0 && imp.age < 0.25) {
+        const d = Math.hypot(imp.x - nx, imp.y - ny);
+        if (d < 0.04) return true;
+      }
+    }
+    return false;
+  }
+
+  private spawnStrandImpulse(nx: number, ny: number, vx: number, vy: number) {
+    if (this.prefersReducedMotion) return;
+
+    let dirX = vx;
+    let dirY = vy;
+    const len = Math.hypot(dirX, dirY);
+
+    if (len > 0.0001) {
+      const clampedLen = Math.min(len, 0.045);
+      dirX = (dirX / len) * (clampedLen / 0.045);
+      dirY = (dirY / len) * (clampedLen / 0.045);
+    } else {
+      // Subtle ambient nudge if hovering over strands
+      dirX = (Math.random() - 0.5) * 0.005;
+      dirY = (Math.random() - 0.5) * 0.005;
+    }
+
+    const imp = this.infinityImpulses[this.infinityNextImpulseIdx];
+    imp.x = nx;
+    imp.y = ny;
+    imp.dirX = dirX;
+    imp.dirY = dirY;
+    imp.radius = 0.16; // localized radius
+    imp.age = 0.0;
+    imp.life = 0.75; // decays over 0.75s
+
+    this.infinityNextImpulseIdx = (this.infinityNextImpulseIdx + 1) % this.MAX_IMPULSES;
   }
 
   onInfinityMouseEnter(event: MouseEvent) {
     if (!this.infinityCanvasRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const curX = event.clientX - rect.left;
-    const curY = event.clientY - rect.top;
+    const curNormX = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const curNormY = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+
     this.infinityMouseInside = true;
-    this.infinityMouseX = curX;
-    this.infinityMouseY = curY;
-    this.infinityPrevMouseX = curX;
-    this.infinityPrevMouseY = curY;
+    this.infinityMouseNormX = curNormX;
+    this.infinityMouseNormY = curNormY;
+    this.infinityPrevMouseNormX = curNormX;
+    this.infinityPrevMouseNormY = curNormY;
     this.infinityMouseVx = 0;
     this.infinityMouseVy = 0;
   }
 
   onInfinityMouseLeave() {
     this.infinityMouseInside = false;
+    this.infinityMouseNormX = -1;
+    this.infinityMouseNormY = -1;
     this.infinityMouseVx = 0;
     this.infinityMouseVy = 0;
   }
 
-  private startInfinityAnimationLoop() {
+  private startNaturalStrandAnimationLoop() {
     if (this.infinityAnimId) {
       cancelAnimationFrame(this.infinityAnimId);
     }
 
-    const loop = () => {
-      this.renderInfinitySpreadFrame();
+    const loop = (now: number) => {
+      const dt = Math.min((now - this.infinityLastFrameTime) / 1000, 0.04);
+      this.infinityLastFrameTime = now;
+
+      this.renderNaturalStrandFrame(dt);
       this.infinityAnimId = requestAnimationFrame(loop);
     };
 
     this.infinityAnimId = requestAnimationFrame(loop);
   }
 
-  private renderInfinitySpreadFrame() {
-    const ctx = this.infinityCanvasCtx;
-    if (!ctx || !this.infinityImage || this.infinityCanvasWidth === 0) return;
+  private renderNaturalStrandFrame(dt: number) {
+    // 1. Age and update impulses
+    const posArr = new Float32Array(this.MAX_IMPULSES * 2);
+    const dirArr = new Float32Array(this.MAX_IMPULSES * 2);
+    const radiusArr = new Float32Array(this.MAX_IMPULSES);
+    const ageArr = new Float32Array(this.MAX_IMPULSES);
+    const lifeArr = new Float32Array(this.MAX_IMPULSES);
 
-    const w = this.infinityCanvasWidth;
-    const h = this.infinityCanvasHeight;
-
-    const isMouseActive = this.infinityMouseInside && !this.prefersReducedMotion;
-    const mx = this.infinityMouseX;
-    const my = this.infinityMouseY;
-    const mvx = this.infinityMouseVx;
-    const mvy = this.infinityMouseVy;
-
-    // Interaction zone radius
-    const radius = Math.min(w, h) * 0.17;
-    const radiusSq = radius * radius;
-    const springK = 0.082;
-    const damping = 0.81;
-
-    let anyParticleActive = false;
-
-    // 1. If mouse is completely outside and no particles are moving, draw 100% exact static image
-    if (!isMouseActive) {
-      let activeCount = 0;
-      for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
-        if (this.infinitySpreadParticles[i].active) {
-          activeCount++;
-          break;
+    for (let i = 0; i < this.MAX_IMPULSES; i++) {
+      const imp = this.infinityImpulses[i];
+      if (imp.life > 0) {
+        imp.age += dt;
+        if (imp.age >= imp.life) {
+          imp.life = 0;
         }
       }
-      if (activeCount === 0) {
-        ctx.drawImage(this.infinityImage, 0, 0, w, h);
-        return;
-      }
+
+      posArr[i * 2] = imp.x;
+      posArr[i * 2 + 1] = imp.y;
+      dirArr[i * 2] = imp.dirX;
+      dirArr[i * 2 + 1] = imp.dirY;
+      radiusArr[i] = imp.radius;
+      ageArr[i] = imp.age;
+      lifeArr[i] = imp.life;
     }
 
-    // 2. Prepare masked base image in tempCanvas:
-    // Erase the localized circular interaction zone under the cursor so the solid image dissolves into spreading particles
-    if (this.infinityTempCanvas && this.infinityTempCtx && isMouseActive) {
-      const tCtx = this.infinityTempCtx;
-      tCtx.clearRect(0, 0, w, h);
-      tCtx.drawImage(this.infinityImage, 0, 0, w, h);
+    // 2. Render WebGL natural strand deflection shader
+    if (this.infinityGl && this.infinityProgram && this.infinityImage) {
+      const gl = this.infinityGl;
+      gl.useProgram(this.infinityProgram);
 
-      tCtx.globalCompositeOperation = 'destination-out';
-      const grad = tCtx.createRadialGradient(mx, my, 0, mx, my, radius);
-      grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
-      grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.85)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      tCtx.fillStyle = grad;
-      tCtx.beginPath();
-      tCtx.arc(mx, my, radius, 0, Math.PI * 2);
-      tCtx.fill();
-      tCtx.globalCompositeOperation = 'source-over';
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityQuadBuffer);
+      const aPos = gl.getAttribLocation(this.infinityProgram, 'a_position');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-      // Draw background and masked base image
-      ctx.fillStyle = '#020610';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(this.infinityTempCanvas, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#020610';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(this.infinityImage, 0, 0, w, h);
-    }
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.infinityTexture);
+      gl.uniform1i(gl.getUniformLocation(this.infinityProgram, 'u_image'), 0);
 
-    // 3. Update & render particles that spread and scatter in the cursor's interaction area
-    const activeParticlesToDraw: typeof this.infinitySpreadParticles = [];
-    const hoverSpeed = Math.hypot(mvx, mvy);
+      gl.uniform1f(gl.getUniformLocation(this.infinityProgram, 'u_aspect'), 16.0 / 9.0);
 
-    for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
-      const p = this.infinitySpreadParticles[i];
+      gl.uniform2fv(gl.getUniformLocation(this.infinityProgram, 'u_impulsePos'), posArr);
+      gl.uniform2fv(gl.getUniformLocation(this.infinityProgram, 'u_impulseDir'), dirArr);
+      gl.uniform1fv(gl.getUniformLocation(this.infinityProgram, 'u_impulseRadius'), radiusArr);
+      gl.uniform1fv(gl.getUniformLocation(this.infinityProgram, 'u_impulseAge'), ageArr);
+      gl.uniform1fv(gl.getUniformLocation(this.infinityProgram, 'u_impulseLife'), lifeArr);
 
-      const dx = mx - p.ox;
-      const dy = my - p.oy;
-      const distSq = dx * dx + dy * dy;
-
-      if (isMouseActive && distSq < radiusSq) {
-        const dist = Math.sqrt(distSq);
-        const t = 1 - (dist / radius);
-        const falloff = t * t * (3 - 2 * t); // smoothstep falloff
-
-        // A. Shift in cursor's movement direction
-        const shiftX = mvx * falloff * 0.28 * p.scatterSpeed;
-        const shiftY = mvy * falloff * 0.28 * p.scatterSpeed;
-
-        // B. Radial dispersal (particles spread outward from cursor instead of floating)
-        const angle = Math.atan2(p.oy - my, p.ox - mx) + p.scatterAngle;
-        const spreadStrength = (hoverSpeed < 0.5 ? 1.5 : 0.8) * falloff * p.scatterSpeed;
-        const spreadX = Math.cos(angle) * spreadStrength;
-        const spreadY = Math.sin(angle) * spreadStrength;
-
-        p.vx += shiftX + spreadX;
-        p.vy += shiftY + spreadY;
-        p.active = true;
-      }
-
-      // Spring physics smoothly returning particle to anchor position
-      if (p.active) {
-        const hx = p.ox - p.x;
-        const hy = p.oy - p.y;
-        p.vx += hx * springK;
-        p.vy += hy * springK;
-        p.vx *= damping;
-        p.vy *= damping;
-
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Displacement clamp keeping infinity symbol structure completely intact
-        const offX = p.x - p.ox;
-        const offY = p.y - p.oy;
-        const currentShift = Math.hypot(offX, offY);
-        const maxShift = 26;
-        if (currentShift > maxShift) {
-          const scale = maxShift / currentShift;
-          p.x = p.ox + offX * scale;
-          p.y = p.oy + offY * scale;
-        }
-
-        // Snap to rest when near anchor
-        if (Math.abs(hx) < 0.08 && Math.abs(hy) < 0.08 && Math.hypot(p.vx, p.vy) < 0.02) {
-          p.x = p.ox;
-          p.y = p.oy;
-          p.vx = 0;
-          p.vy = 0;
-          p.active = false;
-        } else {
-          anyParticleActive = true;
-          activeParticlesToDraw.push(p);
-        }
-      } else if (isMouseActive && distSq < radiusSq * 1.2) {
-        // Also draw resting particles within the masked circle so there is zero gap
-        p.x = p.ox;
-        p.y = p.oy;
-        activeParticlesToDraw.push(p);
-      }
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    } else if (this.infinity2dCtx && this.infinityImage && this.infinityCanvasWidth > 0) {
+      // 2D canvas fallback: direct original image rendering
+      this.infinity2dCtx.drawImage(this.infinityImage, 0, 0, this.infinityCanvasWidth, this.infinityCanvasHeight);
     }
 
     this.infinityMouseVx *= 0.7;
     this.infinityMouseVy *= 0.7;
-
-    // 4. Draw spreading particles
-    for (let i = 0; i < activeParticlesToDraw.length; i++) {
-      const p = activeParticlesToDraw[i];
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 5. Glowing aura for active core spark nodes
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < activeParticlesToDraw.length; i++) {
-      const p = activeParticlesToDraw[i];
-      if (p.isCore && p.active) {
-        const glowR = p.r * 2.8;
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-        grad.addColorStop(0, 'rgba(0, 240, 255, 0.5)');
-        grad.addColorStop(0.5, 'rgba(0, 180, 255, 0.15)');
-        grad.addColorStop(1, 'rgba(0, 120, 255, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
   }
 
   private destroyInfinityParticleSystem() {
@@ -1378,10 +1451,15 @@ this.closeLoginModal();
     if (this.infinityReducedMotionQuery && this.infinityMediaListener) {
       this.infinityReducedMotionQuery.removeEventListener('change', this.infinityMediaListener);
     }
-    this.infinityTempCanvas = null;
-    this.infinityTempCtx = null;
+    if (this.infinityGl) {
+      if (this.infinityTexture) this.infinityGl.deleteTexture(this.infinityTexture);
+      if (this.infinityProgram) this.infinityGl.deleteProgram(this.infinityProgram);
+      if (this.infinityQuadBuffer) this.infinityGl.deleteBuffer(this.infinityQuadBuffer);
+      this.infinityGl = null;
+    }
   }
 }
+
 
 
 
