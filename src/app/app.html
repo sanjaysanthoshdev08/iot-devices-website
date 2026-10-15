@@ -789,149 +789,16 @@
     </div>
   </section>
 
-  <!-- ===== CONTACT SECTION ===== -->
-  <section id="contact-section" class="contact-section">
-
-    <!-- Ambient background glows -->
-    <div class="contact-bg-glow contact-bg-glow--left"></div>
-    <div class="contact-bg-glow contact-bg-glow--right"></div>
-
-    <div class="contact-inner">
-
-      <!-- ── Section Header ── -->
-      <div class="contact-header">
-        <h2 class="contact-heading">We'd love to hear from you.</h2>
-        <p class="contact-subheading">
-          We are here to assist — feel free to reach out to our friendly customer support team
-          for any inquiries or assistance regarding our IoT energy management services.
-        </p>
-      </div>
-
-      <!-- ── Contact Card (form + background image) ── -->
-      <div class="contact-card">
-        <!-- Decorative edge image strip -->
-        <div class="contact-card-bg-strip"></div>
-
-        <!-- Form -->
-        <form class="contact-form" (submit)="onContactSubmit($event)" novalidate>
-
-          <!-- Row 1: First Name + Last Name -->
-          <div class="contact-row">
-            <div class="contact-field-group">
-              <label class="contact-label">First Name</label>
-              <input
-                type="text"
-                class="contact-input"
-                placeholder="Enter First Name"
-                [value]="contactFirstName()"
-                (input)="contactFirstName.set($any($event.target).value)" />
-            </div>
-            <div class="contact-field-group">
-              <label class="contact-label">Last Name</label>
-              <input
-                type="text"
-                class="contact-input"
-                placeholder="Enter Last Name"
-                [value]="contactLastName()"
-                (input)="contactLastName.set($any($event.target).value)" />
-            </div>
-          </div>
-
-          <!-- Row 2: Email + Phone -->
-          <div class="contact-row">
-            <div class="contact-field-group">
-              <label class="contact-label">Email</label>
-              <input
-                type="email"
-                class="contact-input"
-                placeholder="Enter your Email"
-                [value]="contactEmail()"
-                (input)="contactEmail.set($any($event.target).value)" />
-            </div>
-            <div class="contact-field-group">
-              <label class="contact-label">Phone Number</label>
-              <input
-                type="tel"
-                class="contact-input"
-                placeholder="Enter Phone Number"
-                [value]="contactPhone()"
-                (input)="contactPhone.set($any($event.target).value)" />
-            </div>
-          </div>
-
-          <!-- Row 3: Message -->
-          <div class="contact-field-group contact-field-group--full">
-            <label class="contact-label">Message</label>
-            <textarea
-              class="contact-input contact-textarea"
-              placeholder="Enter your Message"
-              rows="4"
-              [value]="contactMessage()"
-              (input)="contactMessage.set($any($event.target).value)"></textarea>
-          </div>
-
-          <!-- Feedback messages -->
-          <p class="contact-feedback contact-feedback--error" *ngIf="contactSubmitError()" role="alert">
-            {{ contactSubmitError() }}
-          </p>
-          <p class="contact-feedback contact-feedback--success" *ngIf="contactSubmitSuccess()" role="status">
-            {{ contactSubmitSuccess() }}
-          </p>
-
-          <!-- Send button -->
-          <div class="contact-submit-row">
-            <button type="submit" class="btn-contact-send" [disabled]="contactSubmitting()">
-              {{ contactSubmitting() ? 'Sending...' : 'Send' }}
-            </button>
-          </div>
-
-        </form>
-      </div>
-
-      <!-- ── Info Bar ── -->
-      <div class="contact-info-bar">
-
-        <!-- Address -->
-        <div class="contact-info-block">
-          <span class="contact-info-label">Address</span>
-          <span class="contact-info-value">
-            Hykon Tower, East Fort, Thrissur - 680005,<br>Kerala, India
-          </span>
-        </div>
-
-        <!-- Call -->
-        <div class="contact-info-block">
-          <span class="contact-info-label">Give Us a Call</span>
-          <span class="contact-info-value">+91 487 244 1414</span>
-        </div>
-
-        <!-- Social icons -->
-        <div class="contact-social-icons">
-          <!-- Facebook -->
-          <a href="javascript:void(0)" class="contact-social-btn" aria-label="Facebook">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-            </svg>
-          </a>
-          <!-- Twitter / X -->
-          <a href="javascript:void(0)" class="contact-social-btn" aria-label="Twitter">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
-            </svg>
-          </a>
-          <!-- LinkedIn -->
-          <a href="javascript:void(0)" class="contact-social-btn" aria-label="LinkedIn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-              <rect x="2" y="9" width="4" height="12"/>
-              <circle cx="4" cy="4" r="2"/>
-            </svg>
-          </a>
-        </div>
-
-      </div>
+  <!-- ===== INFINITY ENERGY SECTION (16:9) ===== -->
+  <section id="infinity-section" class="infinity-section">
+    <div class="infinity-frame" #infinityContainerRef>
+      <canvas #infinityCanvasRef class="infinity-canvas"
+        (mousemove)="onInfinityMouseMove($event)"
+        (mouseleave)="onInfinityMouseLeave()"
+        (mouseenter)="onInfinityMouseEnter($event)"></canvas>
     </div>
   </section>
+
 
 <!-- ===== LOGIN PAGE / MODAL (Split Card Layout with Fixed Background) ===== -->
   <div class="login-modal-overlay" *ngIf="isLoginModalOpen()">
