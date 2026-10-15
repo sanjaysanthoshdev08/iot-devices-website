@@ -889,6 +889,10 @@ this.closeLoginModal();
     }
   }
 
+  onExploreFeatures() {
+    this.setActiveNav(3);
+  }
+
   toggleBranchDropdown() {
     this.showBranchDropdown.update(v => !v);
   }

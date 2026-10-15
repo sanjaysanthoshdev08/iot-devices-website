@@ -3111,43 +3111,131 @@
   text-shadow: 0 0 16px rgba(255, 255, 255, 0.38), 0 0 32px rgba(0, 200, 255, 0.25);
 }
 
-/* Bottom content block from reference image */
-.infinity-bottom-content {
+/* Bottom Action: Explore More Button */
+.infinity-bottom-action {
   position: absolute;
-  bottom: 8.5%;
+  bottom: 8%;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 840px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(8px, 1vw, 14px);
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.btn-infinity-explore {
+  position: relative;
+  display: inline-block;
+  padding: 2px; // creates the 2px glowing rotating border frame
+  background: transparent;
+  border: none;
+  border-radius: 0; // sharp square ends matching reference image
+  cursor: pointer;
+  pointer-events: auto;
   user-select: none;
-  pointer-events: none;
+  overflow: hidden;
+  box-shadow: 0 0 24px rgba(0, 200, 255, 0.28);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  // Rotating glowing beam sweeping across all 4 square ends
+  &::before {
+    content: '';
+    position: absolute;
+    top: -150%;
+    left: -150%;
+    width: 400%;
+    height: 400%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 55deg,
+      #00f0ff 85deg,
+      #0077ff 115deg,
+      transparent 145deg,
+      transparent 235deg,
+      #00f0ff 265deg,
+      #0077ff 295deg,
+      transparent 325deg
+    );
+    animation: rotateBorderBeam 3.6s linear infinite;
+  }
+
+  // Hover state: enhanced glow, slight lift
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 36px rgba(0, 240, 255, 0.65), 0 0 16px rgba(0, 120, 255, 0.4);
+
+    .btn-explore-content {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0.16) 48%,
+        rgba(255, 255, 255, 0.28) 49%,
+        rgba(0, 20, 42, 0.82) 50%,
+        rgba(0, 10, 24, 0.96) 100%
+      );
+    }
+
+    .explore-arrow-ic {
+      transform: translateX(4px);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 0 18px rgba(0, 200, 255, 0.4);
+  }
 }
 
-.infinity-headline {
-  font-family: 'Orbitron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.35rem, 2.5vw, 2.35rem);
-  font-weight: 700;
+@keyframes rotateBorderBeam {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-explore-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  // Dark glass face with the exact diagonal split reflection cut seen in the reference image
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.11) 48%,
+    rgba(255, 255, 255, 0.22) 49%,
+    rgba(0, 16, 32, 0.90) 50%,
+    rgba(0, 8, 18, 0.97) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 13px 40px;
+  border-radius: 0; // sharp square corners
+  box-sizing: border-box;
+  transition: background 0.3s ease;
+}
+
+.btn-explore-text {
   color: #ffffff;
-  letter-spacing: 0.8px;
-  line-height: 1.25;
-  margin: 0;
-  text-shadow: 0 0 18px rgba(255, 255, 255, 0.35), 0 0 36px rgba(0, 180, 255, 0.22);
+  font-family: 'Orbitron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(0.85rem, 1.1vw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 220, 255, 0.4);
 }
 
-.infinity-subtext {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.72rem, 0.95vw, 0.96rem);
-  font-weight: 400;
-  color: rgba(225, 235, 250, 0.72);
-  line-height: 1.6;
-  max-width: 680px;
-  margin: 0;
-  letter-spacing: 0.2px;
+.explore-arrow-ic {
+  width: 17px;
+  height: 17px;
+  color: #00f0ff;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+  filter: drop-shadow(0 0 6px #00f0ff);
 }
 
 @media (max-width: 768px) {
@@ -3163,17 +3251,23 @@
     font-size: clamp(1rem, 4.2vw, 1.45rem);
     letter-spacing: 1px;
   }
-  .infinity-bottom-content {
+  .infinity-bottom-action {
     bottom: 5.5%;
-    gap: 6px;
   }
-  .infinity-headline {
-    font-size: clamp(1.05rem, 4.2vw, 1.45rem);
+  .btn-infinity-explore {
+    padding: 1.5px;
   }
-  .infinity-subtext {
-    font-size: clamp(0.65rem, 2.4vw, 0.82rem);
-    line-height: 1.45;
-    max-width: 92%;
+  .btn-explore-content {
+    padding: 10px 24px;
+    gap: 8px;
+  }
+  .btn-explore-text {
+    font-size: clamp(0.72rem, 3.2vw, 0.88rem);
+    letter-spacing: 1.5px;
+  }
+  .explore-arrow-ic {
+    width: 14px;
+    height: 14px;
   }
 }
 
