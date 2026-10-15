@@ -3111,7 +3111,7 @@
   text-shadow: 0 0 16px rgba(255, 255, 255, 0.38), 0 0 32px rgba(0, 200, 255, 0.25);
 }
 
-/* Bottom Action: Explore More Button */
+/* Bottom Action: Explore More Button (curved pill + rotating colour border beam) */
 .infinity-bottom-action {
   position: absolute;
   bottom: 8%;
@@ -3121,121 +3121,62 @@
   pointer-events: auto;
 }
 
-.btn-infinity-explore {
+/* Wrapper that clips the rotating beam to the pill shape */
+.btn-infinity-explore-wrap {
   position: relative;
   display: inline-block;
-  padding: 2px; // creates the 2px glowing rotating border frame
+  border-radius: 100px;
+  padding: 2px; /* gap between beam and button face */
   background: transparent;
-  border: none;
-  border-radius: 0; // sharp square ends matching reference image
-  cursor: pointer;
-  pointer-events: auto;
-  user-select: none;
   overflow: hidden;
-  box-shadow: 0 0 24px rgba(0, 200, 255, 0.28);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  pointer-events: auto;
 
-  // Rotating glowing beam sweeping across all 4 square ends
+  /* The spinning conic-gradient beam layer */
   &::before {
     content: '';
     position: absolute;
-    top: -150%;
-    left: -150%;
-    width: 400%;
-    height: 400%;
+    inset: -60%;
     background: conic-gradient(
-      from 0deg,
+      from var(--beam-angle, 0deg),
       transparent 0deg,
-      transparent 55deg,
-      #00f0ff 85deg,
-      #0077ff 115deg,
-      transparent 145deg,
-      transparent 235deg,
-      #00f0ff 265deg,
-      #0077ff 295deg,
-      transparent 325deg
+      transparent 200deg,
+      #00d4ff 210deg,
+      #7c3aed 240deg,
+      #38bdf8 265deg,
+      #a855f7 280deg,
+      #00d4ff 300deg,
+      transparent 310deg,
+      transparent 360deg
     );
-    animation: rotateBorderBeam 3.6s linear infinite;
+    animation: rotateBorderBeam 3s linear infinite;
+    border-radius: 0;
+    z-index: 0;
   }
+}
 
-  // Hover state: enhanced glow, slight lift
+.btn-infinity-explore {
+  animation: none;
+  pointer-events: auto;
+  user-select: none;
+  position: relative;
+  z-index: 1; /* sits above the ::before beam layer of the wrapper */
+  /* Override border so it doesn't compete with the beam */
+  border: none !important;
+  background: rgba(8, 18, 38, 0.82) !important;
+  backdrop-filter: blur(12px) !important;
+  color: #fff !important;
+
   &:hover {
+    background: rgba(10, 24, 52, 0.92) !important;
+    color: #7dd3fc !important;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.35), inset 0 0 12px rgba(56, 189, 248, 0.15) !important;
     transform: translateY(-2px);
-    box-shadow: 0 0 36px rgba(0, 240, 255, 0.65), 0 0 16px rgba(0, 120, 255, 0.4);
-
-    .btn-explore-content {
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.16) 48%,
-        rgba(255, 255, 255, 0.28) 49%,
-        rgba(0, 20, 42, 0.82) 50%,
-        rgba(0, 10, 24, 0.96) 100%
-      );
-    }
-
-    .explore-arrow-ic {
-      transform: translateX(4px);
-    }
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 0 18px rgba(0, 200, 255, 0.4);
   }
 }
 
 @keyframes rotateBorderBeam {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.btn-explore-content {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  // Dark glass face with the exact diagonal split reflection cut seen in the reference image
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.11) 0%,
-    rgba(255, 255, 255, 0.11) 48%,
-    rgba(255, 255, 255, 0.22) 49%,
-    rgba(0, 16, 32, 0.90) 50%,
-    rgba(0, 8, 18, 0.97) 100%
-  );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 13px 40px;
-  border-radius: 0; // sharp square corners
-  box-sizing: border-box;
-  transition: background 0.3s ease;
-}
-
-.btn-explore-text {
-  color: #ffffff;
-  font-family: 'Orbitron', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.85rem, 1.1vw, 1.05rem);
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 220, 255, 0.4);
-}
-
-.explore-arrow-ic {
-  width: 17px;
-  height: 17px;
-  color: #00f0ff;
-  flex-shrink: 0;
-  transition: transform 0.25s ease;
-  filter: drop-shadow(0 0 6px #00f0ff);
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {
@@ -3253,21 +3194,6 @@
   }
   .infinity-bottom-action {
     bottom: 5.5%;
-  }
-  .btn-infinity-explore {
-    padding: 1.5px;
-  }
-  .btn-explore-content {
-    padding: 10px 24px;
-    gap: 8px;
-  }
-  .btn-explore-text {
-    font-size: clamp(0.72rem, 3.2vw, 0.88rem);
-    letter-spacing: 1.5px;
-  }
-  .explore-arrow-ic {
-    width: 14px;
-    height: 14px;
   }
 }
 
