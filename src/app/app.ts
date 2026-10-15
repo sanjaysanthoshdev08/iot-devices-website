@@ -927,44 +927,42 @@ this.closeLoginModal();
   }
 
   // =========================================================================
-  // INFINITY PARTICLE SYSTEM (16:9 INTERACTIVE WEBGL / CANVAS)
-  // Preserves 100% pixel fidelity of 'a page after the features page.png'
-  // with localized particle & strand shift in the cursor's direction.
+  // INFINITY PARTICLE SYSTEM (16:9 SPREAD PARTICLES ENGINE)
+  // Preserves 100% pixel-perfect fidelity of 'a page after the features page.png'
+  // with particles that spread and disperse individually instead of floating.
   // =========================================================================
 
-  private infinityGl: WebGLRenderingContext | null = null;
-  private infinity2dCtx: CanvasRenderingContext2D | null = null;
+  private infinityCanvasCtx: CanvasRenderingContext2D | null = null;
+  private infinityTempCanvas: HTMLCanvasElement | null = null;
+  private infinityTempCtx: CanvasRenderingContext2D | null = null;
   private infinityImage: HTMLImageElement | null = null;
-  private infinityTexture: WebGLTexture | null = null;
-  private infinityProgram: WebGLProgram | null = null;
-  private infinityPointsProgram: WebGLProgram | null = null;
 
-  private infinityPosBuffer: WebGLBuffer | null = null;
-  private infinityTexBuffer: WebGLBuffer | null = null;
-  private infinityIndexBuffer: WebGLBuffer | null = null;
-  private infinityPointPosBuffer: WebGLBuffer | null = null;
-  private infinityPointColorBuffer: WebGLBuffer | null = null;
-
-  private infinityGridCols = 96;
-  private infinityGridRows = 54;
-  private infinityNumIndices = 0;
-  private infinityVertices: Float32Array = new Float32Array(0);
-  private infinityOrigVertices: Float32Array = new Float32Array(0);
-  private infinityVelocities: Float32Array = new Float32Array(0);
-  private infinityIsSymbol: Uint8Array = new Uint8Array(0);
-
-  // Floating spark particles
-  private infinitySparks: { origX: number; origY: number; x: number; y: number; vx: number; vy: number; r: number; alpha: number }[] = [];
+  private infinitySpreadParticles: {
+    normX: number;
+    normY: number;
+    ox: number;
+    oy: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    r: number;
+    color: string;
+    isCore: boolean;
+    scatterAngle: number;
+    scatterSpeed: number;
+    active: boolean;
+  }[] = [];
 
   private infinityCanvasWidth = 0;
   private infinityCanvasHeight = 0;
   private infinityAnimId: number | null = null;
   private infinityResizeObserver: ResizeObserver | null = null;
   private infinityMouseInside = false;
-  private infinityMouseClipX = 999;
-  private infinityMouseClipY = 999;
-  private infinityPrevMouseClipX = 999;
-  private infinityPrevMouseClipY = 999;
+  private infinityMouseX = -9999;
+  private infinityMouseY = -9999;
+  private infinityPrevMouseX = -9999;
+  private infinityPrevMouseY = -9999;
   private infinityMouseVx = 0;
   private infinityMouseVy = 0;
   private prefersReducedMotion = false;
@@ -987,37 +985,30 @@ this.closeLoginModal();
     img.src = encodeURI('assets/a page after the features page.png');
     img.onload = () => {
       this.infinityImage = img;
-      this.setupInfinityEngine(img);
+      this.setupInfinitySpreadEngine(img);
     };
     img.onerror = () => {
       const fallback = new Image();
       fallback.src = 'assets/a%20page%20after%20the%20features%20page.png';
       fallback.onload = () => {
         this.infinityImage = fallback;
-        this.setupInfinityEngine(fallback);
+        this.setupInfinitySpreadEngine(fallback);
       };
     };
   }
 
-  private setupInfinityEngine(img: HTMLImageElement) {
+  private setupInfinitySpreadEngine(img: HTMLImageElement) {
     if (!this.infinityCanvasRef || !this.infinityContainerRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const container = this.infinityContainerRef.nativeElement;
 
-    // Detect symbol mask from image so only blue particles & strands move
-    this.extractSymbolMask(img);
+    this.infinityCanvasCtx = canvas.getContext('2d');
+    if (!this.infinityCanvasCtx) return;
 
-    // Try WebGL for hardware-accelerated fluid particle mesh
-    const gl = canvas.getContext('webgl', { antialias: true, alpha: false, depth: false }) ||
-               canvas.getContext('experimental-webgl');
+    this.extractSpreadParticles(img);
 
-    if (gl) {
-      this.infinityGl = gl as WebGLRenderingContext;
-      this.initWebGL(gl as WebGLRenderingContext, img);
-    } else {
-      // 2D fallback
-      this.infinity2dCtx = canvas.getContext('2d');
-    }
+    this.infinityTempCanvas = document.createElement('canvas');
+    this.infinityTempCtx = this.infinityTempCanvas.getContext('2d');
 
     const updateDimensions = () => {
       const rect = container.getBoundingClientRect();
@@ -1032,14 +1023,26 @@ this.closeLoginModal();
 
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
+      this.infinityCanvasCtx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      if (this.infinityGl) {
-        this.infinityGl.viewport(0, 0, canvas.width, canvas.height);
-      } else if (this.infinity2dCtx) {
-        this.infinity2dCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (this.infinityTempCanvas && this.infinityTempCtx) {
+        this.infinityTempCanvas.width = canvas.width;
+        this.infinityTempCanvas.height = canvas.height;
+        this.infinityTempCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      this.renderInfinityFrame();
+      // Update particle anchor coordinates
+      for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
+        const p = this.infinitySpreadParticles[i];
+        p.ox = p.normX * w;
+        p.oy = p.normY * h;
+        if (!p.active) {
+          p.x = p.ox;
+          p.y = p.oy;
+        }
+      }
+
+      this.renderInfinitySpreadFrame();
     };
 
     updateDimensions();
@@ -1052,241 +1055,108 @@ this.closeLoginModal();
     this.startInfinityAnimationLoop();
   }
 
-  private extractSymbolMask(img: HTMLImageElement) {
-    const cols = this.infinityGridCols;
-    const rows = this.infinityGridRows;
-    const numVerts = (cols + 1) * (rows + 1);
+  private extractSpreadParticles(img: HTMLImageElement) {
+    // 16:9 sampling resolution
+    const sampleW = 1024;
+    const sampleH = 576;
 
     const off = document.createElement('canvas');
-    off.width = cols + 1;
-    off.height = rows + 1;
+    off.width = sampleW;
+    off.height = sampleH;
     const offCtx = off.getContext('2d', { willReadFrequently: true });
     if (!offCtx) return;
 
-    offCtx.drawImage(img, 0, 0, cols + 1, rows + 1);
-    const data = offCtx.getImageData(0, 0, cols + 1, rows + 1).data;
+    offCtx.drawImage(img, 0, 0, sampleW, sampleH);
+    const data = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-    this.infinityIsSymbol = new Uint8Array(numVerts);
-    this.infinityVertices = new Float32Array(numVerts * 2);
-    this.infinityOrigVertices = new Float32Array(numVerts * 2);
-    this.infinityVelocities = new Float32Array(numVerts * 2);
+    const particles: typeof this.infinitySpreadParticles = [];
 
-    const sparks: { origX: number; origY: number; x: number; y: number; vx: number; vy: number; r: number; alpha: number }[] = [];
+    // Dense particle grid across the infinity symbol
+    for (let y = 0; y < sampleH; y += 2) {
+      for (let x = 0; x < sampleW; x += 2) {
+        const idx = (y * sampleW + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const brightness = r * 0.299 + g * 0.587 + b * 0.114;
 
-    for (let r = 0; r <= rows; r++) {
-      for (let c = 0; c <= cols; c++) {
-        const i = r * (cols + 1) + c;
-        const u = c / cols;
-        const v = r / rows;
+        // Filter: only capture the blue glowing infinity symbol
+        if (b < 40 && brightness < 30) continue;
 
-        // Clip space [-1, 1]
-        const clipX = u * 2 - 1;
-        const clipY = 1 - v * 2;
+        let radius = 1.0;
+        let isCore = false;
+        let alpha = 0.85;
 
-        this.infinityOrigVertices[i * 2] = clipX;
-        this.infinityOrigVertices[i * 2 + 1] = clipY;
-        this.infinityVertices[i * 2] = clipX;
-        this.infinityVertices[i * 2 + 1] = clipY;
-        this.infinityVelocities[i * 2] = 0;
-        this.infinityVelocities[i * 2 + 1] = 0;
-
-        const pixelIdx = (r * (cols + 1) + c) * 4;
-        const red = data[pixelIdx];
-        const green = data[pixelIdx + 1];
-        const blue = data[pixelIdx + 2];
-        const brightness = red * 0.299 + green * 0.587 + blue * 0.114;
-
-        // Mask: mark vertices that belong to the blue glowing infinity symbol
-        if (blue > 45 && brightness > 35) {
-          this.infinityIsSymbol[i] = 1;
-
-          // Populate spark points at bright nodes
-          if (brightness > 130 && Math.random() < 0.28) {
-            sparks.push({
-              origX: clipX,
-              origY: clipY,
-              x: clipX,
-              y: clipY,
-              vx: 0,
-              vy: 0,
-              r: 1.5 + Math.random() * 2.0,
-              alpha: 0.6 + Math.random() * 0.4
-            });
-          }
+        if (brightness >= 150) {
+          radius = 1.6 + Math.random() * 1.4;
+          isCore = true;
+          alpha = 1.0;
+        } else if (brightness >= 90) {
+          radius = 1.1 + Math.random() * 0.8;
+          isCore = brightness > 125;
+          alpha = 0.9;
+        } else if (brightness >= 45) {
+          if (x % 3 !== 0 || y % 3 !== 0) continue;
+          radius = 0.8 + Math.random() * 0.6;
+          alpha = 0.75;
         } else {
-          this.infinityIsSymbol[i] = 0;
+          if (x % 4 !== 0 || y % 4 !== 0) continue;
+          radius = 0.6 + Math.random() * 0.4;
+          alpha = 0.6;
         }
+
+        const colorStr = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+        const angleOffset = (Math.random() - 0.5) * 0.7; // slight angular dispersal
+        const speedFactor = 0.75 + Math.random() * 0.5;
+
+        particles.push({
+          normX: x / sampleW,
+          normY: y / sampleH,
+          ox: 0,
+          oy: 0,
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          r: radius,
+          color: colorStr,
+          isCore,
+          scatterAngle: angleOffset,
+          scatterSpeed: speedFactor,
+          active: false
+        });
       }
     }
 
-    this.infinitySparks = sparks;
-  }
-
-  private initWebGL(gl: WebGLRenderingContext, img: HTMLImageElement) {
-    // 1. Shaders for the textured deformable mesh
-    const vsSource = `
-      attribute vec2 a_position;
-      attribute vec2 a_texCoord;
-      varying vec2 v_texCoord;
-      void main() {
-        v_texCoord = a_texCoord;
-        gl_Position = vec4(a_position, 0.0, 1.0);
-      }
-    `;
-
-    const fsSource = `
-      precision mediump float;
-      uniform sampler2D u_image;
-      varying vec2 v_texCoord;
-      void main() {
-        gl_FragColor = texture2D(u_image, v_texCoord);
-      }
-    `;
-
-    const vertShader = this.compileShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragShader = this.compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
-    if (!vertShader || !fragShader) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
-    this.infinityProgram = program;
-
-    // 2. Mesh buffers
-    const cols = this.infinityGridCols;
-    const rows = this.infinityGridRows;
-    const numVerts = (cols + 1) * (rows + 1);
-
-    // Texture coordinates (static UVs)
-    const texCoords = new Float32Array(numVerts * 2);
-    for (let r = 0; r <= rows; r++) {
-      for (let c = 0; c <= cols; c++) {
-        const i = r * (cols + 1) + c;
-        texCoords[i * 2] = c / cols;
-        texCoords[i * 2 + 1] = r / rows;
-      }
-    }
-
-    this.infinityTexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityTexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-
-    // Vertex positions (dynamic)
-    this.infinityPosBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.infinityVertices, gl.DYNAMIC_DRAW);
-
-    // Triangles index buffer
-    const indices: number[] = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const i00 = r * (cols + 1) + c;
-        const i10 = i00 + 1;
-        const i01 = (r + 1) * (cols + 1) + c;
-        const i11 = i01 + 1;
-
-        indices.push(i00, i01, i10);
-        indices.push(i10, i01, i11);
-      }
-    }
-    this.infinityNumIndices = indices.length;
-    this.infinityIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.infinityIndexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
-    // 3. Texture creation
-    this.infinityTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.infinityTexture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
-    // 4. Point sparks shader for interactive glowing particle depth
-    const ptVs = `
-      attribute vec2 a_pointPosition;
-      attribute float a_pointSize;
-      attribute vec4 a_pointColor;
-      varying vec4 v_color;
-      void main() {
-        v_color = a_pointColor;
-        gl_Position = vec4(a_pointPosition, 0.0, 1.0);
-        gl_PointSize = a_pointSize;
-      }
-    `;
-
-    const ptFs = `
-      precision mediump float;
-      varying vec4 v_color;
-      void main() {
-        vec2 coord = gl_PointCoord - vec2(0.5);
-        float dist = length(coord);
-        if (dist > 0.5) discard;
-        float alpha = smoothstep(0.5, 0.0, dist) * v_color.a;
-        gl_FragColor = vec4(v_color.rgb, alpha);
-      }
-    `;
-
-    const ptVShader = this.compileShader(gl, gl.VERTEX_SHADER, ptVs);
-    const ptFShader = this.compileShader(gl, gl.FRAGMENT_SHADER, ptFs);
-    if (ptVShader && ptFShader) {
-      const ptProg = gl.createProgram();
-      if (ptProg) {
-        gl.attachShader(ptProg, ptVShader);
-        gl.attachShader(ptProg, ptFShader);
-        gl.linkProgram(ptProg);
-        this.infinityPointsProgram = ptProg;
-        this.infinityPointPosBuffer = gl.createBuffer();
-        this.infinityPointColorBuffer = gl.createBuffer();
-      }
-    }
-  }
-
-  private compileShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.warn('WebGL shader compile error:', gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-      return null;
-    }
-    return shader;
+    this.infinitySpreadParticles = particles;
   }
 
   onInfinityMouseMove(event: MouseEvent) {
     if (!this.infinityCanvasRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-
-    const curClipX = (event.clientX - rect.left) / rect.width * 2 - 1;
-    const curClipY = 1 - (event.clientY - rect.top) / rect.height * 2;
+    const curX = event.clientX - rect.left;
+    const curY = event.clientY - rect.top;
 
     if (!this.infinityMouseInside) {
       this.infinityMouseInside = true;
-      this.infinityPrevMouseClipX = curClipX;
-      this.infinityPrevMouseClipY = curClipY;
+      this.infinityPrevMouseX = curX;
+      this.infinityPrevMouseY = curY;
     }
 
-    const deltaX = curClipX - this.infinityPrevMouseClipX;
-    const deltaY = curClipY - this.infinityPrevMouseClipY;
-    this.infinityPrevMouseClipX = curClipX;
-    this.infinityPrevMouseClipY = curClipY;
+    const deltaX = curX - this.infinityPrevMouseX;
+    const deltaY = curY - this.infinityPrevMouseY;
+    this.infinityPrevMouseX = curX;
+    this.infinityPrevMouseY = curY;
 
-    this.infinityMouseClipX = curClipX;
-    this.infinityMouseClipY = curClipY;
+    this.infinityMouseX = curX;
+    this.infinityMouseY = curY;
 
-    // Smooth cursor movement velocity
     this.infinityMouseVx = this.infinityMouseVx * 0.5 + deltaX * 0.5;
     this.infinityMouseVy = this.infinityMouseVy * 0.5 + deltaY * 0.5;
 
     const speed = Math.hypot(this.infinityMouseVx, this.infinityMouseVy);
-    const maxSpeed = 0.08;
+    const maxSpeed = 20;
     if (speed > maxSpeed) {
       this.infinityMouseVx = (this.infinityMouseVx / speed) * maxSpeed;
       this.infinityMouseVy = (this.infinityMouseVy / speed) * maxSpeed;
@@ -1297,14 +1167,13 @@ this.closeLoginModal();
     if (!this.infinityCanvasRef) return;
     const canvas = this.infinityCanvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const curClipX = (event.clientX - rect.left) / rect.width * 2 - 1;
-    const curClipY = 1 - (event.clientY - rect.top) / rect.height * 2;
-
+    const curX = event.clientX - rect.left;
+    const curY = event.clientY - rect.top;
     this.infinityMouseInside = true;
-    this.infinityMouseClipX = curClipX;
-    this.infinityMouseClipY = curClipY;
-    this.infinityPrevMouseClipX = curClipX;
-    this.infinityPrevMouseClipY = curClipY;
+    this.infinityMouseX = curX;
+    this.infinityMouseY = curY;
+    this.infinityPrevMouseX = curX;
+    this.infinityPrevMouseY = curY;
     this.infinityMouseVx = 0;
     this.infinityMouseVy = 0;
   }
@@ -1321,231 +1190,180 @@ this.closeLoginModal();
     }
 
     const loop = () => {
-      this.renderInfinityFrame();
+      this.renderInfinitySpreadFrame();
       this.infinityAnimId = requestAnimationFrame(loop);
     };
 
     this.infinityAnimId = requestAnimationFrame(loop);
   }
 
-  private renderInfinityFrame() {
-    if (this.infinityGl) {
-      this.renderWebGLFrame();
-    } else if (this.infinity2dCtx) {
-      this.render2dFrame();
-    }
-  }
+  private renderInfinitySpreadFrame() {
+    const ctx = this.infinityCanvasCtx;
+    if (!ctx || !this.infinityImage || this.infinityCanvasWidth === 0) return;
 
-  private renderWebGLFrame() {
-    const gl = this.infinityGl;
-    if (!gl || !this.infinityProgram || !this.infinityImage) return;
-
-    const cols = this.infinityGridCols;
-    const rows = this.infinityGridRows;
-    const numVerts = (cols + 1) * (rows + 1);
-
-    // Physics constants
-    const radius = 0.28; // Interaction radius in clip space
-    const radiusSq = radius * radius;
-    const springK = 0.075;
-    const damping = 0.82;
-    const shiftStrength = 0.26;
-    const maxShift = 0.042; // Bounded localized shift preserving infinity shape
+    const w = this.infinityCanvasWidth;
+    const h = this.infinityCanvasHeight;
 
     const isMouseActive = this.infinityMouseInside && !this.prefersReducedMotion;
-    const mx = this.infinityMouseClipX;
-    const my = this.infinityMouseClipY;
+    const mx = this.infinityMouseX;
+    const my = this.infinityMouseY;
     const mvx = this.infinityMouseVx;
     const mvy = this.infinityMouseVy;
 
-    // 1. Update vertex physics
-    for (let i = 0; i < numVerts; i++) {
-      const idx2 = i * 2;
-      const ox = this.infinityOrigVertices[idx2];
-      const oy = this.infinityOrigVertices[idx2 + 1];
+    // Interaction zone radius
+    const radius = Math.min(w, h) * 0.17;
+    const radiusSq = radius * radius;
+    const springK = 0.082;
+    const damping = 0.81;
 
-      // Only shift nearby vertices that are on the infinity symbol
-      if (isMouseActive && this.infinityIsSymbol[i] === 1) {
-        const dx = mx - ox;
-        // Account for 16:9 aspect ratio so influence zone is circular
-        const dy = (my - oy) * (16 / 9);
-        const distSq = dx * dx + dy * dy;
+    let anyParticleActive = false;
 
-        if (distSq < radiusSq) {
-          const dist = Math.sqrt(distSq);
-          const t = 1 - (dist / radius);
-          const falloff = t * t * (3 - 2 * t); // Smoothstep falloff
-
-          // Subtle localized shift in cursor's direction
-          this.infinityVelocities[idx2] += mvx * falloff * shiftStrength;
-          this.infinityVelocities[idx2 + 1] += mvy * falloff * shiftStrength;
-
-          // Gentle ambient nudge if hovering
-          const hoverSpeed = Math.hypot(mvx, mvy);
-          if (hoverSpeed < 0.004) {
-            const nudge = 0.0016 * falloff;
-            this.infinityVelocities[idx2] += (dx < 0 ? -1 : 1) * nudge;
-            this.infinityVelocities[idx2 + 1] += (dy < 0 ? -1 : 1) * nudge;
-          }
+    // 1. If mouse is completely outside and no particles are moving, draw 100% exact static image
+    if (!isMouseActive) {
+      let activeCount = 0;
+      for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
+        if (this.infinitySpreadParticles[i].active) {
+          activeCount++;
+          break;
         }
       }
-
-      // Spring physics smoothly returning to anchor position
-      const hx = ox - this.infinityVertices[idx2];
-      const hy = oy - this.infinityVertices[idx2 + 1];
-      this.infinityVelocities[idx2] += hx * springK;
-      this.infinityVelocities[idx2 + 1] += hy * springK;
-      this.infinityVelocities[idx2] *= damping;
-      this.infinityVelocities[idx2 + 1] *= damping;
-
-      this.infinityVertices[idx2] += this.infinityVelocities[idx2];
-      this.infinityVertices[idx2 + 1] += this.infinityVelocities[idx2 + 1];
-
-      // Bounded displacement clamp keeping infinity symbol structure completely intact
-      const offX = this.infinityVertices[idx2] - ox;
-      const offY = this.infinityVertices[idx2 + 1] - oy;
-      const currentShift = Math.hypot(offX, offY);
-      if (currentShift > maxShift) {
-        const scale = maxShift / currentShift;
-        this.infinityVertices[idx2] = ox + offX * scale;
-        this.infinityVertices[idx2 + 1] = oy + offY * scale;
-      }
-
-      // Snap to rest when near home
-      if (Math.abs(hx) < 0.0004 && Math.abs(hy) < 0.0004 &&
-          Math.hypot(this.infinityVelocities[idx2], this.infinityVelocities[idx2 + 1]) < 0.00015) {
-        this.infinityVertices[idx2] = ox;
-        this.infinityVertices[idx2 + 1] = oy;
-        this.infinityVelocities[idx2] = 0;
-        this.infinityVelocities[idx2 + 1] = 0;
+      if (activeCount === 0) {
+        ctx.drawImage(this.infinityImage, 0, 0, w, h);
+        return;
       }
     }
 
-    // 2. Update spark particles
-    const ptPositions: number[] = [];
-    const ptColors: number[] = [];
+    // 2. Prepare masked base image in tempCanvas:
+    // Erase the localized circular interaction zone under the cursor so the solid image dissolves into spreading particles
+    if (this.infinityTempCanvas && this.infinityTempCtx && isMouseActive) {
+      const tCtx = this.infinityTempCtx;
+      tCtx.clearRect(0, 0, w, h);
+      tCtx.drawImage(this.infinityImage, 0, 0, w, h);
 
-    for (let s = 0; s < this.infinitySparks.length; s++) {
-      const sp = this.infinitySparks[s];
+      tCtx.globalCompositeOperation = 'destination-out';
+      const grad = tCtx.createRadialGradient(mx, my, 0, mx, my, radius);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+      grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.85)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      tCtx.fillStyle = grad;
+      tCtx.beginPath();
+      tCtx.arc(mx, my, radius, 0, Math.PI * 2);
+      tCtx.fill();
+      tCtx.globalCompositeOperation = 'source-over';
 
-      if (isMouseActive) {
-        const dx = mx - sp.origX;
-        const dy = (my - sp.origY) * (16 / 9);
-        const distSq = dx * dx + dy * dy;
+      // Draw background and masked base image
+      ctx.fillStyle = '#020610';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(this.infinityTempCanvas, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#020610';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(this.infinityImage, 0, 0, w, h);
+    }
 
-        if (distSq < radiusSq) {
-          const dist = Math.sqrt(distSq);
-          const t = 1 - (dist / radius);
-          const falloff = t * t * (3 - 2 * t);
+    // 3. Update & render particles that spread and scatter in the cursor's interaction area
+    const activeParticlesToDraw: typeof this.infinitySpreadParticles = [];
+    const hoverSpeed = Math.hypot(mvx, mvy);
 
-          sp.vx += mvx * falloff * (shiftStrength * 1.3);
-          sp.vy += mvy * falloff * (shiftStrength * 1.3);
-        }
+    for (let i = 0; i < this.infinitySpreadParticles.length; i++) {
+      const p = this.infinitySpreadParticles[i];
+
+      const dx = mx - p.ox;
+      const dy = my - p.oy;
+      const distSq = dx * dx + dy * dy;
+
+      if (isMouseActive && distSq < radiusSq) {
+        const dist = Math.sqrt(distSq);
+        const t = 1 - (dist / radius);
+        const falloff = t * t * (3 - 2 * t); // smoothstep falloff
+
+        // A. Shift in cursor's movement direction
+        const shiftX = mvx * falloff * 0.28 * p.scatterSpeed;
+        const shiftY = mvy * falloff * 0.28 * p.scatterSpeed;
+
+        // B. Radial dispersal (particles spread outward from cursor instead of floating)
+        const angle = Math.atan2(p.oy - my, p.ox - mx) + p.scatterAngle;
+        const spreadStrength = (hoverSpeed < 0.5 ? 1.5 : 0.8) * falloff * p.scatterSpeed;
+        const spreadX = Math.cos(angle) * spreadStrength;
+        const spreadY = Math.sin(angle) * spreadStrength;
+
+        p.vx += shiftX + spreadX;
+        p.vy += shiftY + spreadY;
+        p.active = true;
       }
 
-      const hx = sp.origX - sp.x;
-      const hy = sp.origY - sp.y;
-      sp.vx += hx * (springK * 0.9);
-      sp.vy += hy * (springK * 0.9);
-      sp.vx *= damping;
-      sp.vy *= damping;
+      // Spring physics smoothly returning particle to anchor position
+      if (p.active) {
+        const hx = p.ox - p.x;
+        const hy = p.oy - p.y;
+        p.vx += hx * springK;
+        p.vy += hy * springK;
+        p.vx *= damping;
+        p.vy *= damping;
 
-      sp.x += sp.vx;
-      sp.y += sp.vy;
+        p.x += p.vx;
+        p.y += p.vy;
 
-      // Only draw sparks that are active / moving
-      const sparkShift = Math.hypot(sp.x - sp.origX, sp.y - sp.origY);
-      if (sparkShift > 0.002) {
-        ptPositions.push(sp.x, sp.y);
-        const intensity = Math.min(1, sparkShift * 25);
-        ptColors.push(0.0, 0.9, 1.0, sp.alpha * intensity);
+        // Displacement clamp keeping infinity symbol structure completely intact
+        const offX = p.x - p.ox;
+        const offY = p.y - p.oy;
+        const currentShift = Math.hypot(offX, offY);
+        const maxShift = 26;
+        if (currentShift > maxShift) {
+          const scale = maxShift / currentShift;
+          p.x = p.ox + offX * scale;
+          p.y = p.oy + offY * scale;
+        }
+
+        // Snap to rest when near anchor
+        if (Math.abs(hx) < 0.08 && Math.abs(hy) < 0.08 && Math.hypot(p.vx, p.vy) < 0.02) {
+          p.x = p.ox;
+          p.y = p.oy;
+          p.vx = 0;
+          p.vy = 0;
+          p.active = false;
+        } else {
+          anyParticleActive = true;
+          activeParticlesToDraw.push(p);
+        }
+      } else if (isMouseActive && distSq < radiusSq * 1.2) {
+        // Also draw resting particles within the masked circle so there is zero gap
+        p.x = p.ox;
+        p.y = p.oy;
+        activeParticlesToDraw.push(p);
       }
     }
 
     this.infinityMouseVx *= 0.7;
     this.infinityMouseVy *= 0.7;
 
-    // 3. Render textured deformable mesh (100% exact visual fidelity of the reference image)
-    gl.clearColor(0.01, 0.02, 0.06, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.useProgram(this.infinityProgram);
-
-    // Upload updated vertex positions
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityPosBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.infinityVertices);
-
-    const aPos = gl.getAttribLocation(this.infinityProgram, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const aTex = gl.getAttribLocation(this.infinityProgram, 'a_texCoord');
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityTexBuffer);
-    gl.enableVertexAttribArray(aTex);
-    gl.vertexAttribPointer(aTex, 2, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.infinityTexture);
-    gl.uniform1i(gl.getUniformLocation(this.infinityProgram, 'u_image'), 0);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.infinityIndexBuffer);
-    gl.drawElements(gl.TRIANGLES, this.infinityNumIndices, gl.UNSIGNED_SHORT, 0);
-
-    // 4. Render additive glowing spark particles
-    if (this.infinityPointsProgram && ptPositions.length > 0) {
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-      gl.useProgram(this.infinityPointsProgram);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityPointPosBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ptPositions), gl.DYNAMIC_DRAW);
-      const aPtPos = gl.getAttribLocation(this.infinityPointsProgram, 'a_pointPosition');
-      gl.enableVertexAttribArray(aPtPos);
-      gl.vertexAttribPointer(aPtPos, 2, gl.FLOAT, false, 0, 0);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityPointColorBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ptColors), gl.DYNAMIC_DRAW);
-      const aPtCol = gl.getAttribLocation(this.infinityPointsProgram, 'a_pointColor');
-      gl.enableVertexAttribArray(aPtCol);
-      gl.vertexAttribPointer(aPtCol, 4, gl.FLOAT, false, 0, 0);
-
-      gl.vertexAttrib1f(gl.getAttribLocation(this.infinityPointsProgram, 'a_pointSize'), 5.0 * (window.devicePixelRatio || 1));
-
-      gl.drawArrays(gl.POINTS, 0, ptPositions.length / 2);
-
-      gl.disable(gl.BLEND);
-    }
-  }
-
-  private render2dFrame() {
-    const ctx = this.infinity2dCtx;
-    if (!ctx || !this.infinityImage || this.infinityCanvasWidth === 0) return;
-
-    const w = this.infinityCanvasWidth;
-    const h = this.infinityCanvasHeight;
-
-    // Draw the reference image at full resolution
-    ctx.drawImage(this.infinityImage, 0, 0, w, h);
-
-    // If mouse is active, render interactive subtle cyan particles
-    if (this.infinityMouseInside && !this.prefersReducedMotion) {
-      const mx = (this.infinityMouseClipX + 1) * 0.5 * w;
-      const my = (1 - this.infinityMouseClipY) * 0.5 * h;
-      const radius = Math.min(w, h) * 0.16;
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const grad = ctx.createRadialGradient(mx, my, 0, mx, my, radius);
-      grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
-      grad.addColorStop(0.5, 'rgba(0, 180, 255, 0.05)');
-      grad.addColorStop(1, 'rgba(0, 120, 255, 0)');
-      ctx.fillStyle = grad;
+    // 4. Draw spreading particles
+    for (let i = 0; i < activeParticlesToDraw.length; i++) {
+      const p = activeParticlesToDraw[i];
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(mx, my, radius, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
     }
+
+    // 5. Glowing aura for active core spark nodes
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < activeParticlesToDraw.length; i++) {
+      const p = activeParticlesToDraw[i];
+      if (p.isCore && p.active) {
+        const glowR = p.r * 2.8;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+        grad.addColorStop(0, 'rgba(0, 240, 255, 0.5)');
+        grad.addColorStop(0.5, 'rgba(0, 180, 255, 0.15)');
+        grad.addColorStop(1, 'rgba(0, 120, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   private destroyInfinityParticleSystem() {
@@ -1560,16 +1378,10 @@ this.closeLoginModal();
     if (this.infinityReducedMotionQuery && this.infinityMediaListener) {
       this.infinityReducedMotionQuery.removeEventListener('change', this.infinityMediaListener);
     }
-    if (this.infinityGl) {
-      if (this.infinityTexture) this.infinityGl.deleteTexture(this.infinityTexture);
-      if (this.infinityProgram) this.infinityGl.deleteProgram(this.infinityProgram);
-      if (this.infinityPointsProgram) this.infinityGl.deleteProgram(this.infinityPointsProgram);
-      if (this.infinityPosBuffer) this.infinityGl.deleteBuffer(this.infinityPosBuffer);
-      if (this.infinityTexBuffer) this.infinityGl.deleteBuffer(this.infinityTexBuffer);
-      if (this.infinityIndexBuffer) this.infinityGl.deleteBuffer(this.infinityIndexBuffer);
-      this.infinityGl = null;
-    }
+    this.infinityTempCanvas = null;
+    this.infinityTempCtx = null;
   }
 }
+
 
 
