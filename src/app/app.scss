@@ -4254,28 +4254,74 @@
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
 }
 
-.footer-features-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Infinite Marquee Ticker Viewport */
+.footer-features-ticker-viewport {
   width: 100%;
-  padding: 0 10px;
-  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+
+  /* Fade edges for a polished look */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
 }
 
+/* The scrolling track (holds 2× items for seamless loop) */
+@keyframes footer-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.footer-features-ticker-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  animation: footer-ticker-scroll 18s linear infinite;
+  will-change: transform;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+/* Individual feature label */
 .feature-item {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 15.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: #cfddec;
-  letter-spacing: 0.15px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding: 0 36px;
   transition: color 0.2s ease, text-shadow 0.2s ease;
   cursor: default;
 
   &:hover {
-    color: #ffffff;
-    text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+    color: #00e5ff;
+    text-shadow: 0 0 14px rgba(0, 229, 255, 0.7);
   }
+}
+
+/* Decorative separator dot between items */
+.feature-ticker-sep {
+  font-size: 10px;
+  color: #00c8f8;
+  opacity: 0.7;
+  flex-shrink: 0;
+  text-shadow: 0 0 8px rgba(0, 200, 255, 0.9);
+  user-select: none;
 }
 
 /* Bottom Bar */
