@@ -1007,9 +1007,7 @@
             <!-- Bottom User Info Block -->
             <div class="testimonial-user-block">
               <div class="user-avatar-badge">
-                <svg viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
-                  <path d="M12 12c2.4 0 4.35-1.95 4.35-4.35S14.4 3.3 12 3.3 7.65 5.25 7.65 7.65 9.6 12 12 12zm0 2.2c-2.9 0-8.7 1.46-8.7 4.35v2.15h17.4v-2.15c0-2.89-5.8-4.35-8.7-4.35z"/>
-                </svg>
+                <img [src]="item.userImage" [alt]="item.userName" class="user-avatar-img" />
               </div>
               <div class="user-details">
                 <span class="user-name">{{ item.userName }}</span>
@@ -1105,6 +1103,135 @@
 
     </div>
   </section>
+
+  <!-- =========================================================================
+       FOOTER (EXACT MATCH TO REFERENCE IMAGE)
+       ========================================================================= -->
+  <footer id="site-footer" class="site-footer">
+    <!-- Top Glowing Horizon Line -->
+    <div class="footer-horizon-glow"></div>
+
+    <div class="footer-container">
+      
+      <!-- Top 3 Columns Grid -->
+      <div class="footer-top-grid">
+
+        <!-- Column 1: Brand / Description / Social Links -->
+        <div class="footer-col-brand">
+          <h2 class="footer-company-name">(Company Name)</h2>
+          <div class="footer-accent-line brand-accent"></div>
+
+          <p class="footer-brand-tagline">Intelligent Power. Connected Monitoring.</p>
+          <p class="footer-brand-desc">
+            Smart monitoring solutions for inverter and UPS systems, designed to make power-system information easier to access and understand.
+          </p>
+
+          <!-- Social Icons -->
+          <div class="footer-social-row">
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Facebook">
+              <svg viewBox="0 0 24 24" fill="#00e5ff">
+                <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95C18.05 21.45 22 17.19 22 12z"/>
+              </svg>
+            </a>
+
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5.5" ry="5.5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+            </a>
+
+            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="LinkedIn">
+              <svg viewBox="0 0 24 24" fill="#00e5ff">
+                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+              </svg>
+            </a>
+
+            <a href="https://x.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="X">
+              <svg viewBox="0 0 24 24" fill="#00e5ff">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="#00e5ff">
+                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Column 2: Company -->
+        <div class="footer-col-nav">
+          <h3 class="footer-col-title">Company</h3>
+          <div class="footer-accent-line col-accent"></div>
+          <ul class="footer-links-list">
+            <li><a href="javascript:void(0)" (click)="setActiveNav(1)">About Us</a></li>
+            <li><a href="javascript:void(0)" (click)="setActiveNav(3)">Our Solutions</a></li>
+            <li><a href="javascript:void(0)" (click)="setActiveNav(2)">Products</a></li>
+            <li><a href="javascript:void(0)" (click)="setActiveNav(3)">Features</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 3: Support -->
+        <div class="footer-col-nav">
+          <h3 class="footer-col-title">Support</h3>
+          <div class="footer-accent-line col-accent"></div>
+          <ul class="footer-links-list">
+            <li><a href="javascript:void(0)">Help &amp; Documentation</a></li>
+            <li><a href="javascript:void(0)" (click)="setActiveNav(4)">Contact Us</a></li>
+            <li><a href="javascript:void(0)">Privacy Policy</a></li>
+            <li><a href="javascript:void(0)">Terms of Service</a></li>
+            <li><a href="javascript:void(0)">Data &amp; Security</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Middle Feature Divider & List -->
+      <div class="footer-features-section">
+        <div class="features-top-divider-line"></div>
+        <div class="footer-divider-badge-row">
+          <span class="features-divider-line"></span>
+          <span class="features-badge-text">BUILT FOR SMARTER POWER MONITORING</span>
+          <span class="features-divider-line"></span>
+        </div>
+
+        <div class="footer-features-row">
+          <span class="feature-item">System Monitoring</span>
+          <span class="feature-item">Power Insights</span>
+          <span class="feature-item">Performance Data</span>
+          <span class="feature-item">IoT Connectivity</span>
+          <span class="feature-item">Secure Access</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Horizon & Legal Bar -->
+    <div class="footer-bottom-bar">
+      <div class="footer-container bottom-container">
+        <p class="footer-copyright">&copy; 2026 (Company Name). All rights reserved.</p>
+
+        <div class="footer-legal-links">
+          <a href="javascript:void(0)">Accessibility</a>
+          <span class="legal-sep">|</span>
+          <a href="javascript:void(0)">Privacy Policy</a>
+          <span class="legal-sep">|</span>
+          <a href="javascript:void(0)">Terms of Service</a>
+        </div>
+
+        <!-- Floating / Docked Scroll-to-Top Button -->
+        <button type="button" class="btn-scroll-top" (click)="scrollToTop()" aria-label="Scroll to top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
 
 
 <!-- ===== LOGIN PAGE / MODAL (Split Card Layout with Fixed Background) ===== -->

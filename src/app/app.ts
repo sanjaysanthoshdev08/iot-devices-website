@@ -188,6 +188,15 @@ export class App implements AfterViewInit, OnDestroy {
     this.setActiveNav(3);
   }
 
+  scrollToTop() {
+    const scroller = document.querySelector('.viewport-wrapper');
+    if (scroller) {
+      scroller.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   openLoginModal(isSignUp: boolean = false) {
     this.clearErrors();
     this.isSignUpMode.set(isSignUp);
