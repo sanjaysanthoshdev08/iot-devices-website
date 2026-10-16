@@ -110,51 +110,51 @@ export class App implements AfterViewInit, OnDestroy {
   contactSubmitError = signal<string>('');
 
   // ===== Testimonials & CTA Section State =====
-  activeTestimonialIndex = signal<number>(1);
+  activeTestimonialIndex = signal<number>(2);
   readonly testimonialDots = [0, 1, 2, 3, 4, 5];
 
   readonly testimonials = signal([
     {
       id: 0,
-      quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
-      userName: "Residential User",
-      userRole: "Home Power Backup",
-      userImage: "assets/user1.jpg"
-    },
-    {
-      id: 1,
-      quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
-      userName: "Business User",
-      userRole: "Commercial Power Management",
-      userImage: "assets/user2.jpg"
-    },
-    {
-      id: 2,
       quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
       userName: "IoT System User",
       userRole: "Connected Power Monitoring",
       userImage: "assets/user3.jpg"
     },
     {
+      id: 1,
+      quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
+      userName: "Residential User",
+      userRole: "Home Power Backup",
+      userImage: "assets/user1.jpg"
+    },
+    {
+      id: 2,
+      quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
+      userName: "Business User",
+      userRole: "Commercial Power Management",
+      userImage: "assets/user2.jpg"
+    },
+    {
       id: 3,
+      quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
+      userName: "IoT System User",
+      userRole: "Connected Power Monitoring",
+      userImage: "assets/user3.jpg"
+    },
+    {
+      id: 4,
       quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
       userName: "Residential User",
       userRole: "Home Power Backup",
       userImage: "assets/user4.jpg"
     },
     {
-      id: 4,
+      id: 5,
       quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
       userName: "Business User",
       userRole: "Commercial Power Management",
       userImage: "assets/user5.jpg"
-    },
-    {
-      id: 5,
-      quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
-      userName: "IoT System User",
-      userRole: "Connected Power Monitoring",
-      userImage: "assets/user1.jpg"
     }
   ]);
 

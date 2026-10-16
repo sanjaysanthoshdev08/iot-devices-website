@@ -1007,8 +1007,7 @@
             <!-- Bottom User Info Block -->
             <div class="testimonial-user-block">
               <div class="user-avatar-badge">
-                <img *ngIf="item.userImage" [src]="item.userImage" [alt]="item.userName" class="user-avatar-photo" />
-                <svg *ngIf="!item.userImage" viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
+                <svg viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
                   <path d="M12 12c2.4 0 4.35-1.95 4.35-4.35S14.4 3.3 12 3.3 7.65 5.25 7.65 7.65 9.6 12 12 12zm0 2.2c-2.9 0-8.7 1.46-8.7 4.35v2.15h17.4v-2.15c0-2.89-5.8-4.35-8.7-4.35z"/>
                 </svg>
               </div>
@@ -1028,9 +1027,9 @@
             class="carousel-nav-btn prev-btn" 
             (click)="prevTestimonial()" 
             aria-label="Previous Testimonials">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="20" y1="12" x2="4" y2="12"></line>
+              <polyline points="11 19 4 12 11 5"></polyline>
             </svg>
           </button>
 
@@ -1050,9 +1049,9 @@
             class="carousel-nav-btn next-btn" 
             (click)="nextTestimonial()" 
             aria-label="Next Testimonials">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <polyline points="13 5 20 12 13 19"></polyline>
             </svg>
           </button>
         </div>
@@ -1082,16 +1081,19 @@
 
           <div class="cta-right-col">
             <button type="button" class="btn-banner-action" (click)="onExploreDashboard()">
-              <svg class="btn-banner-icon chart-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z"/>
+              <svg class="btn-banner-icon chart-icon" viewBox="0 0 24 24" fill="#00e5ff">
+                <rect x="3" y="13" width="3" height="8" rx="0.8"/>
+                <rect x="8" y="7" width="3" height="14" rx="0.8"/>
+                <rect x="13" y="10" width="3" height="11" rx="0.8"/>
+                <rect x="18" y="4" width="3" height="17" rx="0.8"/>
               </svg>
               <span>Explore Dashboard</span>
             </button>
 
-            <button type="button" class="btn-banner-action" (click)="onDiscoverFeatures()">
-              <svg class="btn-banner-icon arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
+            <button type="button" class="btn-banner-action btn-discover" (click)="onDiscoverFeatures()">
+              <svg class="btn-banner-icon arrow-icon" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <polyline points="13 5 20 12 13 19"></polyline>
               </svg>
               <span>Discover Features</span>
             </button>
