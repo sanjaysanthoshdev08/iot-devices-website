@@ -1007,7 +1007,8 @@
             <!-- Bottom User Info Block -->
             <div class="testimonial-user-block">
               <div class="user-avatar-badge">
-                <svg viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
+                <img *ngIf="item.userImage" [src]="item.userImage" [alt]="item.userName" class="user-avatar-photo" />
+                <svg *ngIf="!item.userImage" viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
                   <path d="M12 12c2.4 0 4.35-1.95 4.35-4.35S14.4 3.3 12 3.3 7.65 5.25 7.65 7.65 9.6 12 12 12zm0 2.2c-2.9 0-8.7 1.46-8.7 4.35v2.15h17.4v-2.15c0-2.89-5.8-4.35-8.7-4.35z"/>
                 </svg>
               </div>

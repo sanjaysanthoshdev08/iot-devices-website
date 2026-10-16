@@ -118,37 +118,43 @@ export class App implements AfterViewInit, OnDestroy {
       id: 0,
       quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
       userName: "Residential User",
-      userRole: "Home Power Backup"
+      userRole: "Home Power Backup",
+      userImage: "assets/user1.jpg"
     },
     {
       id: 1,
       quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
       userName: "Business User",
-      userRole: "Commercial Power Management"
+      userRole: "Commercial Power Management",
+      userImage: "assets/user2.jpg"
     },
     {
       id: 2,
       quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
       userName: "IoT System User",
-      userRole: "Connected Power Monitoring"
+      userRole: "Connected Power Monitoring",
+      userImage: "assets/user3.jpg"
     },
     {
       id: 3,
       quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
       userName: "Residential User",
-      userRole: "Home Power Backup"
+      userRole: "Home Power Backup",
+      userImage: "assets/user4.jpg"
     },
     {
       id: 4,
       quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
       userName: "Business User",
-      userRole: "Commercial Power Management"
+      userRole: "Commercial Power Management",
+      userImage: "assets/user5.jpg"
     },
     {
       id: 5,
       quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
       userName: "IoT System User",
-      userRole: "Connected Power Monitoring"
+      userRole: "Connected Power Monitoring",
+      userImage: "assets/user1.jpg"
     }
   ]);
 
