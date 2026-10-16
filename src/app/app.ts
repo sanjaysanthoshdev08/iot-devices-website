@@ -109,6 +109,79 @@ export class App implements AfterViewInit, OnDestroy {
   contactSubmitSuccess = signal<string>('');
   contactSubmitError = signal<string>('');
 
+  // ===== Testimonials & CTA Section State =====
+  activeTestimonialIndex = signal<number>(1);
+  readonly testimonialDots = [0, 1, 2, 3, 4, 5];
+
+  readonly testimonials = signal([
+    {
+      id: 0,
+      quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
+      userName: "Residential User",
+      userRole: "Home Power Backup"
+    },
+    {
+      id: 1,
+      quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
+      userName: "Business User",
+      userRole: "Commercial Power Management"
+    },
+    {
+      id: 2,
+      quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
+      userName: "IoT System User",
+      userRole: "Connected Power Monitoring"
+    },
+    {
+      id: 3,
+      quote: "HYKON's intelligent monitoring interface makes it easier to understand my inverter's performance. I can check important system parameters in one place and stay informed about my power backup system.",
+      userName: "Residential User",
+      userRole: "Home Power Backup"
+    },
+    {
+      id: 4,
+      quote: "Having key inverter readings available through a single dashboard provides a clearer view of system status. It helps make power monitoring more convenient and organized.",
+      userName: "Business User",
+      userRole: "Commercial Power Management"
+    },
+    {
+      id: 5,
+      quote: "The combination of connected devices and a clear monitoring dashboard offers a smarter approach to understanding inverter operation. Essential information becomes easier to access and interpret.",
+      userName: "IoT System User",
+      userRole: "Connected Power Monitoring"
+    }
+  ]);
+
+  readonly visibleTestimonials = computed(() => {
+    const list = this.testimonials();
+    const active = this.activeTestimonialIndex();
+    const len = list.length;
+    const leftIdx = (active - 1 + len) % len;
+    const centerIdx = active;
+    const rightIdx = (active + 1) % len;
+    return [list[leftIdx], list[centerIdx], list[rightIdx]];
+  });
+
+  prevTestimonial() {
+    this.activeTestimonialIndex.update(idx => (idx > 0 ? idx - 1 : 5));
+  }
+
+  nextTestimonial() {
+    this.activeTestimonialIndex.update(idx => (idx < 5 ? idx + 1 : 0));
+  }
+
+  setTestimonialIndex(index: number) {
+    this.activeTestimonialIndex.set(index);
+  }
+
+  onExploreDashboard() {
+    this.setActiveNav(2);
+  }
+
+  onDiscoverFeatures() {
+    this.setActiveNav(3);
+  }
+
   openLoginModal(isSignUp: boolean = false) {
     this.clearErrors();
     this.isSignUpMode.set(isSignUp);

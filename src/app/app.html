@@ -966,6 +966,143 @@
     </div>
   </section>
 
+  <!-- ===== TRUSTED BY OUR CUSTOMERS / TESTIMONIALS & CTA BANNER SECTION ===== -->
+  <section id="testimonials-section" class="testimonials-cta-section">
+    <div class="testimonials-container">
+
+      <!-- Section Header -->
+      <div class="testimonials-header-block">
+        <h2 class="testimonials-main-title">Trusted by Our Customers</h2>
+        <p class="testimonials-main-subtitle">
+          Powering confidence through intelligent monitoring. Discover how HYKON IoT technology helps users monitor inverter performance, track essential electrical parameters, and stay informed about their power systems in real time.
+        </p>
+        <p class="testimonials-caption">Illustrative testimonials</p>
+      </div>
+
+      <!-- Testimonial Cards Carousel Viewport -->
+      <div class="testimonials-cards-wrapper">
+        <div class="testimonials-cards-row">
+          <div 
+            *ngFor="let item of visibleTestimonials(); let i = index" 
+            class="testimonial-card-item"
+            [class.card-featured]="i === 1">
+            
+            <!-- Honeycomb Mesh Overlay on Card Top -->
+            <div class="card-mesh-bg" aria-hidden="true">
+              <img src="assets/honeycomb-card.svg" alt="" class="card-mesh-img" />
+            </div>
+
+            <!-- Cyan Quote Icon -->
+            <div class="testimonial-quote-icon">
+              <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10.2 0C4.6 0 0 4.6 0 10.2C0 14.8 3.1 18.6 7.4 19.9C6.5 23.2 3.8 26.1 0.4 27.6C-0.1 27.8 -0.1 28.5 0.3 28.8C0.5 29 0.8 29 1.1 29C9.2 29 16.2 21.9 16.2 13.8V3.7C16.2 1.7 14.5 0 12.5 0H10.2ZM30.4 0C24.8 0 20.2 4.6 20.2 10.2C20.2 14.8 23.3 18.6 27.6 19.9C26.7 23.2 24 26.1 20.6 27.6C20.1 27.8 20.1 28.5 20.5 28.8C20.7 29 21 29 21.3 29C29.4 29 36.4 21.9 36.4 13.8V3.7C36.4 1.7 34.7 0 32.7 0H30.4Z" fill="#00d2ff"/>
+              </svg>
+            </div>
+
+            <!-- Testimonial Quote Text -->
+            <p class="testimonial-body-text">
+              {{ item.quote }}
+            </p>
+
+            <!-- Bottom User Info Block -->
+            <div class="testimonial-user-block">
+              <div class="user-avatar-badge">
+                <svg viewBox="0 0 24 24" fill="#00e5ff" width="22" height="22">
+                  <path d="M12 12c2.4 0 4.35-1.95 4.35-4.35S14.4 3.3 12 3.3 7.65 5.25 7.65 7.65 9.6 12 12 12zm0 2.2c-2.9 0-8.7 1.46-8.7 4.35v2.15h17.4v-2.15c0-2.89-5.8-4.35-8.7-4.35z"/>
+                </svg>
+              </div>
+              <div class="user-details">
+                <span class="user-name">{{ item.userName }}</span>
+                <span class="user-role">{{ item.userRole }}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Carousel Navigation Under Center Card -->
+        <div class="testimonials-carousel-controls">
+          <button 
+            type="button" 
+            class="carousel-nav-btn prev-btn" 
+            (click)="prevTestimonial()" 
+            aria-label="Previous Testimonials">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+
+          <div class="carousel-dots-list">
+            <button 
+              *ngFor="let dot of testimonialDots; let dIdx = index" 
+              type="button" 
+              class="carousel-dot-btn" 
+              [class.active]="dIdx === activeTestimonialIndex()"
+              (click)="setTestimonialIndex(dIdx)"
+              [attr.aria-label]="'Go to testimonial slide ' + (dIdx + 1)">
+            </button>
+          </div>
+
+          <button 
+            type="button" 
+            class="carousel-nav-btn next-btn" 
+            (click)="nextTestimonial()" 
+            aria-label="Next Testimonials">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ===== CTA BANNER (POWER YOUR INSIGHTS. MONITOR SMARTER.) ===== -->
+      <div class="cta-insights-banner">
+        
+        <!-- Glowing Hexagonal Mesh Grid Background -->
+        <div class="cta-banner-mesh" aria-hidden="true">
+          <img src="assets/honeycomb-banner.svg" alt="" class="cta-mesh-img" />
+        </div>
+
+        <!-- Inner Content (Left title/text + Right CTA buttons) -->
+        <div class="cta-banner-content">
+          
+          <div class="cta-left-col">
+            <h3 class="cta-banner-title">
+              Power Your Insights.<br>
+              Monitor Smarter.
+            </h3>
+            <p class="cta-banner-desc">
+              Experience a smarter way to monitor your HYKON inverter and UPS systems. Access essential operating parameters, understand system status, and explore connected power monitoring through one intuitive platform.
+            </p>
+          </div>
+
+          <div class="cta-right-col">
+            <button type="button" class="btn-banner-action" (click)="onExploreDashboard()">
+              <svg class="btn-banner-icon chart-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z"/>
+              </svg>
+              <span>Explore Dashboard</span>
+            </button>
+
+            <button type="button" class="btn-banner-action" (click)="onDiscoverFeatures()">
+              <svg class="btn-banner-icon arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+              <span>Discover Features</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
 
 <!-- ===== LOGIN PAGE / MODAL (Split Card Layout with Fixed Background) ===== -->
   <div class="login-modal-overlay" *ngIf="isLoginModalOpen()">
