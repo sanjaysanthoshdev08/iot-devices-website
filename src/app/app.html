@@ -267,7 +267,7 @@
 
   <!-- ===== FEATURES PAGE SECTION ===== -->
   <section id="features-section" class="features-page-section">
-    <div class="features-image-container">
+    <div class="features-image-container" [class.features-blurred]="isDeviceAuthModalOpen()">
       <img src="assets/features page imag.png" 
            (error)="$any($event.target).src = 'assets/features page image.png'" 
            alt="Features Page" 
@@ -277,7 +277,7 @@
       <div class="features-hud-stage">
 
         <!-- 1. VOLTAGE PANEL (Top-Left, x263-514, y100-315) -->
-        <div class="hud-panel hud-panel-voltage">
+        <div class="hud-panel hud-panel-voltage" (click)="openDeviceAuthModal('voltage')" role="button" tabindex="0" title="Click to enter device credentials">
           <!-- Dock sidebar -->
           <div class="hud-dock-sidebar">
             <button class="dock-btn active" title="Voltage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
@@ -373,7 +373,7 @@
         </div>
 
         <!-- 2. CURRENT PANEL (Lower-Left, x158-376, y290-455) -->
-        <div class="hud-panel hud-panel-current">
+        <div class="hud-panel hud-panel-current" (click)="openDeviceAuthModal('current')" role="button" tabindex="0" title="Click to enter device credentials">
           <div class="hud-panel-inner">
             <div class="hud-header">
               <span class="hud-title">CURRENT</span>
@@ -431,7 +431,7 @@
         </div>
 
         <!-- 3. INVERTER/UPS MODE PANEL (Bottom-Left, x264-536, y438-624) -->
-        <div class="hud-panel hud-panel-inverter">
+        <div class="hud-panel hud-panel-inverter" (click)="openDeviceAuthModal('inverter')" role="button" tabindex="0" title="Click to enter device credentials">
           <div class="hud-panel-inner">
             <div class="hud-header">
               <span class="hud-title">INVERTER/UPS MODE</span>
@@ -518,7 +518,7 @@
 
         <!-- 4. POWER GROUP (Center, Backing Panel + Foreground Phone Card + Tether) -->
         <!-- 4a. Backing Panel (x593-803, y78-218) -->
-        <div class="hud-panel hud-panel-power-backing">
+        <div class="hud-panel hud-panel-power-backing" (click)="openDeviceAuthModal('power')" role="button" tabindex="0" title="Click to enter device credentials">
           <!-- Left side: Vertical Efficiency Capsule Gauge -->
           <div class="power-backing-left">
             <div class="v-gauge-ticks">
@@ -553,7 +553,7 @@
         </div>
 
         <!-- 4b. Foreground Phone Card (x642-731, y58-231) -->
-        <div class="hud-panel hud-panel-power-card">
+        <div class="hud-panel hud-panel-power-card" (click)="openDeviceAuthModal('power')" role="button" tabindex="0" title="Click to enter device credentials">
           <!-- Top phone speaker/notch notch -->
           <div class="phone-notch"></div>
 
@@ -601,7 +601,7 @@
         <div class="hud-power-tether"></div>
 
         <!-- 5. PROTECTION PANEL (Top-Right, x871-1129, y103-315) -->
-        <div class="hud-panel hud-panel-protection">
+        <div class="hud-panel hud-panel-protection" (click)="openDeviceAuthModal('protection')" role="button" tabindex="0" title="Click to enter device credentials">
           <!-- Left dock sidebar -->
           <div class="hud-dock-sidebar">
             <button class="dock-btn active" title="Protection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
@@ -676,7 +676,7 @@
         </div>
 
         <!-- 6. BATTERY PANEL (Middle-Right, x982-1229, y283-467) -->
-        <div class="hud-panel hud-panel-battery">
+        <div class="hud-panel hud-panel-battery" (click)="openDeviceAuthModal('battery')" role="button" tabindex="0" title="Click to enter device credentials">
           <div class="hud-panel-inner battery-inner-layout">
             <!-- Left: Big Vertical Battery Illustration -->
             <div class="battery-graphic-col">
@@ -733,7 +733,7 @@
         </div>
 
         <!-- 7. SPECIFICATIONS PANEL (Bottom-Right, x844-1100, y441-628) -->
-        <div class="hud-panel hud-panel-specifications">
+        <div class="hud-panel hud-panel-specifications" (click)="openDeviceAuthModal('specifications')" role="button" tabindex="0" title="Click to enter device credentials">
           <div class="hud-panel-inner">
             <div class="hud-header">
               <span class="hud-title">SPECIFICATIONS</span>
@@ -785,6 +785,105 @@
           </div>
         </div>
 
+      </div>
+
+    </div>
+
+    <!-- ===== DEVICE ACCESS PAGE (EXACT MATCH TO device access page.png) ===== -->
+    <div class="device-auth-modal-backdrop" *ngIf="isDeviceAuthModalOpen()" (click)="closeDeviceAuthModal()">
+      <!-- Full background image from assets/device access page.png -->
+      <img src="assets/device access page.png" 
+           alt="Device Access Page" 
+           class="device-access-page-bg" />
+
+      <!-- Back to Features Navigation Button -->
+      <button type="button" class="auth-page-back-btn" (click)="closeDeviceAuthModal()" title="Back to Features">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back</span>
+      </button>
+
+      <!-- Center Access Box matching device access page.png -->
+      <div class="device-access-card" (click)="$event.stopPropagation()">
+        <h2 class="device-access-title">Access your device</h2>
+
+        <form class="device-access-form" (ngSubmit)="verifyDeviceCredentials()">
+          <!-- Field 1: Device ID -->
+          <div class="device-access-field">
+            <div class="field-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div class="field-content-wrap">
+              <label class="field-mini-label">Device ID</label>
+              <input type="text"
+                     class="field-input-control"
+                     name="deviceId"
+                     [ngModel]="authDeviceId()"
+                     (ngModelChange)="authDeviceId.set($event)"
+                     placeholder="Enter your device ID"
+                     autocomplete="off" />
+            </div>
+          </div>
+
+          <!-- Field 2: Serial number -->
+          <div class="device-access-field">
+            <div class="field-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
+            </div>
+            <div class="field-content-wrap">
+              <label class="field-mini-label">Serial number</label>
+              <input type="text"
+                     class="field-input-control"
+                     name="serialNumber"
+                     [ngModel]="authSerialNumber()"
+                     (ngModelChange)="authSerialNumber.set($event)"
+                     placeholder="Enter your serial number"
+                     autocomplete="off" />
+            </div>
+          </div>
+
+          <!-- Error Alert -->
+          <div class="auth-alert-box auth-alert-error" *ngIf="authErrorMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ authErrorMessage() }}</span>
+          </div>
+
+          <!-- Success Alert -->
+          <div class="auth-alert-box auth-alert-success" *ngIf="authSuccessMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>{{ authSuccessMessage() }}</span>
+          </div>
+
+          <!-- Action Button: Access device -->
+          <button type="submit" class="btn-access-device" [disabled]="isAuthVerifying()">
+            <span *ngIf="!isAuthVerifying()">Access device</span>
+            <span *ngIf="isAuthVerifying()">Accessing device...</span>
+          </button>
+
+          <!-- Quick Demo Presets -->
+          <div class="auth-demo-helper">
+            <span class="demo-lbl">Demo presets:</span>
+            <button type="button" class="demo-chip" (click)="fillDemoCredentials(1)">halo1200-1</button>
+            <button type="button" class="demo-chip" (click)="fillDemoCredentials(2)">halo1200-2</button>
+            <button type="button" class="demo-chip" (click)="fillDemoCredentials(10)">halo1200-10</button>
+          </div>
+        </form>
       </div>
     </div>
   </section>
@@ -1394,4 +1493,191 @@
     </div>
   </div>
 
+</div>
+
+<!-- ===== FULLSCREEN DASHBOARD PAGE (EXACT SAME AS FEATURES CLICK DASHBOARD PAGE.png) ===== -->
+<div class="dashboard-fullscreen-page" *ngIf="isDashboardOpen()" [class.active]="isDashboardOpen()">
+
+  <!-- Top Navigation Bar -->
+  <header class="dashboard-top-nav">
+    <button type="button" class="dashboard-back-btn" (click)="closeDashboard()" title="Back to Features (Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Back to Features</span>
+    </button>
+
+    <div class="dashboard-nav-center">
+      <div class="telemetry-live-badge">
+        <span class="live-dot"></span>
+        <span>LIVE TELEMETRY STREAM &bull; HYKON HALO 1200</span>
+      </div>
+    </div>
+
+    <div class="dashboard-nav-right">
+      <div class="dashboard-clock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>{{ dashboardClock() }}</span>
+      </div>
+      <button type="button" class="dashboard-close-btn" (click)="closeDashboard()" aria-label="Close dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Live Toast Notification -->
+  <div class="dashboard-toast" *ngIf="dashboardToast()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 14 14"></polyline>
+    </svg>
+    <span>{{ dashboardToast() }}</span>
+  </div>
+
+  <!-- Scaled 1376x768 Stage Viewport -->
+  <div class="dashboard-stage-viewport" (click)="deviceDropdownOpen.set(false); connectionDropdownOpen.set(false); dataSourceDropdownOpen.set(false)">
+    <div class="dashboard-stage">
+
+      <!-- Master base image exact match -->
+      <img src="assets/FEATURES CLICK DASHBOARD PAGE.png"
+           alt="HYKON HALO 1200 - Inverter IoT Telemetry Dashboard"
+           class="dashboard-stage-image" />
+
+      <!-- Holographic Cyber Glow Ring around Globe -->
+      <div class="dash-globe-ambient-ring"></div>
+
+      <!-- 1. Header Selectors -->
+      <!-- Device Dropdown -->
+      <div class="dash-hotspot dash-select-device"
+           [class.active]="deviceDropdownOpen()"
+           (click)="toggleDeviceDropdown($event)"
+           title="Switch Device">
+        <span class="hotspot-text">Device: <span class="hotspot-val">{{ activeDashboardDevice() }}</span></span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="dash-dropdown-menu" *ngIf="deviceDropdownOpen()" (click)="$event.stopPropagation()">
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HALO 1200'" (click)="selectDevice('HALO 1200')">HALO 1200 (Active)</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HALO 3000'" (click)="selectDevice('HALO 3000')">HALO 3000 (3kVA)</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HY-X5000'" (click)="selectDevice('HY-X5000')">HY-X5000 (Commercial)</button>
+        </div>
+      </div>
+
+      <!-- Connection Dropdown -->
+      <div class="dash-hotspot dash-select-conn"
+           [class.active]="connectionDropdownOpen()"
+           (click)="toggleConnectionDropdown($event)"
+           title="Connection Protocol">
+        <span class="hotspot-text">Connection: <span class="hotspot-val">{{ activeDashboardConnection() }}</span></span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="dash-dropdown-menu" *ngIf="connectionDropdownOpen()" (click)="$event.stopPropagation()">
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Live IoT'" (click)="selectConnection('Live IoT')">Live IoT (Connected)</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Cloud MQTT'" (click)="selectConnection('Cloud MQTT')">Cloud MQTT Broker</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Bluetooth BLE'" (click)="selectConnection('Bluetooth BLE')">Direct Bluetooth BLE</button>
+        </div>
+      </div>
+
+      <!-- Data Source Dropdown -->
+      <div class="dash-hotspot dash-select-source"
+           [class.active]="dataSourceDropdownOpen()"
+           (click)="toggleDataSourceDropdown($event)"
+           title="Telemetry Source">
+        <span class="hotspot-text">Data Source: <span class="hotspot-val">{{ activeDashboardDataSource() }}</span></span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="dash-dropdown-menu" *ngIf="dataSourceDropdownOpen()" (click)="$event.stopPropagation()">
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'Inverter Physical'" (click)="selectDataSource('Inverter Physical')">Inverter Physical (RS485)</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'CAN Telemetry'" (click)="selectDataSource('CAN Telemetry')">CAN Bus Controller</button>
+          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'Simulated Feed'" (click)="selectDataSource('Simulated Feed')">Diagnostic Simulator</button>
+        </div>
+      </div>
+
+      <!-- 2. Left Sidebar Navigation -->
+      <div class="dash-sidebar-nav">
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'dashboard'" (click)="selectSidebarTab('dashboard')" title="Dashboard Overview">
+          <span class="dash-side-tooltip">Dashboard</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'alerts'" (click)="selectSidebarTab('alerts')" title="Fault & Warning Alerts">
+          <span class="dash-side-tooltip">System Alerts</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'battery'" (click)="selectSidebarTab('battery')" title="Battery & Grid Telemetry">
+          <span class="dash-side-tooltip">Battery Telemetry</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'protections'" (click)="selectSidebarTab('protections')" title="Protection Modules">
+          <span class="dash-side-tooltip">Protections</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'users'" (click)="selectSidebarTab('users')" title="Fleet Management">
+          <span class="dash-side-tooltip">Users & Fleet</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'cloud'" (click)="selectSidebarTab('cloud')" title="Cloud Sync">
+          <span class="dash-side-tooltip">Cloud Sync</span>
+        </button>
+        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'settings'" (click)="selectSidebarTab('settings')" title="Device Settings">
+          <span class="dash-side-tooltip">Settings</span>
+        </button>
+        <button type="button" class="dash-side-hykon-btn" (click)="closeDashboard()" title="Return to Main Website">
+          <span class="dash-side-tooltip">Return to Website</span>
+        </button>
+      </div>
+
+      <!-- 3. Refresh Buttons on Cards -->
+      <button type="button" class="dash-card-refresh dash-refresh-power" (click)="triggerRefresh('Power', $event)" title="Refresh Power Telemetry"></button>
+      <button type="button" class="dash-card-refresh dash-refresh-voltage" (click)="triggerRefresh('Voltage', $event)" title="Refresh Voltage Stats"></button>
+      <button type="button" class="dash-card-refresh dash-refresh-current" (click)="triggerRefresh('Current', $event)" title="Refresh Current Feed"></button>
+      <button type="button" class="dash-card-refresh dash-refresh-mode" (click)="triggerRefresh('Inverter Mode', $event)" title="Refresh Inverter Mode"></button>
+      <button type="button" class="dash-card-refresh dash-refresh-battery" (click)="triggerRefresh('Battery', $event)" title="Refresh Battery Telemetry"></button>
+      <button type="button" class="dash-card-refresh dash-refresh-protections" (click)="triggerRefresh('Protections', $event)" title="Check System Protections"></button>
+
+      <!-- 4. Interactive AI Assistant Bar -->
+      <div class="dash-ai-bar" (click)="$event.stopPropagation()">
+        <div class="dash-ai-input-wrap">
+          <svg class="ai-sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2">
+            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/>
+          </svg>
+          <input type="text"
+                 class="dash-ai-input"
+                 [(ngModel)]="aiQuestion"
+                 (keydown.enter)="submitAiQuery()"
+                 placeholder="Ask AI Assistant about HALO 1200 status..." />
+        </div>
+        <div class="dash-ai-status" (click)="submitAiQuery()">
+          <span class="status-pulse-dot"></span>
+          <span class="status-text">System Operational</span>
+        </div>
+        <button type="button" class="dash-ai-send-btn" (click)="submitAiQuery()" title="Send Telemetry Query">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- AI Telemetry Dialog / Popup -->
+      <div class="dash-ai-popup" *ngIf="aiResponse()" (click)="$event.stopPropagation()">
+        <div class="ai-popup-header">
+          <div class="ai-popup-title">
+            <span class="ai-chip">HALO AI</span>
+            <span>Live Telemetry Response</span>
+          </div>
+          <button type="button" class="ai-popup-close" (click)="closeAiPopup()">✕</button>
+        </div>
+        <div class="ai-popup-content">
+          <p>{{ aiResponse() }}</p>
+        </div>
+        <div class="ai-popup-suggestions">
+          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('What is the battery health?')">Battery Health</button>
+          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('How long will backup last?')">Backup Runtime</button>
+          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('Check grid status')">Grid Status</button>
+        </div>
+      </div>
+
+      <!-- 5. Interactive Status Pills -->
+      <div class="dash-interactive-hotspot dash-hotspot-ups" (click)="toggleUpsMode($event)" title="Active: UPS Mode (Li-Ion Battery Backup)"></div>
+      <div class="dash-interactive-hotspot dash-hotspot-wifi" (click)="checkWifiStatus($event)" title="Wi-Fi Signal: Connected 100% (-42 dBm)"></div>
+
+    </div>
+  </div>
 </div>

@@ -45,7 +45,15 @@ export class App implements AfterViewInit, OnDestroy {
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object
-  ) { }
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      if (window.location.pathname.includes('device-login')) {
+        this.isDeviceAuthModalOpen.set(true);
+      } else if (window.location.pathname.includes('dashboard')) {
+        this.isDashboardOpen.set(true);
+      }
+    }
+  }
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('profileContainerRef') profileContainerRef!: ElementRef<HTMLElement>;
   @ViewChild('infinityCanvasRef') infinityCanvasRef?: ElementRef<HTMLCanvasElement>;
@@ -108,6 +116,31 @@ export class App implements AfterViewInit, OnDestroy {
   contactSubmitting = signal<boolean>(false);
   contactSubmitSuccess = signal<string>('');
   contactSubmitError = signal<string>('');
+
+  // ===== DEVICE AUTHENTICATION MODAL STATE =====
+  isDeviceAuthModalOpen = signal<boolean>(false);
+  authDeviceId = signal<string>('');
+  authSerialNumber = signal<string>('');
+  authErrorMessage = signal<string>('');
+  authSuccessMessage = signal<string>('');
+  isAuthVerifying = signal<boolean>(false);
+  selectedFeatureBox = signal<string>('');
+
+  // ===== DASHBOARD MODAL / PAGE STATE =====
+  isDashboardOpen = signal<boolean>(false);
+  activeDashboardDevice = signal<string>('HALO 1200');
+  activeDashboardConnection = signal<string>('Live IoT');
+  activeDashboardDataSource = signal<string>('Inverter Physical');
+  deviceDropdownOpen = signal<boolean>(false);
+  connectionDropdownOpen = signal<boolean>(false);
+  dataSourceDropdownOpen = signal<boolean>(false);
+  dashboardToast = signal<string>('');
+  aiQuestion = signal<string>('');
+  aiResponse = signal<string>('');
+  activeSidebarTab = signal<string>('dashboard');
+  dashboardClock = signal<string>('12:00:00');
+  private clockInterval: any = null;
+  private toastTimer: any = null;
 
   // ===== Testimonials & CTA Section State =====
   activeTestimonialIndex = signal<number>(2);
@@ -181,7 +214,295 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   onExploreDashboard() {
-    this.setActiveNav(2);
+    this.openDeviceAuthModal();
+  }
+
+  // ===== DEVICE AUTHENTICATION MODAL METHODS =====
+  openDeviceAuthModal(boxName?: string) {
+    if (boxName) {
+      this.selectedFeatureBox.set(boxName);
+    }
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+    this.isDeviceAuthModalOpen.set(true);
+    if (isPlatformBrowser(this.platformId)) {
+      if (!window.location.pathname.includes('device-login')) {
+        window.history.pushState({ page: 'device-login' }, '', '/device-login');
+      }
+    }
+  }
+
+  closeDeviceAuthModal() {
+    this.isDeviceAuthModalOpen.set(false);
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+    this.isAuthVerifying.set(false);
+    if (isPlatformBrowser(this.platformId) && window.location.pathname.includes('device-login')) {
+      window.history.pushState({ page: 'home' }, '', '/');
+    }
+  }
+
+  fillDemoCredentials(deviceIndex: number = 1) {
+    this.authDeviceId.set(`halo1200-${deviceIndex}`);
+    const num = String(deviceIndex).padStart(2, '0');
+    this.authSerialNumber.set(`SN-HYK-1200-${num}`);
+    this.authErrorMessage.set('');
+  }
+
+  verifyDeviceCredentials() {
+    const rawDevice = this.authDeviceId().trim();
+    const rawSerial = this.authSerialNumber().trim();
+
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+
+    if (!rawDevice && !rawSerial) {
+      this.authErrorMessage.set('Please enter both Device ID and Serial Number.');
+      return;
+    }
+    if (!rawDevice) {
+      this.authErrorMessage.set('Please enter the Device ID.');
+      return;
+    }
+    if (!rawSerial) {
+      this.authErrorMessage.set('Please enter the Serial Number.');
+      return;
+    }
+
+    // Hyphen is mandatory in Device ID (e.g. halo1200-1, halo1200-2, etc.)
+    if (!rawDevice.includes('-')) {
+      this.authErrorMessage.set("Invalid Device ID. The hyphen '-' is mandatory (e.g., halo1200-1).");
+      return;
+    }
+
+    // Device ID pattern: name followed by '-' followed by number
+    const devicePattern = /^[a-zA-Z0-9]+-[0-9]+$/;
+    if (!devicePattern.test(rawDevice)) {
+      this.authErrorMessage.set("Invalid Device ID format. Must be device name and unit number separated by '-' (e.g., halo1200-1, halo1200-2).");
+      return;
+    }
+
+    const parts = rawDevice.split('-');
+    const model = parts[0].toLowerCase();
+    const unitNumber = parts[1];
+    const serialUpper = rawSerial.toUpperCase();
+
+    // Serial number format check
+    const isSerialFormatValid = /^[a-zA-Z0-9\-_]{5,}$/.test(rawSerial);
+    if (!isSerialFormatValid) {
+      this.authErrorMessage.set('Invalid Serial Number. Must be at least 5 alphanumeric characters (e.g., SN-HYK-1200-01).');
+      return;
+    }
+
+    // Model validation (HALO/HYKON device families)
+    const validModels = ['halo1200', 'halo3000', 'hy1200', 'halo', 'hyx5000', 'hykon1200', 'hykon'];
+    const isValidModel = validModels.some(m => model.includes(m) || m.includes(model));
+
+    const expectedPad = unitNumber.padStart(2, '0');
+    const isUnitSerialMatch = serialUpper.endsWith(unitNumber) || serialUpper.endsWith(expectedPad) || serialUpper.includes('SN') || serialUpper.startsWith('SN-');
+
+    if (!isValidModel || !isUnitSerialMatch) {
+      this.authErrorMessage.set('Invalid Device ID or Serial Number. The credentials provided do not match any registered device.');
+      return;
+    }
+
+    // Credentials verified!
+    this.isAuthVerifying.set(true);
+    this.authSuccessMessage.set('Credentials verified successfully! Connecting to Live Dashboard...');
+
+    setTimeout(() => {
+      const formattedModel = model.includes('3000') ? 'HALO 3000' : (model.includes('5000') ? 'HY-X5000' : 'HALO 1200');
+      this.activeDashboardDevice.set(formattedModel);
+      this.closeDeviceAuthModal();
+      this.openDashboard(this.selectedFeatureBox());
+    }, 700);
+  }
+
+  // ===== DASHBOARD METHODS =====
+  openDashboard(section?: string) {
+    this.isDashboardOpen.set(true);
+    this.updateDashboardScale();
+    if (isPlatformBrowser(this.platformId)) {
+      if (!window.location.pathname.includes('dashboard')) {
+        window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
+      }
+      if (!this.clockInterval) {
+        this.startDashboardClock();
+      }
+    }
+    if (section) {
+      this.showDashboardToast(`Viewing ${section.toUpperCase()} telemetry on Live Dashboard`);
+    } else {
+      this.showDashboardToast('Connected to HYKON HALO 1200 Live IoT Telemetry');
+    }
+  }
+
+  closeDashboard() {
+    this.isDashboardOpen.set(false);
+    this.deviceDropdownOpen.set(false);
+    this.connectionDropdownOpen.set(false);
+    this.dataSourceDropdownOpen.set(false);
+    this.aiResponse.set('');
+    if (isPlatformBrowser(this.platformId)) {
+      if (window.location.pathname.includes('dashboard')) {
+        window.history.pushState({ page: 'site' }, '', '/');
+      }
+      setTimeout(() => {
+        const featuresEl = document.getElementById('features-section');
+        const scroller = document.querySelector('.viewport-wrapper');
+        if (featuresEl && scroller) {
+          scroller.scrollTo({ top: featuresEl.offsetTop, behavior: 'smooth' });
+        }
+      }, 50);
+    }
+  }
+
+  updateDashboardScale() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const scale = Math.min(w / 1376, Math.max(h - 56, 300) / 768);
+    document.documentElement.style.setProperty('--dashboard-scale', String(scale));
+  }
+
+  private startDashboardClock() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const updateTime = () => {
+      const now = new Date();
+      this.dashboardClock.set(now.toLocaleTimeString('en-US', { hour12: false }));
+    };
+    updateTime();
+    this.clockInterval = setInterval(updateTime, 1000);
+  }
+
+  showDashboardToast(message: string) {
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+    this.dashboardToast.set(message);
+    this.toastTimer = setTimeout(() => {
+      this.dashboardToast.set('');
+    }, 3200);
+  }
+
+  triggerRefresh(sectionName: string, event?: Event) {
+    if (event) event.stopPropagation();
+    this.showDashboardToast(`Synchronized ${sectionName} telemetry from Inverter`);
+  }
+
+  toggleDeviceDropdown(event: Event) {
+    event.stopPropagation();
+    this.deviceDropdownOpen.update(v => !v);
+    this.connectionDropdownOpen.set(false);
+    this.dataSourceDropdownOpen.set(false);
+  }
+
+  selectDevice(device: string) {
+    this.activeDashboardDevice.set(device);
+    this.deviceDropdownOpen.set(false);
+    this.showDashboardToast(`Active device switched to ${device}`);
+  }
+
+  toggleConnectionDropdown(event: Event) {
+    event.stopPropagation();
+    this.connectionDropdownOpen.update(v => !v);
+    this.deviceDropdownOpen.set(false);
+    this.dataSourceDropdownOpen.set(false);
+  }
+
+  selectConnection(connection: string) {
+    this.activeDashboardConnection.set(connection);
+    this.connectionDropdownOpen.set(false);
+    this.showDashboardToast(`Connection updated to ${connection}`);
+  }
+
+  toggleDataSourceDropdown(event: Event) {
+    event.stopPropagation();
+    this.dataSourceDropdownOpen.update(v => !v);
+    this.deviceDropdownOpen.set(false);
+    this.connectionDropdownOpen.set(false);
+  }
+
+  selectDataSource(source: string) {
+    this.activeDashboardDataSource.set(source);
+    this.dataSourceDropdownOpen.set(false);
+    this.showDashboardToast(`Data source switched to ${source}`);
+  }
+
+  selectSidebarTab(tab: string) {
+    this.activeSidebarTab.set(tab);
+    if (tab === 'alerts') {
+      this.showDashboardToast('Alerts: System healthy. 0 active warnings.');
+    } else if (tab === 'battery') {
+      this.showDashboardToast('Battery: 48V LiFePO4 battery pack at 95.5% (51.2V).');
+    } else if (tab === 'protections') {
+      this.showDashboardToast('Protections: 5 of 5 safety modules verified OK.');
+    } else if (tab === 'users') {
+      this.showDashboardToast('Fleet Access: Admin operator session active.');
+    } else if (tab === 'cloud') {
+      this.showDashboardToast('Cloud Sync: 100% synchronised (14ms latency).');
+    } else if (tab === 'settings') {
+      this.showDashboardToast('Settings: Inverter baud 9600, telemetry poll 500ms.');
+    } else {
+      this.showDashboardToast('System Status: Telemetry overview active.');
+    }
+  }
+
+  toggleUpsMode(event: Event) {
+    if (event) event.stopPropagation();
+    this.showDashboardToast('System Mode: ACTIVE UPS MODE (Inverter Normal, Li-Ion Active)');
+  }
+
+  checkWifiStatus(event: Event) {
+    if (event) event.stopPropagation();
+    this.showDashboardToast('Wi-Fi Status: Connected (Signal strength: -42dBm, 100% sync)');
+  }
+
+  submitAiQuery() {
+    const q = this.aiQuestion().trim().toLowerCase();
+    if (!q) {
+      this.aiResponse.set('HALO 1200 Telemetry: System operational in UPS mode. Current load 983W, efficiency 94%, battery 95.5% (approx. 5h 30m runtime remaining).');
+      return;
+    }
+
+    if (q.includes('battery') || q.includes('charge')) {
+      this.aiResponse.set('Battery Telemetry: Lithium-Ion (48V nominal). Current state of charge is 95.5%, terminal voltage 51.2V. Battery charging rate 8.5A. Estimated backup duration is 5h 30m under current 983W continuous load.');
+    } else if (q.includes('power') || q.includes('watt') || q.includes('load')) {
+      this.aiResponse.set('Power Telemetry: Active load is 983 Watts (Apparent power: 1.1 kVA). Operating inverter efficiency is currently 94% with pure sine wave output at 220V / 50Hz.');
+    } else if (q.includes('voltage') || q.includes('grid') || q.includes('utility')) {
+      this.aiResponse.set('Voltage Telemetry: Utility grid is currently offline (0V). Inverter UPS mode is active, providing stable 220V output to connected appliances.');
+    } else if (q.includes('protect') || q.includes('safe') || q.includes('temp')) {
+      this.aiResponse.set('Protections Status: All 5 monitored protection circuits are active and OK (Overload: Normal, Short Circuit: Protected, Over-Temp: Active, Ground Fault: Normal, Surge: Good).');
+    } else {
+      this.aiResponse.set(`Halo AI Response: ${this.activeDashboardDevice()} is operating nominally on ${this.activeDashboardConnection()}. Telemetry is 100% synchronized with no faults detected.`);
+    }
+    this.showDashboardToast('AI Assistant telemetry response received');
+  }
+
+  askPresetQuery(query: string) {
+    this.aiQuestion.set(query);
+    this.submitAiQuery();
+  }
+
+  closeAiPopup() {
+    this.aiResponse.set('');
+  }
+
+  @HostListener('window:popstate')
+  onPopState() {
+    if (isPlatformBrowser(this.platformId)) {
+      if (window.location.pathname.includes('dashboard')) {
+        this.isDashboardOpen.set(true);
+        this.isDeviceAuthModalOpen.set(false);
+        this.updateDashboardScale();
+      } else if (window.location.pathname.includes('device-login')) {
+        this.isDeviceAuthModalOpen.set(true);
+        this.isDashboardOpen.set(false);
+      } else {
+        this.isDashboardOpen.set(false);
+        this.isDeviceAuthModalOpen.set(false);
+      }
+    }
   }
 
   onDiscoverFeatures() {
@@ -262,6 +583,21 @@ export class App implements AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscapeKey() {
+    if (this.isDeviceAuthModalOpen()) {
+      this.closeDeviceAuthModal();
+      return;
+    }
+    if (this.isDashboardOpen()) {
+      if (this.deviceDropdownOpen() || this.connectionDropdownOpen() || this.dataSourceDropdownOpen() || this.aiResponse()) {
+        this.deviceDropdownOpen.set(false);
+        this.connectionDropdownOpen.set(false);
+        this.dataSourceDropdownOpen.set(false);
+        this.aiResponse.set('');
+      } else {
+        this.closeDashboard();
+      }
+      return;
+    }
     if (this.showProfileDropdown()) {
       this.closeProfileDropdown();
     }
@@ -647,10 +983,19 @@ this.closeLoginModal();
     if (isPlatformBrowser(this.platformId)) {
       this.preloadFrames();
       this.updateFeaturesScale();
+      this.updateDashboardScale();
       this.initInfinityParticleSystem();
+
+      if (window.location.pathname.includes('dashboard')) {
+        this.openDashboard();
+      } else if (window.location.pathname.includes('device-login')) {
+        this.openDeviceAuthModal();
+      }
+
       this.resizeListener = () => {
         this.drawFrame(this.currentFrame);
         this.updateFeaturesScale();
+        this.updateDashboardScale();
       };
       window.addEventListener('resize', this.resizeListener);
     }
@@ -673,6 +1018,12 @@ this.closeLoginModal();
     }
     if (this.resizeListener) {
       window.removeEventListener('resize', this.resizeListener);
+    }
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
     }
     this.destroyInfinityParticleSystem();
   }
