@@ -4457,7 +4457,10 @@
 /* =========================================================================
    DEVICE CREDENTIALS REDIRECT PAGE (BACKGROUND: background.jpg FIT FULLY)
    ========================================================================= */
-.device-auth-modal-backdrop {
+/* =========================================================================
+   DEVICE ACCESS PAGE (EXACT 16:9 MATCH TO device access page.png)
+   ========================================================================= */
+.device-access-viewport {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -4467,21 +4470,27 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #030712;
+  background-color: #020610;
   animation: authBackdropFade 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 24px;
-  box-sizing: border-box;
 }
 
-/* Full background landscape image from assets/device access page.png */
-.device-access-page-bg {
+.device-access-stage {
+  position: relative;
+  width: 1672px;
+  height: 941px;
+  transform: scale(min(calc(100vw / 1672), calc(100vh / 941)));
+  transform-origin: center center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.95);
+}
+
+.device-access-stage-img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
-  z-index: 1;
+  display: block;
   pointer-events: none;
   user-select: none;
 }
@@ -4495,8 +4504,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(8, 16, 28, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(8, 16, 28, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   padding: 8px 18px;
   color: #e2e8f0;
@@ -4506,7 +4515,7 @@
   cursor: pointer;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
   transition: all 0.25s ease;
 
   svg {
@@ -4516,8 +4525,8 @@
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.45);
     color: #ffffff;
     transform: translateX(-2px);
 
@@ -4532,77 +4541,48 @@
   to { opacity: 1; }
 }
 
-/* Center Access Box matching device access page.png */
-.device-access-card {
-  position: relative;
-  z-index: 10;
-  width: 100%;
-  max-width: 440px;
-  background: rgba(10, 16, 26, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
-  padding: 38px 34px 32px 34px;
-  box-shadow: 
-    0 24px 60px rgba(0, 0, 0, 0.75),
-    0 0 40px rgba(0, 100, 255, 0.15);
+/* Interactive hotspots on 1672x941 stage */
+.stage-field-hotspot {
+  position: absolute;
+  left: 616px;
+  width: 440px;
+  border-radius: 12px;
   box-sizing: border-box;
-  animation: authCardScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes authCardScaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.92) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.device-access-title {
-  margin: 0 0 28px 0;
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: -0.3px;
-  font-family: inherit;
-}
-
-.device-access-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Input field card container */
-.device-access-field {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
   padding: 8px 16px;
-  min-height: 58px;
-  box-sizing: border-box;
-  transition: all 0.25s ease;
+  gap: 14px;
+  background: rgba(10, 16, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  z-index: 5;
+
+  &.stage-field-device {
+    top: 428px;
+    height: 60px;
+  }
+
+  &.stage-field-serial {
+    top: 520px;
+    height: 65px;
+  }
 
   &:focus-within {
     border-color: #3b82f6;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
+    background: rgba(12, 20, 32, 0.95);
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
 
-    .field-icon-wrap svg {
+    .stage-field-icon svg {
       color: #60a5fa;
     }
   }
+
+  &.has-value {
+    background: rgba(10, 16, 26, 0.94);
+  }
 }
 
-.field-icon-wrap {
+.stage-field-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4612,11 +4592,11 @@
     width: 20px;
     height: 20px;
     color: #94a3b8;
-    transition: color 0.25s ease;
+    transition: color 0.2s ease;
   }
 }
 
-.field-content-wrap {
+.stage-field-content {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -4624,17 +4604,16 @@
   min-width: 0;
 }
 
-.field-mini-label {
+.stage-field-label {
   font-size: 11px;
   font-weight: 500;
   color: #94a3b8;
   line-height: 1.2;
   margin-bottom: 2px;
-  cursor: pointer;
   user-select: none;
 }
 
-.field-input-control {
+.stage-field-input {
   width: 100%;
   background: transparent;
   border: none;
@@ -4653,67 +4632,31 @@
   }
 }
 
-/* Alert Boxes */
-.auth-alert-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.4;
-  animation: alertFadeIn 0.25s ease;
-
-  svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-}
-
-@keyframes alertFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.auth-alert-error {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
-
-  svg { color: #ef4444; }
-}
-
-.auth-alert-success {
-  background: rgba(34, 197, 94, 0.14);
-  border: 1px solid rgba(34, 197, 94, 0.55);
-  color: #86efac;
-
-  svg { color: #22c55e; }
-}
-
-/* Action button: Access device (Vibrant royal blue matching device access page.png) */
-.btn-access-device {
-  width: 100%;
-  height: 50px;
-  background: #1a73e8;
+/* Action button hotspot: x: 616, y: 614, w: 440, h: 68 */
+.stage-btn-access {
+  position: absolute;
+  left: 616px;
+  top: 614px;
+  width: 440px;
+  height: 68px;
+  background: linear-gradient(180deg, #1d6ee8 0%, #155ac5 100%);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: #ffffff;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 6px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 18px rgba(26, 115, 232, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 18px rgba(26, 115, 232, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 5;
 
   &:hover:not(:disabled) {
-    background: #1557b0;
-    box-shadow: 0 6px 22px rgba(26, 115, 232, 0.65);
+    background: linear-gradient(180deg, #2579f5 0%, #1764d8 100%);
+    box-shadow: 0 6px 24px rgba(26, 115, 232, 0.65);
     transform: translateY(-1px);
   }
 
@@ -4722,22 +4665,69 @@
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.7;
     cursor: not-allowed;
   }
 }
 
-/* Demo Credentials Helper */
-.auth-demo-helper {
+/* Stage Alert Messages */
+.stage-auth-alert {
+  position: absolute;
+  left: 616px;
+  top: 694px;
+  width: 440px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
   display: flex;
   align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  z-index: 6;
+  animation: alertFadeIn 0.25s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  &.stage-alert-error {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    color: #fca5a5;
+    svg { color: #ef4444; }
+  }
+
+  &.stage-alert-success {
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid rgba(34, 197, 94, 0.6);
+    color: #86efac;
+    svg { color: #22c55e; }
+  }
+}
+
+@keyframes alertFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Demo presets bar below the card */
+.stage-demo-presets {
+  position: absolute;
+  left: 616px;
+  top: 748px;
+  width: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 4px;
+  z-index: 6;
 
   .demo-lbl {
-    color: #64748b;
-    font-size: 11px;
+    color: #94a3b8;
+    font-size: 12px;
     font-weight: 500;
   }
 
@@ -4745,15 +4735,15 @@
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 999px;
-    padding: 3px 10px;
+    padding: 3px 12px;
     color: #93c5fd;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      background: rgba(59, 130, 246, 0.25);
+      background: rgba(59, 130, 246, 0.3);
       border-color: #3b82f6;
       color: #ffffff;
       box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
