@@ -1,4 +1,4 @@
-<div class="viewport-wrapper" (scroll)="onElementScroll($event)">
+<div class="viewport-wrapper" [class.app-screen-locked]="isDeviceAuthModalOpen() || isDashboardOpen()" (scroll)="onElementScroll($event)">
 
   <!-- ===== HOME HERO SECTION ===== -->
   <section class="home-hero-section">
@@ -788,107 +788,6 @@
       </div>
 
     </div>
-
-    <!-- ===== DEVICE ACCESS PAGE (EXACT MATCH TO device access page.png) ===== -->
-    <div class="device-access-viewport" *ngIf="isDeviceAuthModalOpen()" (click)="closeDeviceAuthModal()">
-      <!-- Back to Features Button -->
-      <button type="button" class="auth-page-back-btn" (click)="closeDeviceAuthModal()" title="Back to Features">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        <span>Back to Features</span>
-      </button>
-
-      <!-- 16:9 Scaled Stage (1672 x 941) matching device access page.png -->
-      <div class="device-access-stage" (click)="$event.stopPropagation()">
-        <!-- Master reference background image (pure background without baked-in card) -->
-        <img src="assets/device access page (2).png" 
-             alt="Device Access Page" 
-             class="device-access-stage-img" />
-
-        <!-- Clean, Smooth Device Access Card covering the image's card exactly -->
-        <div class="device-access-card">
-          <h2 class="dac-title">Access your device</h2>
-
-          <form class="dac-form" (ngSubmit)="verifyDeviceCredentials()">
-            <!-- Field 1: Device ID -->
-            <div class="dac-field" [class.has-value]="authDeviceId()">
-              <div class="dac-field-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-              </div>
-              <div class="dac-field-content">
-                <span class="dac-field-label">Device ID</span>
-                <input type="text"
-                       class="dac-field-input"
-                       name="deviceId"
-                       [ngModel]="authDeviceId()"
-                       (ngModelChange)="authDeviceId.set($event)"
-                       placeholder="Enter your device ID"
-                       autocomplete="off" />
-              </div>
-            </div>
-
-            <!-- Field 2: Serial number -->
-            <div class="dac-field" [class.has-value]="authSerialNumber()">
-              <div class="dac-field-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                </svg>
-              </div>
-              <div class="dac-field-content">
-                <span class="dac-field-label">Serial number</span>
-                <input type="text"
-                       class="dac-field-input"
-                       name="serialNumber"
-                       [ngModel]="authSerialNumber()"
-                       (ngModelChange)="authSerialNumber.set($event)"
-                       placeholder="Enter your serial number"
-                       autocomplete="off" />
-              </div>
-            </div>
-
-            <!-- Access device Button -->
-            <button type="submit" class="dac-btn-access" [disabled]="isAuthVerifying()">
-              <span *ngIf="!isAuthVerifying()">Access device</span>
-              <span *ngIf="isAuthVerifying()">Accessing device...</span>
-            </button>
-
-            <!-- Error Alert Banner -->
-            <div class="dac-auth-alert dac-alert-error" *ngIf="authErrorMessage()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>{{ authErrorMessage() }}</span>
-            </div>
-
-            <!-- Success Alert Banner -->
-            <div class="dac-auth-alert dac-alert-success" *ngIf="authSuccessMessage()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              <span>{{ authSuccessMessage() }}</span>
-            </div>
-          </form>
-        </div>
-
-        <!-- Demo Presets Bar -->
-        <div class="stage-demo-presets">
-          <span class="demo-lbl">Demo presets:</span>
-          <button type="button" class="demo-chip" (click)="fillDemoCredentials(1)">halo1200-1</button>
-          <button type="button" class="demo-chip" (click)="fillDemoCredentials(2)">halo1200-2</button>
-          <button type="button" class="demo-chip" (click)="fillDemoCredentials(10)">halo1200-10</button>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- ===== INFINITY ENERGY SECTION (16:9) ===== -->
@@ -1498,185 +1397,380 @@
 
 </div>
 
-<!-- ===== FULLSCREEN DASHBOARD PAGE (EXACT SAME AS FEATURES CLICK DASHBOARD PAGE.png) ===== -->
+<!-- ===== FULLSCREEN DEVICE ACCESS PAGE ===== -->
+<div class="device-access-viewport" *ngIf="isDeviceAuthModalOpen()" (wheel)="$event.preventDefault()" (touchmove)="$event.preventDefault()">
+  <!-- Back to Features Button -->
+  <button type="button" class="auth-page-back-btn" (click)="closeDeviceAuthModal()" title="Back to Features">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    <span>Back to Features</span>
+  </button>
+
+  <!-- 16:9 Scaled Stage (1672 x 941) matching device access page (2).png -->
+  <div class="device-access-stage">
+    <!-- Master reference background image (pure background without baked-in card) -->
+    <img src="assets/device access page (2).png" 
+         alt="Device Access Page" 
+         class="device-access-stage-img" />
+
+    <!-- Clean, Sleek Device Access Card (compact/smaller size, perfectly centered) -->
+    <div class="device-access-card" (click)="$event.stopPropagation()">
+      <h2 class="dac-title">Access your device</h2>
+
+      <form class="dac-form" (ngSubmit)="verifyDeviceCredentials()">
+        <!-- Field 1: Device ID -->
+        <div class="dac-field" [class.has-value]="authDeviceId()">
+          <div class="dac-field-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <div class="dac-field-content">
+            <span class="dac-field-label">Device ID</span>
+            <input type="text"
+                   class="dac-field-input"
+                   name="deviceId"
+                   [ngModel]="authDeviceId()"
+                   (ngModelChange)="authDeviceId.set($event)"
+                   placeholder="Enter your device ID"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Field 2: Serial number -->
+        <div class="dac-field" [class.has-value]="authSerialNumber()">
+          <div class="dac-field-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+          </div>
+          <div class="dac-field-content">
+            <span class="dac-field-label">Serial number</span>
+            <input type="text"
+                   class="dac-field-input"
+                   name="serialNumber"
+                   [ngModel]="authSerialNumber()"
+                   (ngModelChange)="authSerialNumber.set($event)"
+                   placeholder="Enter your serial number"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Access device Button -->
+        <button type="submit" class="dac-btn-access" [disabled]="isAuthVerifying()">
+          <span *ngIf="!isAuthVerifying()">Access device</span>
+          <span *ngIf="isAuthVerifying()">Accessing device...</span>
+        </button>
+
+        <!-- Error Alert Banner -->
+        <div class="dac-auth-alert dac-alert-error" *ngIf="authErrorMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ authErrorMessage() }}</span>
+        </div>
+
+        <!-- Success Alert Banner -->
+        <div class="dac-auth-alert dac-alert-success" *ngIf="authSuccessMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>{{ authSuccessMessage() }}</span>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FULLSCREEN DASHBOARD PAGE (EXACT SAME AS REFERENCE IMAGE) ===== -->
 <div class="dashboard-fullscreen-page" *ngIf="isDashboardOpen()" [class.active]="isDashboardOpen()">
 
-  <!-- Top Navigation Bar -->
-  <header class="dashboard-top-nav">
-    <button type="button" class="dashboard-back-btn" (click)="closeDashboard()" title="Back to Features (Esc)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      <span>Back to Features</span>
-    </button>
+  <!-- Outer Dashboard App Frame -->
+  <div class="dash-app-window">
 
-    <div class="dashboard-nav-center">
-      <div class="telemetry-live-badge">
-        <span class="live-dot"></span>
-        <span>LIVE TELEMETRY STREAM &bull; HYKON HALO 1200</span>
+    <!-- 1. Left Vertical Icon Sidebar -->
+    <aside class="dash-left-rail">
+      <!-- Top Neon Mint Spark / Bolt Logo -->
+      <div class="dash-rail-top">
+        <div class="dash-rail-brand" title="HYKON Fleet Intelligence">
+          <img src="assets/dash-bolt-logo.png" alt="Logo" class="dash-brand-img" />
+        </div>
       </div>
+
+      <!-- Center Floating Home Button (Returns to Main Website) -->
+      <div class="dash-rail-center">
+        <button type="button" class="dash-rail-home-btn" (click)="closeDashboard()" title="Return to Website / Features (Esc)">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom space -->
+      <div class="dash-rail-bottom"></div>
+    </aside>
+
+    <!-- 2. Main Dashboard Content Container -->
+    <main class="dash-main-container">
+
+      <!-- Top Header Navigation Bar -->
+      <header class="dash-header">
+        <div class="dash-header-left">
+          <h1 class="dash-greeting">Hello, user</h1>
+        </div>
+
+        <nav class="dash-header-nav">
+          <button type="button" 
+                  class="dash-nav-link" 
+                  [class.active]="activeDashboardNav() === 'overview'"
+                  (click)="setDashboardNav('overview')">
+            <span>Overview</span>
+            <span class="nav-active-pill" *ngIf="activeDashboardNav() === 'overview'"></span>
+          </button>
+          <button type="button" 
+                  class="dash-nav-link" 
+                  [class.active]="activeDashboardNav() === 'systems'"
+                  (click)="setDashboardNav('systems')">
+            <span>Systems</span>
+            <span class="nav-active-pill" *ngIf="activeDashboardNav() === 'systems'"></span>
+          </button>
+          <button type="button" 
+                  class="dash-nav-link" 
+                  [class.active]="activeDashboardNav() === 'accounts'"
+                  (click)="setDashboardNav('accounts')">
+            <span>Accounts</span>
+            <span class="nav-active-pill" *ngIf="activeDashboardNav() === 'accounts'"></span>
+          </button>
+          <button type="button" 
+                  class="dash-nav-link" 
+                  [class.active]="activeDashboardNav() === 'alerts'"
+                  (click)="setDashboardNav('alerts')">
+            <span>Alerts</span>
+            <span class="nav-active-pill" *ngIf="activeDashboardNav() === 'alerts'"></span>
+          </button>
+        </nav>
+
+        <div class="dash-header-right">
+          <!-- Notification Bell -->
+          <button type="button" class="dash-bell-btn" (click)="showDashboardToast('Notifications: 3 systems require inspection')" title="Alerts & Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+          </button>
+
+          <!-- User Avatar -->
+          <div class="dash-user-avatar" title="User Profile">
+            <img src="assets/dash-avatar.png" alt="User Profile" />
+          </div>
+
+          <!-- Quick Return Button -->
+          <button type="button" class="dash-quick-close-btn" (click)="closeDashboard()" title="Back to Features">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dashboard Body: Two-Column Layout -->
+      <div class="dash-grid-layout">
+
+        <!-- ===== LEFT COLUMN: CIRCULAR SYSTEMS HEALTH GAUGE & FLEET SUMMARY ===== -->
+        <section class="dash-col-left">
+
+          <!-- Circular Orbit Gauge -->
+          <div class="dash-gauge-wrapper">
+            <div class="dash-orbit-ring">
+              <!-- Orbit Track Labels -->
+              <span class="orbit-lbl orbit-lbl-top">SYSTEMS</span>
+              <span class="orbit-lbl orbit-lbl-right">STATUS</span>
+              <span class="orbit-lbl orbit-lbl-bottom">LOCATIONS</span>
+
+              <!-- Particle Nebula Background Art -->
+              <div class="dash-particle-nebula">
+                <img src="assets/dash-gauge-art.png" alt="Systems Healthy Nebula" class="nebula-art-img" />
+              </div>
+
+              <!-- Raised 3D Center Dial -->
+              <div class="dash-dial-core">
+                <span class="dial-percent">93.3%</span>
+                <span class="dial-caption">Systems healthy</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fleet Summary Headline -->
+          <div class="dash-fleet-summary">
+            <span class="fleet-summary-label">Fleet summary</span>
+            <h2 class="fleet-summary-heading">
+              112 systems healthy.<br>
+              3 need your attention.
+            </h2>
+          </div>
+
+        </section>
+
+        <!-- ===== RIGHT COLUMN: 2x2 TELEMETRY CARDS + BOTTOM ACTION BAR ===== -->
+        <section class="dash-col-right">
+
+          <div class="dash-cards-grid">
+
+            <!-- Card 1: Total Systems (Top Left) -->
+            <div class="dash-card dash-card-totals">
+              <span class="card-meta-lbl">Total systems</span>
+              <div class="card-hero-num">120</div>
+              
+              <!-- Pulse Wave & Equalizer Visualizer -->
+              <div class="card-visual-wave">
+                <svg class="pulse-wave-svg" viewBox="0 0 230 48" fill="none" preserveAspectRatio="none">
+                  <!-- Equalizer Bars -->
+                  <line x1="12" y1="36" x2="12" y2="24" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="19" y1="38" x2="19" y2="19" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="26" y1="44" x2="26" y2="10" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="33" y1="36" x2="33" y2="18" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="40" y1="34" x2="40" y2="22" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="47" y1="39" x2="47" y2="15" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="54" y1="33" x2="54" y2="21" stroke="#00f5a0" stroke-width="2.5" stroke-linecap="round"/>
+                  <!-- Connecting Organic Wave Path -->
+                  <path d="M 54 26 C 72 13, 85 41, 108 23 C 130 9, 150 33, 172 23 C 185 18, 195 28, 206 28" 
+                        stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.85"/>
+                  <!-- Glowing Pulse Dot -->
+                  <circle cx="206" cy="28" r="9" fill="#00f5a0" opacity="0.28"/>
+                  <circle cx="206" cy="28" r="4.5" fill="#00f5a0"/>
+                </svg>
+              </div>
+
+              <span class="card-footer-lbl">Across 3 locations</span>
+            </div>
+
+            <!-- Card 2: Healthy (Top Right) -->
+            <div class="dash-card dash-card-healthy">
+              <span class="card-meta-lbl">Healthy</span>
+              <div class="card-hero-num">112</div>
+
+              <!-- Digital Matrix / Morse LED Visualizer -->
+              <div class="card-visual-matrix">
+                <svg class="digital-matrix-svg" viewBox="0 0 200 42" fill="none">
+                  <!-- Row 1 -->
+                  <circle cx="16" cy="8" r="2.5" fill="#00f5a0" />
+                  <circle cx="30" cy="8" r="2.5" fill="#ffffff" opacity="0.6"/>
+                  <rect x="42" y="6" width="16" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="68" cy="8" r="2.5" fill="#00f5a0" />
+                  <rect x="80" y="6" width="30" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="120" cy="8" r="2.5" fill="#ffffff" opacity="0.6"/>
+                  <rect x="132" y="6" width="10" height="4.5" rx="2.2" fill="#00f5a0" />
+
+                  <!-- Row 2 -->
+                  <rect x="10" y="20" width="14" height="4.5" rx="2.2" fill="#ffffff" opacity="0.8"/>
+                  <circle cx="34" cy="22" r="2.5" fill="#00f5a0" />
+                  <rect x="44" y="20" width="22" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="76" cy="22" r="2.5" fill="#ffffff" opacity="0.5"/>
+                  <rect x="88" y="20" width="34" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="132" cy="22" r="2.5" fill="#00f5a0" />
+                  <rect x="142" y="20" width="16" height="4.5" rx="2.2" fill="#ffffff" opacity="0.8"/>
+
+                  <!-- Row 3 -->
+                  <circle cx="22" cy="34" r="2.5" fill="#00f5a0" />
+                  <rect x="34" y="32" width="12" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="56" cy="34" r="2.5" fill="#ffffff" opacity="0.6"/>
+                  <rect x="68" y="32" width="18" height="4.5" rx="2.2" fill="#00f5a0" />
+                  <circle cx="96" cy="34" r="2.5" fill="#00f5a0" />
+                  <rect x="108" y="32" width="12" height="4.5" rx="2.2" fill="#00f5a0" />
+                </svg>
+              </div>
+
+              <span class="card-footer-lbl">Operating normally</span>
+            </div>
+
+            <!-- Card 3: Needs Attention (Bottom Left) -->
+            <div class="dash-card dash-card-attention">
+              <span class="card-meta-lbl">Needs attention</span>
+              <div class="card-hero-num">3</div>
+
+              <!-- Alert Item List -->
+              <div class="dash-alert-list">
+                <div class="dash-alert-item">
+                  <span class="dash-alert-dot"></span>
+                  <span class="dash-alert-id">UPS-014</span>
+                  <span class="dash-alert-sep">&middot;</span>
+                  <span class="dash-alert-text">High load</span>
+                </div>
+                <div class="dash-alert-item">
+                  <span class="dash-alert-dot"></span>
+                  <span class="dash-alert-id">INV-032</span>
+                  <span class="dash-alert-sep">&middot;</span>
+                  <span class="dash-alert-text">Low battery</span>
+                </div>
+                <div class="dash-alert-item">
+                  <span class="dash-alert-dot"></span>
+                  <span class="dash-alert-id">UPS-087</span>
+                  <span class="dash-alert-sep">&middot;</span>
+                  <span class="dash-alert-text">Battery check due</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Offline (Bottom Right) -->
+            <div class="dash-card dash-card-offline">
+              <span class="card-meta-lbl">Offline</span>
+              <div class="card-hero-num">5</div>
+
+              <!-- 3D Hardware Inverter Unit Display -->
+              <div class="dash-inverter-showcase">
+                <img src="assets/dash-inverter.png" alt="Inverter Hardware Unit" class="dash-inverter-img" />
+              </div>
+
+              <span class="card-footer-lbl">Check connectivity</span>
+            </div>
+
+          </div>
+
+          <!-- Bottom Footer Action Bar -->
+          <footer class="dash-footer-bar">
+            <div class="dash-footer-text">
+              <span>5 systems are offline. Review their connection status.</span>
+            </div>
+
+            <div class="dash-footer-actions">
+              <button type="button" class="dash-btn-sample" (click)="toggleSampleData()">
+                <span>Sample data</span>
+              </button>
+              <button type="button" class="dash-btn-view" (click)="viewAllSystems()">
+                <span>View systems</span>
+              </button>
+            </div>
+          </footer>
+
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- Botanical Foliage Accent at Bottom-Right -->
+    <div class="dash-foliage-accent">
+      <img src="assets/dash-leaves.png" alt="" class="dash-foliage-img" />
     </div>
 
-    <div class="dashboard-nav-right">
-      <div class="dashboard-clock">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <span>{{ dashboardClock() }}</span>
-      </div>
-      <button type="button" class="dashboard-close-btn" (click)="closeDashboard()" aria-label="Close dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-  </header>
+  </div>
 
-  <!-- Live Toast Notification -->
-  <div class="dashboard-toast" *ngIf="dashboardToast()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="12 6 12 12 14 14"></polyline>
+  <!-- Realtime Toast Banner -->
+  <div class="dash-toast-notification" *ngIf="dashboardToast()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#00f5a0" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
     </svg>
     <span>{{ dashboardToast() }}</span>
   </div>
 
-  <!-- Scaled 1376x768 Stage Viewport -->
-  <div class="dashboard-stage-viewport" (click)="deviceDropdownOpen.set(false); connectionDropdownOpen.set(false); dataSourceDropdownOpen.set(false)">
-    <div class="dashboard-stage">
-
-
-      <!-- Holographic Cyber Glow Ring around Globe -->
-      <div class="dash-globe-ambient-ring"></div>
-
-      <!-- 1. Header Selectors -->
-      <!-- Device Dropdown -->
-      <div class="dash-hotspot dash-select-device"
-           [class.active]="deviceDropdownOpen()"
-           (click)="toggleDeviceDropdown($event)"
-           title="Switch Device">
-        <span class="hotspot-text">Device: <span class="hotspot-val">{{ activeDashboardDevice() }}</span></span>
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        <div class="dash-dropdown-menu" *ngIf="deviceDropdownOpen()" (click)="$event.stopPropagation()">
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HALO 1200'" (click)="selectDevice('HALO 1200')">HALO 1200 (Active)</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HALO 3000'" (click)="selectDevice('HALO 3000')">HALO 3000 (3kVA)</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDevice() === 'HY-X5000'" (click)="selectDevice('HY-X5000')">HY-X5000 (Commercial)</button>
-        </div>
-      </div>
-
-      <!-- Connection Dropdown -->
-      <div class="dash-hotspot dash-select-conn"
-           [class.active]="connectionDropdownOpen()"
-           (click)="toggleConnectionDropdown($event)"
-           title="Connection Protocol">
-        <span class="hotspot-text">Connection: <span class="hotspot-val">{{ activeDashboardConnection() }}</span></span>
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        <div class="dash-dropdown-menu" *ngIf="connectionDropdownOpen()" (click)="$event.stopPropagation()">
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Live IoT'" (click)="selectConnection('Live IoT')">Live IoT (Connected)</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Cloud MQTT'" (click)="selectConnection('Cloud MQTT')">Cloud MQTT Broker</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardConnection() === 'Bluetooth BLE'" (click)="selectConnection('Bluetooth BLE')">Direct Bluetooth BLE</button>
-        </div>
-      </div>
-
-      <!-- Data Source Dropdown -->
-      <div class="dash-hotspot dash-select-source"
-           [class.active]="dataSourceDropdownOpen()"
-           (click)="toggleDataSourceDropdown($event)"
-           title="Telemetry Source">
-        <span class="hotspot-text">Data Source: <span class="hotspot-val">{{ activeDashboardDataSource() }}</span></span>
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        <div class="dash-dropdown-menu" *ngIf="dataSourceDropdownOpen()" (click)="$event.stopPropagation()">
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'Inverter Physical'" (click)="selectDataSource('Inverter Physical')">Inverter Physical (RS485)</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'CAN Telemetry'" (click)="selectDataSource('CAN Telemetry')">CAN Bus Controller</button>
-          <button type="button" class="dash-dropdown-item" [class.selected]="activeDashboardDataSource() === 'Simulated Feed'" (click)="selectDataSource('Simulated Feed')">Diagnostic Simulator</button>
-        </div>
-      </div>
-
-      <!-- 2. Left Sidebar Navigation -->
-      <div class="dash-sidebar-nav">
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'dashboard'" (click)="selectSidebarTab('dashboard')" title="Dashboard Overview">
-          <span class="dash-side-tooltip">Dashboard</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'alerts'" (click)="selectSidebarTab('alerts')" title="Fault & Warning Alerts">
-          <span class="dash-side-tooltip">System Alerts</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'battery'" (click)="selectSidebarTab('battery')" title="Battery & Grid Telemetry">
-          <span class="dash-side-tooltip">Battery Telemetry</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'protections'" (click)="selectSidebarTab('protections')" title="Protection Modules">
-          <span class="dash-side-tooltip">Protections</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'users'" (click)="selectSidebarTab('users')" title="Fleet Management">
-          <span class="dash-side-tooltip">Users & Fleet</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'cloud'" (click)="selectSidebarTab('cloud')" title="Cloud Sync">
-          <span class="dash-side-tooltip">Cloud Sync</span>
-        </button>
-        <button type="button" class="dash-side-btn" [class.active]="activeSidebarTab() === 'settings'" (click)="selectSidebarTab('settings')" title="Device Settings">
-          <span class="dash-side-tooltip">Settings</span>
-        </button>
-        <button type="button" class="dash-side-hykon-btn" (click)="closeDashboard()" title="Return to Main Website">
-          <span class="dash-side-tooltip">Return to Website</span>
-        </button>
-      </div>
-
-      <!-- 3. Refresh Buttons on Cards -->
-      <button type="button" class="dash-card-refresh dash-refresh-power" (click)="triggerRefresh('Power', $event)" title="Refresh Power Telemetry"></button>
-      <button type="button" class="dash-card-refresh dash-refresh-voltage" (click)="triggerRefresh('Voltage', $event)" title="Refresh Voltage Stats"></button>
-      <button type="button" class="dash-card-refresh dash-refresh-current" (click)="triggerRefresh('Current', $event)" title="Refresh Current Feed"></button>
-      <button type="button" class="dash-card-refresh dash-refresh-mode" (click)="triggerRefresh('Inverter Mode', $event)" title="Refresh Inverter Mode"></button>
-      <button type="button" class="dash-card-refresh dash-refresh-battery" (click)="triggerRefresh('Battery', $event)" title="Refresh Battery Telemetry"></button>
-      <button type="button" class="dash-card-refresh dash-refresh-protections" (click)="triggerRefresh('Protections', $event)" title="Check System Protections"></button>
-
-      <!-- 4. Interactive AI Assistant Bar -->
-      <div class="dash-ai-bar" (click)="$event.stopPropagation()">
-        <div class="dash-ai-input-wrap">
-          <svg class="ai-sparkle-icon" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2">
-            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/>
-          </svg>
-          <input type="text"
-                 class="dash-ai-input"
-                 [(ngModel)]="aiQuestion"
-                 (keydown.enter)="submitAiQuery()"
-                 placeholder="Ask AI Assistant about HALO 1200 status..." />
-        </div>
-        <div class="dash-ai-status" (click)="submitAiQuery()">
-          <span class="status-pulse-dot"></span>
-          <span class="status-text">System Operational</span>
-        </div>
-        <button type="button" class="dash-ai-send-btn" (click)="submitAiQuery()" title="Send Telemetry Query">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
-        </button>
-      </div>
-
-      <!-- AI Telemetry Dialog / Popup -->
-      <div class="dash-ai-popup" *ngIf="aiResponse()" (click)="$event.stopPropagation()">
-        <div class="ai-popup-header">
-          <div class="ai-popup-title">
-            <span class="ai-chip">HALO AI</span>
-            <span>Live Telemetry Response</span>
-          </div>
-          <button type="button" class="ai-popup-close" (click)="closeAiPopup()">✕</button>
-        </div>
-        <div class="ai-popup-content">
-          <p>{{ aiResponse() }}</p>
-        </div>
-        <div class="ai-popup-suggestions">
-          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('What is the battery health?')">Battery Health</button>
-          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('How long will backup last?')">Backup Runtime</button>
-          <button type="button" class="ai-sugg-pill" (click)="askPresetQuery('Check grid status')">Grid Status</button>
-        </div>
-      </div>
-
-      <!-- 5. Interactive Status Pills -->
-      <div class="dash-interactive-hotspot dash-hotspot-ups" (click)="toggleUpsMode($event)" title="Active: UPS Mode (Li-Ion Battery Backup)"></div>
-      <div class="dash-interactive-hotspot dash-hotspot-wifi" (click)="checkWifiStatus($event)" title="Wi-Fi Signal: Connected 100% (-42 dBm)"></div>
-
-    </div>
-  </div>
 </div>

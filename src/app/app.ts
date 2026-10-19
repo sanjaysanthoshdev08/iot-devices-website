@@ -138,6 +138,8 @@ export class App implements AfterViewInit, OnDestroy {
   aiQuestion = signal<string>('');
   aiResponse = signal<string>('');
   activeSidebarTab = signal<string>('dashboard');
+  activeDashboardNav = signal<'overview' | 'systems' | 'accounts' | 'alerts'>('overview');
+  dashboardSampleDataActive = signal<boolean>(false);
   dashboardClock = signal<string>('12:00:00');
   private clockInterval: any = null;
   private toastTimer: any = null;
@@ -355,6 +357,21 @@ export class App implements AfterViewInit, OnDestroy {
         }
       }, 50);
     }
+  }
+
+  setDashboardNav(tab: 'overview' | 'systems' | 'accounts' | 'alerts') {
+    this.activeDashboardNav.set(tab);
+    this.showDashboardToast(`Navigated to ${tab.toUpperCase()} telemetry tab`);
+  }
+
+  toggleSampleData() {
+    this.dashboardSampleDataActive.update(v => !v);
+    this.showDashboardToast(this.dashboardSampleDataActive() ? 'Sample dataset loaded (120 online systems)' : 'Live telemetry stream active');
+  }
+
+  viewAllSystems() {
+    this.setDashboardNav('systems');
+    this.showDashboardToast('Showing all 120 deployed system units across 3 locations');
   }
 
   updateDashboardScale() {
