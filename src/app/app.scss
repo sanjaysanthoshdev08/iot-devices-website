@@ -4757,11 +4757,11 @@
   width: 100vw;
   height: 100vh;
   z-index: 999999;
-  background: #080a0f;
+  background: #0d0f14;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
   box-sizing: border-box;
   overflow: hidden;
   user-select: none;
@@ -4784,20 +4784,15 @@
   }
 }
 
-/* Outer Framed Tablet / App Window */
+/* Full-screen Dashboard Frame — no card, no border, fills entire viewport */
 .dash-app-window {
   position: relative;
   width: 100%;
-  max-width: 1240px;
-  height: 94vh;
-  max-height: 700px;
-  background: #0e1117;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 35px 80px rgba(0, 0, 0, 0.95),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  height: 100%;
+  background: #0d0f14;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
   display: flex;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -4812,9 +4807,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
-  background: #0c0e13;
+  padding: 28px 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0d0f14;
   z-index: 10;
 
   .dash-rail-top {
@@ -4834,7 +4829,7 @@
       width: 26px;
       height: 26px;
       object-fit: contain;
-      filter: drop-shadow(0 0 8px rgba(0, 245, 160, 0.45));
+      filter: drop-shadow(0 0 8px rgba(79, 156, 249, 0.45));
     }
   }
 
@@ -4848,10 +4843,10 @@
     width: 46px;
     height: 46px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #183328, #0e1d17);
-    border: 1px solid rgba(0, 245, 160, 0.4);
+    background: radial-gradient(circle at 35% 35%, #0d2040, #071428);
+    border: 1px solid rgba(79, 156, 249, 0.4);
     box-shadow: 
-      0 0 18px rgba(0, 245, 160, 0.3),
+      0 0 18px rgba(79, 156, 249, 0.3),
       inset 0 1px 2px rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
@@ -4862,15 +4857,15 @@
     svg {
       width: 20px;
       height: 20px;
-      color: #00f5a0;
+      color: #4f9cf9;
       transition: transform 0.2s ease;
     }
 
     &:hover {
       transform: scale(1.08);
-      border-color: #00f5a0;
+      border-color: #4f9cf9;
       box-shadow: 
-        0 0 24px rgba(0, 245, 160, 0.55),
+        0 0 24px rgba(79, 156, 249, 0.55),
         inset 0 1px 3px rgba(255, 255, 255, 0.35);
 
       svg {
@@ -4894,7 +4889,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px 34px 22px 32px;
+  padding: 28px 48px 28px 40px;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -4959,8 +4954,8 @@
         width: 22px;
         height: 3px;
         border-radius: 2px;
-        background: #00f5a0;
-        box-shadow: 0 0 10px #00f5a0;
+        background: #4f9cf9;
+        box-shadow: 0 0 10px #4f9cf9;
       }
 
       &:hover {
@@ -5010,20 +5005,29 @@
       height: 38px;
       border-radius: 50%;
       overflow: hidden;
-      border: 1.5px solid rgba(0, 245, 160, 0.45);
-      box-shadow: 0 0 12px rgba(0, 245, 160, 0.25);
+      border: 1.5px solid rgba(79, 156, 249, 0.5);
+      box-shadow: 0 0 12px rgba(79, 156, 249, 0.3);
       cursor: pointer;
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a4fa8, #2563eb);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+      .dash-avatar-initial {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0;
+        line-height: 1;
+        text-transform: uppercase;
+        pointer-events: none;
       }
 
       &:hover {
         transform: scale(1.06);
-        border-color: #00f5a0;
+        border-color: #4f9cf9;
+        box-shadow: 0 0 18px rgba(79, 156, 249, 0.55);
       }
     }
 
@@ -5059,10 +5063,11 @@
 /* Dashboard Body: Two-Column Layout */
 .dash-grid-layout {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: 30px;
+  grid-template-columns: 1fr 1.45fr;
+  gap: 52px;
   flex: 1;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
 }
 
 /* ===== LEFT COLUMN: CIRCULAR SYSTEMS HEALTH GAUGE & FLEET SUMMARY ===== */
@@ -5072,13 +5077,12 @@
   align-items: flex-start;
   justify-content: space-between;
   height: 100%;
-  min-height: 480px;
 
   .dash-gauge-wrapper {
     position: relative;
-    width: 340px;
-    height: 340px;
-    margin: 8px auto 14px;
+    width: 360px;
+    height: 360px;
+    margin: 0 auto 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5089,7 +5093,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    border: 1px solid rgba(0, 245, 160, 0.24);
+    border: 1px solid rgba(79, 156, 249, 0.24);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5101,7 +5105,7 @@
       font-weight: 600;
       color: #858f9f;
       text-transform: uppercase;
-      background: #0e1117;
+      background: #0d0f14;
       padding: 0 8px;
       z-index: 6;
       user-select: none;
@@ -5218,13 +5222,17 @@
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  min-height: 0;
 }
 
 .dash-cards-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: 16px;
+  flex: 1;
   margin-bottom: 18px;
+  min-height: 0;
 }
 
 .dash-card {
@@ -5235,14 +5243,14 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 196px;
+  min-height: 160px;
   position: relative;
   overflow: hidden;
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba(0, 245, 160, 0.24);
+    border-color: rgba(79, 156, 249, 0.24);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   }
 
@@ -5322,8 +5330,8 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #00f5a0;
-      box-shadow: 0 0 7px #00f5a0;
+      background: #4f9cf9;
+      box-shadow: 0 0 7px #4f9cf9;
       flex-shrink: 0;
     }
 
@@ -5418,21 +5426,21 @@
     }
 
     .dash-btn-view {
-      background: #00f5a0;
+      background: #2563eb;
       border: none;
-      color: #04120c;
+      color: #ffffff;
       border-radius: 9999px;
       padding: 10px 26px;
       font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+      box-shadow: 0 0 20px rgba(79, 156, 249, 0.4);
       transition: all 0.25s ease;
 
       &:hover {
-        background: #20ffad;
+        background: #4f9cf9;
         transform: translateY(-1px);
-        box-shadow: 0 0 28px rgba(0, 245, 160, 0.65);
+        box-shadow: 0 0 28px rgba(79, 156, 249, 0.65);
       }
 
       &:active {
@@ -5473,7 +5481,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: #141822;
-  border: 1px solid #00f5a0;
+  border: 1px solid #4f9cf9;
   color: #ffffff;
   padding: 12px 24px;
   border-radius: 9999px;
@@ -5484,7 +5492,7 @@
   font-weight: 500;
   box-shadow: 
     0 12px 32px rgba(0, 0, 0, 0.75),
-    0 0 16px rgba(0, 245, 160, 0.35);
+    0 0 16px rgba(79, 156, 249, 0.35);
   z-index: 1000000;
   animation: dashToastPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -5508,11 +5516,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
-  .dash-app-window {
-    height: 98vh;
-    max-height: none;
-  }
-
   .dash-grid-layout {
     grid-template-columns: 1fr;
     gap: 24px;
@@ -5530,23 +5533,13 @@
 }
 
 @media (max-width: 768px) {
-  .dashboard-fullscreen-page {
-    padding: 0;
-  }
-
-  .dash-app-window {
-    border-radius: 0;
-    height: 100vh;
-    border: none;
-  }
-
   .dash-left-rail {
     width: 60px;
     padding: 16px 0;
   }
 
   .dash-main-container {
-    padding: 16px;
+    padding: 16px 20px;
   }
 
   .dash-cards-grid {
