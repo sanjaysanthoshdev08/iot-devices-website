@@ -366,12 +366,12 @@ export class App implements AfterViewInit, OnDestroy {
 
   toggleSampleData() {
     this.dashboardSampleDataActive.update(v => !v);
-    this.showDashboardToast(this.dashboardSampleDataActive() ? 'Sample dataset loaded (120 online systems)' : 'Live telemetry stream active');
+    this.showDashboardToast(this.dashboardSampleDataActive() ? 'Sample telemetry dataset loaded' : 'Live telemetry stream active');
   }
 
   viewAllSystems() {
     this.setDashboardNav('systems');
-    this.showDashboardToast('Showing all 120 deployed system units across 3 locations');
+    this.showDashboardToast('Showing all deployed system units across locations');
   }
 
   updateDashboardScale() {

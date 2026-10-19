@@ -5169,11 +5169,12 @@
     padding: 10px;
 
     .dial-percent {
-      font-size: 2.45rem;
+      font-size: 2.1rem;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: -0.025em;
+      letter-spacing: 0.04em;
       line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
 
     .dial-caption {
@@ -5262,12 +5263,13 @@
   }
 
   .card-hero-num {
-    font-size: 2.9rem;
+    font-size: 2.5rem;
     font-weight: 600;
     color: #ffffff;
     line-height: 1;
     margin: 4px 0 8px;
-    letter-spacing: -0.025em;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
   }
 
   .card-footer-lbl {
@@ -5450,29 +5452,6 @@
   }
 }
 
-/* Botanical Foliage Accent at Bottom-Right */
-.dash-foliage-accent {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 140px;
-  height: 140px;
-  pointer-events: none;
-  z-index: 2;
-  overflow: hidden;
-  border-bottom-right-radius: 28px;
-
-  .dash-foliage-img {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: right bottom;
-    opacity: 0.92;
-  }
-}
 
 /* Realtime Toast Notification Banner */
 .dash-toast-notification {
