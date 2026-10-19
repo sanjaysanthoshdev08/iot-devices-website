@@ -1493,8 +1493,8 @@
 <!-- ===== FULLSCREEN DASHBOARD PAGE (EXACT SAME AS REFERENCE IMAGE) ===== -->
 <div class="dashboard-fullscreen-page" *ngIf="isDashboardOpen()" [class.active]="isDashboardOpen()">
 
-  <!-- Outer Dashboard App Frame -->
-  <div class="dash-app-window">
+  <!-- Outer Dashboard App Frame (Overview View) -->
+  <div class="dash-app-window" *ngIf="activeDashboardNav() === 'overview'">
 
     <!-- 1. Left Vertical Icon Sidebar -->
     <aside class="dash-left-rail">
@@ -1750,6 +1750,500 @@
 
     </main>
 
+  </div>
+
+  <!-- ===== SYSTEMS / DEVICE MANAGEMENT VIEW (EXACT MATCH TO REFERENCE IMAGE) ===== -->
+  <div class="systems-page-layout" *ngIf="activeDashboardNav() === 'systems' || activeDashboardNav() === 'accounts' || activeDashboardNav() === 'alerts'">
+
+    <!-- 1. LEFT SIDEBAR -->
+    <aside class="systems-sidebar" [class.open]="isSystemsSidebarOpen()">
+      <!-- Company Brand Header -->
+      <div class="systems-sidebar-brand" (click)="setDashboardNav('overview')">
+        <div class="brand-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" class="brand-spark-svg">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#258BFF"/>
+          </svg>
+        </div>
+        <div class="brand-text-block">
+          <div class="brand-company-name">(Company Name)</div>
+          <div class="brand-subtext">Power monitoring</div>
+        </div>
+        <div class="brand-selector-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 10l5 5 5-5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Navigation List -->
+      <nav class="systems-nav-list" role="navigation" aria-label="Systems navigation">
+        <!-- Overview -->
+        <button type="button" 
+                class="systems-nav-item" 
+                (click)="setDashboardNav('overview')" 
+                title="Go to Overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span class="nav-text">Overview</span>
+        </button>
+
+        <!-- Device (Active / Selected) -->
+        <button type="button" 
+                class="systems-nav-item active" 
+                (click)="setDashboardNav('systems')"
+                title="Device Management" 
+                aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/>
+            <line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
+          <span class="nav-text">Device</span>
+        </button>
+
+        <!-- Account -->
+        <button type="button" 
+                class="systems-nav-item" 
+                [class.active]="activeDashboardNav() === 'accounts'"
+                (click)="setDashboardNav('accounts')" 
+                title="Account Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="nav-text">Account</span>
+        </button>
+
+        <!-- Warning (Renamed from Alarm with clean warning-triangle outline icon) -->
+        <button type="button" 
+                class="systems-nav-item" 
+                [class.active]="activeDashboardNav() === 'alerts'"
+                (click)="setDashboardNav('alerts')" 
+                title="Warning & Alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="nav-text">Warning</span>
+        </button>
+      </nav>
+
+      <!-- Mobile Close Drawer Button -->
+      <button type="button" class="systems-sidebar-close-mobile" (click)="toggleSystemsSidebar()" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </aside>
+
+    <!-- Sidebar Backdrop for Mobile -->
+    <div class="systems-sidebar-backdrop" *ngIf="isSystemsSidebarOpen()" (click)="toggleSystemsSidebar()"></div>
+
+    <!-- 2. MAIN CONTENT AREA -->
+    <main class="systems-main" role="main">
+
+      <!-- Top Header -->
+      <header class="systems-header">
+        <div class="systems-header-left">
+          <button type="button" class="systems-mobile-toggle" (click)="toggleSystemsSidebar()" aria-label="Open sidebar menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1 class="systems-page-title">Device</h1>
+        </div>
+
+        <div class="systems-header-right">
+          <!-- Top Global Search Pill -->
+          <div class="systems-header-search">
+            <input type="text" 
+                   class="systems-header-search-input" 
+                   placeholder="Search..." 
+                   [ngModel]="headerSearchQuery()" 
+                   (ngModelChange)="onHeaderSearchInput($event)"
+                   aria-label="Search devices" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-mag-icon">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+
+          <!-- Blue + Add New Button -->
+          <button type="button" 
+                  class="btn-add-system" 
+                  (click)="openAddSystemModal()" 
+                  title="Register new system">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>+ Add New</span>
+          </button>
+
+          <!-- Authenticated User Avatar (Single source of truth from AuthService) -->
+          <div class="systems-user-avatar" 
+               [title]="currentUser()?.name || currentUser()?.email || 'User Profile'" 
+               role="button" 
+               tabindex="0">
+            <span class="avatar-initial">{{ userInitial() }}</span>
+          </div>
+
+          <!-- Quick Return to Website Button -->
+          <button type="button" class="systems-return-btn" (click)="closeDashboard()" title="Return to Website (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- 3. FOUR PROFESSIONAL SUMMARY METRICS CARDS -->
+      <section class="systems-metrics-grid" aria-label="System status metrics">
+
+        <!-- Card 1: All -->
+        <div class="metric-card card-all" 
+             [class.active]="systemStatusFilter() === 'all'" 
+             (click)="selectStatusFilter('all')" 
+             (keydown.enter)="selectStatusFilter('all')"
+             tabindex="0" 
+             role="button" 
+             aria-label="Filter by All systems">
+          <div class="metric-card-top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-icon">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span class="card-label">All</span>
+          </div>
+          <div class="metric-card-count">{{ totalSystemsCount() }}</div>
+        </div>
+
+        <!-- Card 2: Online (Renamed from Normal) -->
+        <div class="metric-card card-online" 
+             [class.active]="systemStatusFilter() === 'online'" 
+             (click)="selectStatusFilter('online')" 
+             (keydown.enter)="selectStatusFilter('online')"
+             tabindex="0" 
+             role="button" 
+             aria-label="Filter by Online systems">
+          <div class="metric-card-top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-icon">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span class="card-label">Online</span>
+          </div>
+          <div class="metric-card-count">{{ onlineSystemsCount() }}</div>
+        </div>
+
+        <!-- Card 3: Warning (Amber Accent) -->
+        <div class="metric-card card-warning" 
+             [class.active]="systemStatusFilter() === 'warning'" 
+             (click)="selectStatusFilter('warning')" 
+             (keydown.enter)="selectStatusFilter('warning')"
+             tabindex="0" 
+             role="button" 
+             aria-label="Filter by Warning systems">
+          <div class="metric-card-top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-icon">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="card-label">Warning</span>
+          </div>
+          <div class="metric-card-count">{{ warningSystemsCount() }}</div>
+        </div>
+
+        <!-- Card 4: Offline (Muted Gray Accent) -->
+        <div class="metric-card card-offline" 
+             [class.active]="systemStatusFilter() === 'offline'" 
+             (click)="selectStatusFilter('offline')" 
+             (keydown.enter)="selectStatusFilter('offline')"
+             tabindex="0" 
+             role="button" 
+             aria-label="Filter by Offline systems">
+          <div class="metric-card-top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-icon">
+              <line x1="1" y1="1" x2="23" y2="23"/>
+              <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+              <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+              <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+              <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            <span class="card-label">Offline</span>
+          </div>
+          <div class="metric-card-count">{{ offlineSystemsCount() }}</div>
+        </div>
+
+      </section>
+
+      <!-- 4. SYSTEM LIST TABLE PANEL -->
+      <section class="systems-table-panel" aria-label="System record list">
+
+        <!-- Panel Header with Title & Filter Controls -->
+        <div class="systems-panel-header">
+          <h2 class="systems-panel-title">System list</h2>
+
+          <div class="systems-panel-controls">
+
+            <!-- System Status Dropdown (Replaces Device Status: Normal) -->
+            <div class="status-filter-dropdown-container">
+              <button type="button" 
+                      class="btn-status-dropdown" 
+                      (click)="toggleStatusDropdown($event)"
+                      aria-haspopup="listbox"
+                      [attr.aria-expanded]="isStatusDropdownOpen()">
+                <span class="filter-lbl-prefix">System status:</span>
+                <span class="filter-lbl-value">
+                  {{ systemStatusFilter() === 'all' ? 'All statuses' : (systemStatusFilter() === 'online' ? 'Online' : (systemStatusFilter() === 'warning' ? 'Warning' : 'Offline')) }}
+                </span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-arrow-icon">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+
+              <!-- Dropdown Options Menu -->
+              <div class="status-dropdown-menu" *ngIf="isStatusDropdownOpen()" role="listbox">
+                <button type="button" 
+                        class="status-menu-option" 
+                        [class.selected]="systemStatusFilter() === 'all'"
+                        (click)="selectStatusFilter('all', $event)" 
+                        role="option">
+                  <span class="option-dot dot-all"></span>
+                  <span>All statuses</span>
+                </button>
+                <button type="button" 
+                        class="status-menu-option" 
+                        [class.selected]="systemStatusFilter() === 'online'"
+                        (click)="selectStatusFilter('online', $event)" 
+                        role="option">
+                  <span class="option-dot dot-online"></span>
+                  <span>Online</span>
+                </button>
+                <button type="button" 
+                        class="status-menu-option" 
+                        [class.selected]="systemStatusFilter() === 'warning'"
+                        (click)="selectStatusFilter('warning', $event)" 
+                        role="option">
+                  <span class="option-dot dot-warning"></span>
+                  <span>Warning</span>
+                </button>
+                <button type="button" 
+                        class="status-menu-option" 
+                        [class.selected]="systemStatusFilter() === 'offline'"
+                        (click)="selectStatusFilter('offline', $event)" 
+                        role="option">
+                  <span class="option-dot dot-offline"></span>
+                  <span>Offline</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table Search Group -->
+            <div class="panel-search-group">
+              <div class="panel-search-input-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-input-icon">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" 
+                       class="panel-search-input" 
+                       placeholder="Search by name" 
+                       [ngModel]="tableSearchQuery()" 
+                       (ngModelChange)="onTableSearchInput($event)"
+                       (keydown.enter)="executeTableSearch()"
+                       aria-label="Search systems by name or serial number" />
+              </div>
+              <button type="button" class="btn-panel-search" (click)="executeTableSearch()">Search</button>
+            </div>
+
+            <!-- Filter Reset / Toggle Button -->
+            <button type="button" 
+                    class="btn-panel-filter" 
+                    [class.active]="systemStatusFilter() !== 'all' || tableSearchQuery()"
+                    (click)="clearSystemFilters()" 
+                    title="Clear filters and search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-icon">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              <span>Filter</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Table View Container -->
+        <div class="systems-table-responsive">
+          <table class="systems-table">
+            <thead>
+              <tr>
+                <th scope="col" class="th-no">No.</th>
+                <th scope="col" class="th-name">System name</th>
+                <th scope="col" class="th-sn">SN</th>
+                <th scope="col" class="th-status">System status</th>
+                <th scope="col" class="th-user">User</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Empty State (When no registered systems exist or match) -->
+              <tr *ngIf="systemRecords().length === 0" class="empty-state-row">
+                <td colspan="5" class="empty-state-cell">
+                  <div class="empty-state-content">
+                    <div class="empty-icon-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                      </svg>
+                    </div>
+                    <h3 class="empty-title">No systems found</h3>
+                    <p class="empty-desc">
+                      {{ (systemStatusFilter() !== 'all' || tableSearchQuery()) 
+                         ? 'No systems match your filter criteria. Try clearing search or status filters.' 
+                         : 'There are currently no registered systems in this account. Click "+ Add New" to connect your first device.' }}
+                    </p>
+                    <div class="empty-actions" *ngIf="systemStatusFilter() !== 'all' || tableSearchQuery()">
+                      <button type="button" class="btn-empty-clear" (click)="clearSystemFilters()">Clear filters</button>
+                    </div>
+                    <div class="empty-actions" *ngIf="systemStatusFilter() === 'all' && !tableSearchQuery()">
+                      <button type="button" class="btn-empty-add" (click)="openAddSystemModal()">+ Add New System</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Populated Rows (When actual records exist) -->
+              <tr *ngFor="let record of systemRecords(); let i = index" class="systems-data-row">
+                <!-- 1. Sequential Number (1, 2, 3...) -->
+                <td class="cell-no">{{ i + 1 }}</td>
+                <!-- 2. System Name -->
+                <td class="cell-name">
+                  <span class="system-name-text">{{ record.name }}</span>
+                </td>
+                <!-- 3. Serial Number (string with leading zeros preserved) -->
+                <td class="cell-sn">
+                  <span class="sn-code">{{ record.serialNumber }}</span>
+                </td>
+                <!-- 4. System Status Pill Badge (Online, Warning, Offline) -->
+                <td class="cell-status">
+                  <span class="status-pill status-{{ record.status }}">
+                    <span class="status-dot"></span>
+                    <span class="status-text">{{ record.status === 'online' ? 'Online' : (record.status === 'warning' ? 'Warning' : 'Offline') }}</span>
+                  </span>
+                </td>
+                <!-- 5. User display info -->
+                <td class="cell-user">
+                  <span class="user-text">{{ record.user }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- 5. REGISTER NEW SYSTEM MODAL DIALOG -->
+  <div class="system-modal-backdrop" *ngIf="isAddSystemModalOpen()" (click)="closeAddSystemModal()">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-card-header">
+        <h3 id="modal-title" class="modal-card-title">Register New System</h3>
+        <button type="button" class="modal-close-btn" (click)="closeAddSystemModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="submitAddSystem()">
+        <!-- Error Alert -->
+        <div class="modal-error-alert" *ngIf="newSystemError()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ newSystemError() }}</span>
+        </div>
+
+        <!-- Field: System Name -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemName">System name</label>
+          <input type="text" 
+                 id="systemName" 
+                 class="modal-input" 
+                 placeholder="e.g., HYBRID_5 or HYKON-SOLAR-01" 
+                 [ngModel]="newSystemName()" 
+                 (ngModelChange)="newSystemName.set($event)" 
+                 name="systemName" 
+                 required />
+        </div>
+
+        <!-- Field: Serial Number (SN) -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemSN">Serial number (SN)</label>
+          <input type="text" 
+                 id="systemSN" 
+                 class="modal-input" 
+                 placeholder="e.g., 000000000000000001 (preserves leading zeros)" 
+                 [ngModel]="newSystemSN()" 
+                 (ngModelChange)="newSystemSN.set($event)" 
+                 name="systemSN" 
+                 required />
+        </div>
+
+        <!-- Field: System Status -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemStatus">Initial status</label>
+          <select id="systemStatus" 
+                  class="modal-select" 
+                  [ngModel]="newSystemStatus()" 
+                  (ngModelChange)="newSystemStatus.set($event)" 
+                  name="systemStatus">
+            <option value="online">Online</option>
+            <option value="warning">Warning</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+
+        <!-- Field: Assigned User -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemUser">Assigned operator / user</label>
+          <input type="text" 
+                 id="systemUser" 
+                 class="modal-input" 
+                 placeholder="e.g., operator@hykon.com" 
+                 [ngModel]="newSystemUser()" 
+                 (ngModelChange)="newSystemUser.set($event)" 
+                 name="systemUser" />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeAddSystemModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingSystem()">
+            {{ isSubmittingSystem() ? 'Registering...' : 'Register System' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Realtime Toast Banner -->

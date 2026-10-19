@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
+import { SystemRecordsService, SystemRecord, SystemStatus } from './services/system-records.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 export interface HykonBranch {
@@ -41,6 +42,7 @@ export interface InfinityParticle {
 })
 export class App implements AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
+  readonly systemRecordsService = inject(SystemRecordsService);
   private readonly http = inject(HttpClient);
 
   constructor(
@@ -49,8 +51,12 @@ export class App implements AfterViewInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       if (window.location.pathname.includes('device-login')) {
         this.isDeviceAuthModalOpen.set(true);
+      } else if (window.location.pathname.includes('systems')) {
+        this.isDashboardOpen.set(true);
+        this.activeDashboardNav.set('systems');
       } else if (window.location.pathname.includes('dashboard')) {
         this.isDashboardOpen.set(true);
+        this.activeDashboardNav.set('overview');
       }
     }
   }
@@ -344,9 +350,11 @@ export class App implements AfterViewInit, OnDestroy {
     this.deviceDropdownOpen.set(false);
     this.connectionDropdownOpen.set(false);
     this.dataSourceDropdownOpen.set(false);
+    this.isStatusDropdownOpen.set(false);
+    this.isSystemsSidebarOpen.set(false);
     this.aiResponse.set('');
     if (isPlatformBrowser(this.platformId)) {
-      if (window.location.pathname.includes('dashboard')) {
+      if (window.location.pathname.includes('dashboard') || window.location.pathname.includes('systems')) {
         window.history.pushState({ page: 'site' }, '', '/');
       }
       setTimeout(() => {
@@ -361,7 +369,18 @@ export class App implements AfterViewInit, OnDestroy {
 
   setDashboardNav(tab: 'overview' | 'systems' | 'accounts' | 'alerts') {
     this.activeDashboardNav.set(tab);
-    this.showDashboardToast(`Navigated to ${tab.toUpperCase()} telemetry tab`);
+    if (isPlatformBrowser(this.platformId)) {
+      if (tab === 'systems') {
+        if (!window.location.pathname.includes('systems')) {
+          window.history.pushState({ page: 'systems' }, '', '/systems');
+        }
+      } else if (tab === 'overview') {
+        if (!window.location.pathname.includes('dashboard')) {
+          window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
+        }
+      }
+    }
+    this.showDashboardToast(`Navigated to ${tab.toUpperCase()} ${tab === 'systems' ? 'management' : 'telemetry'} tab`);
   }
 
   toggleSampleData() {
@@ -371,7 +390,118 @@ export class App implements AfterViewInit, OnDestroy {
 
   viewAllSystems() {
     this.setDashboardNav('systems');
-    this.showDashboardToast('Showing all deployed system units across locations');
+  }
+
+  // ===== SYSTEMS / DEVICE PAGE SIGNALS & METHODS =====
+  readonly systemRecords = this.systemRecordsService.filteredSystems;
+  readonly totalSystemsCount = this.systemRecordsService.totalCount;
+  readonly onlineSystemsCount = this.systemRecordsService.onlineCount;
+  readonly warningSystemsCount = this.systemRecordsService.warningCount;
+  readonly offlineSystemsCount = this.systemRecordsService.offlineCount;
+  readonly systemStatusFilter = this.systemRecordsService.statusFilter;
+  readonly systemSearchQuery = this.systemRecordsService.searchQuery;
+  readonly isSystemLoading = this.systemRecordsService.isLoading;
+
+  isStatusDropdownOpen = signal<boolean>(false);
+  isSystemsSidebarOpen = signal<boolean>(false);
+  tableSearchQuery = signal<string>('');
+  headerSearchQuery = signal<string>('');
+
+  isAddSystemModalOpen = signal<boolean>(false);
+  newSystemName = signal<string>('');
+  newSystemSN = signal<string>('');
+  newSystemStatus = signal<SystemStatus>('online');
+  newSystemUser = signal<string>('');
+  newSystemError = signal<string>('');
+  isSubmittingSystem = signal<boolean>(false);
+
+  toggleStatusDropdown(event?: Event) {
+    if (event) event.stopPropagation();
+    this.isStatusDropdownOpen.update(v => !v);
+  }
+
+  selectStatusFilter(status: 'all' | SystemStatus, event?: Event) {
+    if (event) event.stopPropagation();
+    this.systemRecordsService.setStatusFilter(status);
+    this.isStatusDropdownOpen.set(false);
+  }
+
+  onTableSearchInput(query: string) {
+    this.tableSearchQuery.set(query);
+    this.systemRecordsService.setSearchQuery(query);
+  }
+
+  onHeaderSearchInput(query: string) {
+    this.headerSearchQuery.set(query);
+    this.systemRecordsService.setSearchQuery(query);
+  }
+
+  executeTableSearch() {
+    this.systemRecordsService.setSearchQuery(this.tableSearchQuery());
+  }
+
+  clearSystemFilters() {
+    this.systemRecordsService.clearFilters();
+    this.tableSearchQuery.set('');
+    this.headerSearchQuery.set('');
+    this.isStatusDropdownOpen.set(false);
+  }
+
+  openAddSystemModal() {
+    this.newSystemName.set('');
+    this.newSystemSN.set('');
+    this.newSystemStatus.set('online');
+    const user = this.currentUser();
+    this.newSystemUser.set(user?.email || user?.name || '');
+    this.newSystemError.set('');
+    this.isAddSystemModalOpen.set(true);
+  }
+
+  closeAddSystemModal() {
+    this.isAddSystemModalOpen.set(false);
+    this.newSystemError.set('');
+  }
+
+  async submitAddSystem() {
+    const name = this.newSystemName().trim();
+    const sn = this.newSystemSN().trim();
+    const status = this.newSystemStatus();
+    const user = this.newSystemUser().trim() || 'System Operator';
+
+    this.newSystemError.set('');
+
+    if (!name) {
+      this.newSystemError.set('Please enter a system name.');
+      return;
+    }
+    if (!sn) {
+      this.newSystemError.set('Please enter a serial number (SN).');
+      return;
+    }
+    if (sn.length < 3) {
+      this.newSystemError.set('Serial number must be at least 3 characters.');
+      return;
+    }
+
+    this.isSubmittingSystem.set(true);
+    try {
+      await this.systemRecordsService.addSystem({
+        name,
+        serialNumber: sn,
+        status,
+        user
+      });
+      this.isSubmittingSystem.set(false);
+      this.closeAddSystemModal();
+      this.showDashboardToast(`System "${name}" registered successfully`);
+    } catch {
+      this.isSubmittingSystem.set(false);
+      this.newSystemError.set('Failed to register system. Please try again.');
+    }
+  }
+
+  toggleSystemsSidebar() {
+    this.isSystemsSidebarOpen.update(v => !v);
   }
 
   updateDashboardScale() {
@@ -1003,8 +1133,12 @@ this.closeLoginModal();
       this.updateDashboardScale();
       this.initInfinityParticleSystem();
 
-      if (window.location.pathname.includes('dashboard')) {
+      if (window.location.pathname.includes('systems')) {
         this.openDashboard();
+        this.activeDashboardNav.set('systems');
+      } else if (window.location.pathname.includes('dashboard')) {
+        this.openDashboard();
+        this.activeDashboardNav.set('overview');
       } else if (window.location.pathname.includes('device-login')) {
         this.openDeviceAuthModal();
       }
