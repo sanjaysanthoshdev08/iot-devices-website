@@ -789,7 +789,7 @@
 
     </div>
 
-    <!-- ===== DEVICE ACCESS PAGE (EXACT 16:9 MATCH TO device access page.png) ===== -->
+    <!-- ===== DEVICE ACCESS PAGE (EXACT MATCH TO device access page.png) ===== -->
     <div class="device-access-viewport" *ngIf="isDeviceAuthModalOpen()" (click)="closeDeviceAuthModal()">
       <!-- Back to Features Button -->
       <button type="button" class="auth-page-back-btn" (click)="closeDeviceAuthModal()" title="Back to Features">
@@ -800,89 +800,93 @@
         <span>Back to Features</span>
       </button>
 
-      <!-- 16:9 Scaled Stage (1672 x 941) -->
+      <!-- 16:9 Scaled Stage (1672 x 941) matching device access page.png -->
       <div class="device-access-stage" (click)="$event.stopPropagation()">
         <!-- Master reference image exact match -->
         <img src="assets/device access page.png" 
              alt="Device Access Page" 
              class="device-access-stage-img" />
 
-        <!-- Interactive Form Hotspots Overlay -->
-        <form class="device-access-stage-form" (ngSubmit)="verifyDeviceCredentials()">
-          <!-- Hotspot 1: Device ID (x: 616, y: 428, w: 440, h: 60) -->
-          <div class="stage-field-hotspot stage-field-device" [class.has-value]="authDeviceId()">
-            <div class="stage-field-icon">
+        <!-- Clean, Smooth Device Access Card covering the image's card exactly -->
+        <div class="device-access-card">
+          <h2 class="dac-title">Access your device</h2>
+
+          <form class="dac-form" (ngSubmit)="verifyDeviceCredentials()">
+            <!-- Field 1: Device ID -->
+            <div class="dac-field" [class.has-value]="authDeviceId()">
+              <div class="dac-field-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <div class="dac-field-content">
+                <span class="dac-field-label">Device ID</span>
+                <input type="text"
+                       class="dac-field-input"
+                       name="deviceId"
+                       [ngModel]="authDeviceId()"
+                       (ngModelChange)="authDeviceId.set($event)"
+                       placeholder="Enter your device ID"
+                       autocomplete="off" />
+              </div>
+            </div>
+
+            <!-- Field 2: Serial number -->
+            <div class="dac-field" [class.has-value]="authSerialNumber()">
+              <div class="dac-field-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+              </div>
+              <div class="dac-field-content">
+                <span class="dac-field-label">Serial number</span>
+                <input type="text"
+                       class="dac-field-input"
+                       name="serialNumber"
+                       [ngModel]="authSerialNumber()"
+                       (ngModelChange)="authSerialNumber.set($event)"
+                       placeholder="Enter your serial number"
+                       autocomplete="off" />
+              </div>
+            </div>
+
+            <!-- Access device Button -->
+            <button type="submit" class="dac-btn-access" [disabled]="isAuthVerifying()">
+              <span *ngIf="!isAuthVerifying()">Access device</span>
+              <span *ngIf="isAuthVerifying()">Accessing device...</span>
+            </button>
+
+            <!-- Error Alert Banner -->
+            <div class="dac-auth-alert dac-alert-error" *ngIf="authErrorMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
+              <span>{{ authErrorMessage() }}</span>
             </div>
-            <div class="stage-field-content">
-              <span class="stage-field-label">Device ID</span>
-              <input type="text"
-                     class="stage-field-input"
-                     name="deviceId"
-                     [ngModel]="authDeviceId()"
-                     (ngModelChange)="authDeviceId.set($event)"
-                     placeholder="Enter your device ID"
-                     autocomplete="off" />
-            </div>
-          </div>
 
-          <!-- Hotspot 2: Serial number (x: 616, y: 520, w: 440, h: 65) -->
-          <div class="stage-field-hotspot stage-field-serial" [class.has-value]="authSerialNumber()">
-            <div class="stage-field-icon">
+            <!-- Success Alert Banner -->
+            <div class="dac-auth-alert dac-alert-success" *ngIf="authSuccessMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
+              <span>{{ authSuccessMessage() }}</span>
             </div>
-            <div class="stage-field-content">
-              <span class="stage-field-label">Serial number</span>
-              <input type="text"
-                     class="stage-field-input"
-                     name="serialNumber"
-                     [ngModel]="authSerialNumber()"
-                     (ngModelChange)="authSerialNumber.set($event)"
-                     placeholder="Enter your serial number"
-                     autocomplete="off" />
-            </div>
-          </div>
+          </form>
+        </div>
 
-          <!-- Hotspot 3: Access device Button (x: 616, y: 614, w: 440, h: 68) -->
-          <button type="submit" class="stage-btn-access" [disabled]="isAuthVerifying()">
-            <span *ngIf="!isAuthVerifying()">Access device</span>
-            <span *ngIf="isAuthVerifying()">Accessing device...</span>
-          </button>
-
-          <!-- Error Alert Banner -->
-          <div class="stage-auth-alert stage-alert-error" *ngIf="authErrorMessage()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <span>{{ authErrorMessage() }}</span>
-          </div>
-
-          <!-- Success Alert Banner -->
-          <div class="stage-auth-alert stage-alert-success" *ngIf="authSuccessMessage()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <span>{{ authSuccessMessage() }}</span>
-          </div>
-
-          <!-- Demo Presets Bar -->
-          <div class="stage-demo-presets">
-            <span class="demo-lbl">Demo presets:</span>
-            <button type="button" class="demo-chip" (click)="fillDemoCredentials(1)">halo1200-1</button>
-            <button type="button" class="demo-chip" (click)="fillDemoCredentials(2)">halo1200-2</button>
-            <button type="button" class="demo-chip" (click)="fillDemoCredentials(10)">halo1200-10</button>
-          </div>
-        </form>
+        <!-- Demo Presets Bar -->
+        <div class="stage-demo-presets">
+          <span class="demo-lbl">Demo presets:</span>
+          <button type="button" class="demo-chip" (click)="fillDemoCredentials(1)">halo1200-1</button>
+          <button type="button" class="demo-chip" (click)="fillDemoCredentials(2)">halo1200-2</button>
+          <button type="button" class="demo-chip" (click)="fillDemoCredentials(10)">halo1200-10</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1544,10 +1548,6 @@
   <div class="dashboard-stage-viewport" (click)="deviceDropdownOpen.set(false); connectionDropdownOpen.set(false); dataSourceDropdownOpen.set(false)">
     <div class="dashboard-stage">
 
-      <!-- Master base image exact match -->
-      <img src="assets/FEATURES CLICK DASHBOARD PAGE.png"
-           alt="HYKON HALO 1200 - Inverter IoT Telemetry Dashboard"
-           class="dashboard-stage-image" />
 
       <!-- Holographic Cyber Glow Ring around Globe -->
       <div class="dash-globe-ambient-ring"></div>
