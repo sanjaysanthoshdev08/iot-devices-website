@@ -5,6 +5,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
 import { SystemRecordsService, SystemRecord, SystemStatus } from './services/system-records.service';
+import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus, CreateAccountRequest } from './services/accounts.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 export interface HykonBranch {
@@ -43,6 +44,7 @@ export interface InfinityParticle {
 export class App implements AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
   readonly systemRecordsService = inject(SystemRecordsService);
+  readonly accountsService = inject(AccountsService);
   private readonly http = inject(HttpClient);
 
   constructor(
@@ -2058,6 +2060,206 @@ this.closeLoginModal();
       if (this.infinityQuadBuffer) this.infinityGl.deleteBuffer(this.infinityQuadBuffer);
       this.infinityGl = null;
     }
+  }
+
+  // ===== ACCOUNTS PAGE STATE & METHODS =====
+
+  // Exposed service signals
+  readonly accountRecords       = this.accountsService.filteredAccounts;
+  readonly accountGroups        = this.accountsService.groups;
+  readonly totalAccountsCount   = this.accountsService.totalCount;
+  readonly isAccountLoading     = this.accountsService.isLoading;
+  readonly accountHasFilters    = this.accountsService.hasActiveFilters;
+  readonly accountSearchQuery   = this.accountsService.searchQuery;
+  readonly accountUserTypeFilter = this.accountsService.userTypeFilter;
+  readonly accountActiveFilter  = this.accountsService.activeFilter;
+  readonly accountStatusFilter  = this.accountsService.statusFilter;
+
+  // Tab: 'list' | 'owner'
+  accountActiveTab = signal<'list' | 'owner'>('list');
+
+  // Segment: 'user' | 'group'
+  accountSegment = signal<'user' | 'group'>('user');
+
+  // Scope dropdown
+  accountScopeDropdownOpen = signal<boolean>(false);
+  accountScopeValue = signal<string>('All users');
+
+  // User-type filter dropdown
+  accountUserTypeDropdownOpen = signal<boolean>(false);
+
+  // Active status filter dropdown
+  accountActiveStatusDropdownOpen = signal<boolean>(false);
+
+  // Account status filter dropdown
+  accountStatusDropdownOpen = signal<boolean>(false);
+
+  // Pagination
+  readonly accountPageSize = 10;
+  accountCurrentPage = signal<number>(1);
+
+  readonly accountTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.accountRecords().length / this.accountPageSize))
+  );
+
+  readonly accountPagedRecords = computed(() => {
+    const page = this.accountCurrentPage();
+    const start = (page - 1) * this.accountPageSize;
+    return this.accountRecords().slice(start, start + this.accountPageSize);
+  });
+
+  // Create-account modal
+  isCreateAccountModalOpen = signal<boolean>(false);
+  newAccountUsername     = signal<string>('');
+  newAccountPhone        = signal<string>('');
+  newAccountUserType     = signal<AccountUserType>('Operator');
+  newAccountActiveStatus = signal<AccountActiveStatus>('Active');
+  newAccountStatus       = signal<AccountStatus>('Enabled');
+  newAccountError        = signal<string>('');
+  isSubmittingAccount    = signal<boolean>(false);
+
+  setAccountTab(tab: 'list' | 'owner') {
+    this.accountActiveTab.set(tab);
+  }
+
+  setAccountSegment(seg: 'user' | 'group') {
+    this.accountSegment.set(seg);
+    this.accountCurrentPage.set(1);
+  }
+
+  toggleAccountScopeDropdown(event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountScopeDropdownOpen.update(v => !v);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountActiveStatusDropdownOpen.set(false);
+    this.accountStatusDropdownOpen.set(false);
+  }
+
+  selectAccountScope(value: string, event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountScopeValue.set(value);
+    this.accountScopeDropdownOpen.set(false);
+  }
+
+  toggleAccountUserTypeDropdown(event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountUserTypeDropdownOpen.update(v => !v);
+    this.accountScopeDropdownOpen.set(false);
+    this.accountActiveStatusDropdownOpen.set(false);
+    this.accountStatusDropdownOpen.set(false);
+  }
+
+  selectAccountUserType(value: AccountUserType | 'all', event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountsService.setUserType(value);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountCurrentPage.set(1);
+  }
+
+  toggleAccountActiveStatusDropdown(event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountActiveStatusDropdownOpen.update(v => !v);
+    this.accountScopeDropdownOpen.set(false);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountStatusDropdownOpen.set(false);
+  }
+
+  selectAccountActiveStatus(value: AccountActiveStatus | 'all', event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountsService.setActiveStatus(value);
+    this.accountActiveStatusDropdownOpen.set(false);
+    this.accountCurrentPage.set(1);
+  }
+
+  toggleAccountStatusDropdown(event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountStatusDropdownOpen.update(v => !v);
+    this.accountScopeDropdownOpen.set(false);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountActiveStatusDropdownOpen.set(false);
+  }
+
+  selectAccountStatus(value: AccountStatus | 'all', event?: Event) {
+    if (event) event.stopPropagation();
+    this.accountsService.setAccountStatus(value);
+    this.accountStatusDropdownOpen.set(false);
+    this.accountCurrentPage.set(1);
+  }
+
+  onAccountSearchInput(q: string) {
+    this.accountsService.setSearch(q);
+    this.accountCurrentPage.set(1);
+  }
+
+  clearAccountFilters() {
+    this.accountsService.clearFilters();
+    this.accountCurrentPage.set(1);
+    this.accountScopeDropdownOpen.set(false);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountActiveStatusDropdownOpen.set(false);
+    this.accountStatusDropdownOpen.set(false);
+  }
+
+  accountPrevPage() {
+    this.accountCurrentPage.update(p => Math.max(1, p - 1));
+  }
+
+  accountNextPage() {
+    this.accountCurrentPage.update(p => Math.min(this.accountTotalPages(), p + 1));
+  }
+
+  openCreateAccountModal() {
+    this.newAccountUsername.set('');
+    this.newAccountPhone.set('');
+    this.newAccountUserType.set('Operator');
+    this.newAccountActiveStatus.set('Active');
+    this.newAccountStatus.set('Enabled');
+    this.newAccountError.set('');
+    this.isCreateAccountModalOpen.set(true);
+  }
+
+  closeCreateAccountModal() {
+    this.isCreateAccountModalOpen.set(false);
+    this.newAccountError.set('');
+  }
+
+  async submitCreateAccount() {
+    const username = this.newAccountUsername().trim();
+    const phone    = this.newAccountPhone().trim();
+    this.newAccountError.set('');
+
+    if (!username) {
+      this.newAccountError.set('Username is required.');
+      return;
+    }
+    if (!phone) {
+      this.newAccountError.set('Phone number is required.');
+      return;
+    }
+
+    this.isSubmittingAccount.set(true);
+    try {
+      await this.accountsService.createAccount({
+        username,
+        phone,
+        userType:      this.newAccountUserType(),
+        activeStatus:  this.newAccountActiveStatus(),
+        accountStatus: this.newAccountStatus()
+      });
+      this.isSubmittingAccount.set(false);
+      this.closeCreateAccountModal();
+      this.showDashboardToast(`Account "${username}" created successfully`);
+    } catch {
+      this.isSubmittingAccount.set(false);
+      this.newAccountError.set('Failed to create account. Please try again.');
+    }
+  }
+
+  closeAllAccountDropdowns() {
+    this.accountScopeDropdownOpen.set(false);
+    this.accountUserTypeDropdownOpen.set(false);
+    this.accountActiveStatusDropdownOpen.set(false);
+    this.accountStatusDropdownOpen.set(false);
   }
 }
 
