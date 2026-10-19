@@ -4542,7 +4542,7 @@
   to { opacity: 1; }
 }
 
-/* Exact matching Device Access Card covering the image card */
+/* Exact matching Device Access Card */
 .device-access-card {
   position: absolute;
   left: 588px;
@@ -4550,10 +4550,12 @@
   width: 495px;
   min-height: 448px;
   box-sizing: border-box;
-  background: #040913;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(6, 12, 22, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 102, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 102, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   padding: 38px 27px 32px 27px;
   display: flex;
   flex-direction: column;
