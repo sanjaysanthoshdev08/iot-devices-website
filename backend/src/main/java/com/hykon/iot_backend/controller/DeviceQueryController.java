@@ -1,5 +1,6 @@
 package com.hykon.iot_backend.controller;
 
+import com.hykon.iot_backend.dto.DevicePageResponse;
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.response.ApiResponse;
 import com.hykon.iot_backend.service.DeviceQueryService;
@@ -27,7 +28,7 @@ public class DeviceQueryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<DeviceResponse>>> list(
+    public ResponseEntity<ApiResponse<DevicePageResponse>> list(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             Principal principal
@@ -38,7 +39,7 @@ public class DeviceQueryController {
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Devices retrieved successfully",
-                devices
+                DevicePageResponse.from(devices)
         ));
     }
 
