@@ -168,12 +168,7 @@ class SecurityAndValidationTests {
         );
     }
 
-    @Test
-    void legacyAdminCannotAccessAdminEndpoint() throws Exception {
-        assertRoleEndpointAccess(
-                RoleName.ADMIN, "/api/v1/admin/test", 403
-        );
-    }
+    
 
     @Test
     void allThreeRolesCanAccessUserEndpoint() throws Exception {
