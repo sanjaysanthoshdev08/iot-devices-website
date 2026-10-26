@@ -116,7 +116,12 @@ public class SecurityConfig {
                 // Admin endpoints require the HYKON_ADMIN role.
                 .requestMatchers("/api/v1/admin/**").hasRole("HYKON_ADMIN")
 
-                // User endpoints allow all three application roles.
+                // Device claims require USER; shared user endpoints allow all three roles.
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/user/devices/claim"
+                ).hasRole("USER")
+
                 .requestMatchers("/api/v1/user/**")
                     .hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
 
