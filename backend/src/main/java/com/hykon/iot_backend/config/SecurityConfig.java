@@ -121,6 +121,11 @@ public class SecurityConfig {
                     .hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
 
                 // All remaining endpoints require authentication.
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/management/devices"
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
