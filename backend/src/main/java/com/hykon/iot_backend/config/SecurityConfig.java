@@ -113,12 +113,12 @@ public class SecurityConfig {
                 // Permit Spring Boot's error endpoint.
                 .requestMatchers("/error").permitAll()
 
-                // Admin endpoints require the ADMIN role.
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Admin endpoints require the HYKON_ADMIN role.
+                .requestMatchers("/api/v1/admin/**").hasRole("HYKON_ADMIN")
 
-                // User endpoints allow USER and ADMIN roles.
+                // User endpoints allow all three application roles.
                 .requestMatchers("/api/v1/user/**")
-                    .hasAnyRole("USER", "ADMIN")
+                    .hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
 
                 // All remaining endpoints require authentication.
                 .anyRequest().authenticated()
