@@ -57,4 +57,14 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             WHERE LOWER(TRIM(d.deviceCode)) = LOWER(TRIM(:code))
             """)
     Optional<Device> findByCodeForUpdate(@Param("code") String code);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT d
+            FROM Device d
+            WHERE d.id = :deviceId
+            """)
+    Optional<Device> findByIdForUpdate(
+            @Param("deviceId") Long deviceId
+    );
 }
