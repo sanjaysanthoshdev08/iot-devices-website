@@ -153,4 +153,60 @@ class SecurityAndValidationTests {
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.error").value("Forbidden"));
     }
+
+    @Test
+    void hykonAdminCanAccessAdminEndpoint() throws Exception {
+        assertRoleEndpointAccess(
+                RoleName.HYKON_ADMIN, "/api/v1/admin/test", 200
+        );
+    }
+
+    @Test
+    void distributorAdminCannotAccessAdminEndpoint() throws Exception {
+        assertRoleEndpointAccess(
+                RoleName.DISTRIBUTOR_ADMIN, "/api/v1/admin/test", 403
+        );
+    }
+
+    @Test
+    void legacyAdminCannotAccessAdminEndpoint() throws Exception {
+        assertRoleEndpointAccess(
+                RoleName.ADMIN, "/api/v1/admin/test", 403
+        );
+    }
+
+    @Test
+    void allThreeRolesCanAccessUserEndpoint() throws Exception {
+        for (RoleName role : new RoleName[] {
+                RoleName.USER,
+                RoleName.DISTRIBUTOR_ADMIN,
+                RoleName.HYKON_ADMIN
+        }) {
+            assertRoleEndpointAccess(role, "/api/v1/user/test", 200);
+        }
+    }
+
+    private void assertRoleEndpointAccess(
+            RoleName role, String endpoint, int expectedStatus
+    ) throws Exception {
+        String token = "test-token-" + role.name();
+        String email = role.name().toLowerCase() + "@example.com";
+
+        when(jwtService.isTokenValid(token)).thenReturn(true);
+        when(jwtService.extractEmail(token)).thenReturn(email);
+
+        User user = new User();
+        user.setName("Role Test");
+        user.setEmail(email);
+        user.setPassword("not-used-in-this-test");
+        user.setStatus("ACTIVE");
+        user.setRole(new Role(role));
+
+        when(userRepository.findByEmailWithRole(email))
+                .thenReturn(Optional.of(user));
+
+        mockMvc.perform(get(endpoint)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().is(expectedStatus));
+    }
 }
