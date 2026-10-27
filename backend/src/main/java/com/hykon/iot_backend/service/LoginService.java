@@ -31,6 +31,7 @@ public class LoginService {
         this.refreshTokenService = refreshTokenService;
     }
 
+    @Transactional
     public LoginResult login(LoginRequest request) {
 
         String email = request.getEmail().trim().toLowerCase();
@@ -56,12 +57,14 @@ public class LoginService {
             );
         }
 
-        // Generate JWT access token after successful authentication.
-        String accessToken = jwtService.generateAccessToken(user);
-
-        // Generate and persist refresh token.
+        // Persist the session and refresh token before issuing its JWT.
         RefreshToken refreshToken =
                 refreshTokenService.createRefreshToken(user);
+
+        String accessToken = jwtService.generateAccessToken(
+                user,
+                refreshToken.getSession().getId()
+        );
 
         return new LoginResult(
                 user,
@@ -96,12 +99,14 @@ public class LoginService {
             );
         }
 
-        // Generate a new access token for the active user.
-        String accessToken = jwtService.generateAccessToken(user);
-
-        // Revoke the old refresh token and create a new one.
+        // Rotate the refresh token while retaining the login session.
         RefreshToken newRefreshToken =
                 refreshTokenService.rotateRefreshToken(oldRefreshToken);
+
+        String accessToken = jwtService.generateAccessToken(
+                user,
+                newRefreshToken.getSession().getId()
+        );
 
         return new RefreshResult(
                 accessToken,
