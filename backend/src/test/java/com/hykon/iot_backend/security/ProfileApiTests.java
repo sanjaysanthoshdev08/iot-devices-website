@@ -42,6 +42,9 @@ class ProfileApiTests {
     @MockitoBean
     private JwtService jwtService;
 
+    @MockitoBean
+    private com.hykon.iot_backend.service.LoginSessionService loginSessionService;
+
     private void stubAccount(RoleName role) {
         User user = new User();
         user.setName("Current Account");

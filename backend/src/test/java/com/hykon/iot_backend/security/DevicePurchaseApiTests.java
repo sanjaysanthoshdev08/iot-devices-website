@@ -54,6 +54,9 @@ class DevicePurchaseApiTests {
     private JwtService jwtService;
 
     @MockitoBean
+    private com.hykon.iot_backend.service.LoginSessionService loginSessionService;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @Test

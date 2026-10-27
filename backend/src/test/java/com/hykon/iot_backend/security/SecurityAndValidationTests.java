@@ -70,6 +70,9 @@ class SecurityAndValidationTests {
     private JwtService jwtService;
 
     @MockitoBean
+    private com.hykon.iot_backend.service.LoginSessionService loginSessionService;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @Test
@@ -143,6 +146,7 @@ class SecurityAndValidationTests {
         user.setPassword("not-used-in-this-test");
         user.setStatus("ACTIVE");
         user.setRole(new Role(RoleName.USER));
+        prepareSession(token, user);
 
         when(userRepository.findByEmailWithRole(email))
                 .thenReturn(Optional.of(user));
@@ -181,6 +185,26 @@ class SecurityAndValidationTests {
         }
     }
 
+    private void prepareSession(String token, User user) {
+        org.springframework.test.util.ReflectionTestUtils
+                .setField(user, "id", 16L);
+
+        java.util.UUID sessionId = java.util.UUID.randomUUID();
+
+        com.hykon.iot_backend.entity.LoginSession session =
+                new com.hykon.iot_backend.entity.LoginSession();
+
+        org.springframework.test.util.ReflectionTestUtils
+                .setField(session, "id", sessionId);
+
+        session.setUser(user);
+        session.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(5));
+
+        when(jwtService.extractSessionId(token)).thenReturn(sessionId);
+        when(loginSessionService.requireActive(sessionId, user.getId()))
+                .thenReturn(session);
+    }
+
     private void assertRoleEndpointAccess(
             RoleName role, String endpoint, int expectedStatus
     ) throws Exception {
@@ -196,6 +220,7 @@ class SecurityAndValidationTests {
         user.setPassword("not-used-in-this-test");
         user.setStatus("ACTIVE");
         user.setRole(new Role(role));
+        prepareSession(token, user);
 
         when(userRepository.findByEmailWithRole(email))
                 .thenReturn(Optional.of(user));
