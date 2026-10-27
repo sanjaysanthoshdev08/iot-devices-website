@@ -34,6 +34,45 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class DeviceQueryApiTests {
 
+    private void assertUnverifiedSessionBlocked() throws Exception {
+        doThrow(new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Access verification is required"
+        )).when(accessPolicy).requireVerified(
+                any(org.springframework.security.core.Authentication.class)
+        );
+
+        mockMvc.perform(get(ENDPOINT))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message")
+                        .value("Access verification is required"));
+
+        mockMvc.perform(get(ENDPOINT + "/1"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message")
+                        .value("Access verification is required"));
+
+        verifyNoInteractions(queryService);
+    }
+
+    @Test
+    @WithMockUser(
+            username = "customer@example.com",
+            roles = "USER"
+    )
+    void unverifiedCustomerCannotListOrReadDevices() throws Exception {
+        assertUnverifiedSessionBlocked();
+    }
+
+    @Test
+    @WithMockUser(
+            username = "distributor@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void unverifiedDistributorCannotListOrReadDevices() throws Exception {
+        assertUnverifiedSessionBlocked();
+    }
+
     private static final String ENDPOINT = "/api/v1/devices";
 
     @Autowired
@@ -41,6 +80,9 @@ class DeviceQueryApiTests {
 
     @MockitoBean
     private DeviceQueryService queryService;
+
+    @MockitoBean
+    private com.hykon.iot_backend.service.SessionAccessPolicyService accessPolicy;
 
     @MockitoBean
     private JwtService jwtService;
