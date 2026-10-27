@@ -28,6 +28,13 @@ public class RefreshToken {
     )
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "session_id",
+        foreignKey = @ForeignKey(name = "fk_refresh_tokens_session")
+    )
+    private LoginSession session;
+
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
@@ -60,6 +67,14 @@ public class RefreshToken {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public LoginSession getSession() {
+        return session;
+    }
+
+    public void setSession(LoginSession session) {
+        this.session = session;
     }
 
     public LocalDateTime getExpiresAt() {
