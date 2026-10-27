@@ -68,7 +68,7 @@ public class AuthService {
     public void logout(String refreshTokenValue) {
 
         RefreshToken refreshToken =
-                refreshTokenService.findByToken(refreshTokenValue);
+                refreshTokenService.findByTokenForUpdate(refreshTokenValue);
 
         if (!refreshTokenService.isTokenValid(refreshToken)) {
             throw new InvalidTokenException(
@@ -76,6 +76,6 @@ public class AuthService {
             );
         }
 
-        refreshTokenService.revokeToken(refreshToken);
+        refreshTokenService.revokeTokenAndSession(refreshToken);
     }
 }
