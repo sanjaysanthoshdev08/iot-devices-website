@@ -3,7 +3,7 @@ package com.hykon.iot_backend.controller;
 import com.hykon.iot_backend.dto.ClaimDeviceRequest;
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.response.ApiResponse;
-import com.hykon.iot_backend.service.SessionAccessVerificationService;
+import com.hykon.iot_backend.service.AccessVerificationCoordinator;
 
 import jakarta.validation.Valid;
 
@@ -22,10 +22,10 @@ import java.util.UUID;
 @RequestMapping("/api/v1/user/devices/claim")
 public class DeviceClaimController {
 
-    private final SessionAccessVerificationService claimService;
+    private final AccessVerificationCoordinator claimService;
 
     public DeviceClaimController(
-            SessionAccessVerificationService claimService
+            AccessVerificationCoordinator claimService
     ) {
         this.claimService = claimService;
     }

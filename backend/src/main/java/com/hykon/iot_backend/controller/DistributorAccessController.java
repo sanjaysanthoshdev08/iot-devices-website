@@ -3,7 +3,7 @@ package com.hykon.iot_backend.controller;
 import com.hykon.iot_backend.dto.DistributorAccessRequest;
 import com.hykon.iot_backend.dto.DistributorAccessResponse;
 import com.hykon.iot_backend.response.ApiResponse;
-import com.hykon.iot_backend.service.SessionAccessVerificationService;
+import com.hykon.iot_backend.service.AccessVerificationCoordinator;
 
 import jakarta.validation.Valid;
 
@@ -22,10 +22,10 @@ import java.util.UUID;
 @RequestMapping("/api/v1/distributor/access")
 public class DistributorAccessController {
 
-    private final SessionAccessVerificationService accessService;
+    private final AccessVerificationCoordinator accessService;
 
     public DistributorAccessController(
-            SessionAccessVerificationService accessService
+            AccessVerificationCoordinator accessService
     ) {
         this.accessService = accessService;
     }

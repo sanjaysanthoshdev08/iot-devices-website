@@ -6,7 +6,7 @@ import com.hykon.iot_backend.dto.ClaimDeviceRequest;
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.exception.GlobalExceptionHandler;
 import com.hykon.iot_backend.repository.UserRepository;
-import com.hykon.iot_backend.service.SessionAccessVerificationService;
+import com.hykon.iot_backend.service.AccessVerificationCoordinator;
 import com.hykon.iot_backend.service.JwtService;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +31,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityAndValidationTests.NoDefaultUserConfiguration.class
 })
 class DeviceClaimApiTests {
+
+    @Test
+    @WithMockUser(
+            username = "customer@example.com",
+            roles = "USER"
+    )
+    void lockoutReturnsTooManyRequests() throws Exception {
+        when(claimService.verifyDevice(
+                any(ClaimDeviceRequest.class),
+                eq("customer@example.com"),
+                eq(SESSION_ID)
+        )).thenThrow(new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                "Too many verification attempts. Try again later."
+        ));
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(APPLICATION_JSON)
+                        .content(VALID_REQUEST))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.message").value(
+                        "Too many verification attempts. Try again later."
+                ));
+    }
 
     private static final java.util.UUID SESSION_ID =
             java.util.UUID.randomUUID();
@@ -79,7 +103,7 @@ class DeviceClaimApiTests {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private SessionAccessVerificationService claimService;
+    private AccessVerificationCoordinator claimService;
 
     @MockitoBean
     private JwtService jwtService;
