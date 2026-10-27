@@ -1,12 +1,16 @@
 package com.hykon.iot_backend.security;
 
 import com.hykon.iot_backend.entity.User;
+import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.repository.UserRepository;
 import com.hykon.iot_backend.service.JwtService;
+import com.hykon.iot_backend.service.LoginSessionService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,18 +18,22 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final LoginSessionService loginSessionService;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            LoginSessionService loginSessionService
     ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.loginSessionService = loginSessionService;
     }
 
     @Override
@@ -35,17 +43,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authorizationHeader =
-                request.getHeader("Authorization");
+        String authorizationHeader = request.getHeader("Authorization");
 
-        // No token: let Spring Security decide whether
-        // this endpoint requires authentication.
         if (authorizationHeader == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // A supplied Authorization header must use Bearer format.
         if (!authorizationHeader.startsWith("Bearer ")
                 || authorizationHeader.length() <= 7) {
             sendUnauthorized(response);
@@ -60,8 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String email;
+        final UUID sessionId;
 
-        // Validate the JWT separately from database access.
         try {
             if (!jwtService.isTokenValid(token)) {
                 sendUnauthorized(response);
@@ -69,24 +73,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             email = jwtService.extractEmail(token);
-
+            sessionId = jwtService.extractSessionId(token);
         } catch (io.jsonwebtoken.JwtException
                  | IllegalArgumentException exception) {
             sendUnauthorized(response);
             return;
         }
 
-        if (email == null || email.isBlank()) {
+        if (email == null || email.isBlank() || sessionId == null) {
             sendUnauthorized(response);
             return;
         }
 
-        // Load the user and current role from PostgreSQL.
-        // Database exceptions are not treated as invalid JWTs.
+        // Keep account status and role authoritative in PostgreSQL.
         User user = userRepository.findByEmailWithRole(email)
                 .orElse(null);
 
-        // Reject deleted users and inactive accounts.
         if (user == null
                 || !"ACTIVE".equalsIgnoreCase(user.getStatus())
                 || user.getRole() == null
@@ -95,7 +97,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Use the current database role, not the JWT role claim.
+        // Only invalid sessions become 401; database failures propagate.
+        try {
+            loginSessionService.requireActive(sessionId, user.getId());
+        } catch (InvalidTokenException exception) {
+            sendUnauthorized(response);
+            return;
+        }
+
         String currentRole = user.getRole().getName().name();
 
         var authorities = List.of(
@@ -104,13 +113,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        user.getEmail(),
-                        null,
-                        authorities
+                        user.getEmail(), null, authorities
                 );
 
-        SecurityContextHolder
-                .getContext()
+        // Make the validated session ID available to gate enforcement.
+        authentication.setDetails(sessionId);
+
+        SecurityContextHolder.getContext()
                 .setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
@@ -120,7 +129,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws IOException {
 
         SecurityContextHolder.clearContext();
-
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

@@ -3,6 +3,7 @@ package com.hykon.iot_backend.config;
 import com.hykon.iot_backend.repository.UserRepository;
 import com.hykon.iot_backend.security.JwtAuthenticationFilter;
 import com.hykon.iot_backend.service.JwtService;
+import com.hykon.iot_backend.service.LoginSessionService;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -21,9 +22,12 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(
             JwtService jwtService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            LoginSessionService loginSessionService
     ) {
-        return new JwtAuthenticationFilter(jwtService, userRepository);
+        return new JwtAuthenticationFilter(
+                jwtService, userRepository, loginSessionService
+        );
     }
 
     // Keep the JWT filter registered only in Spring Security's filter chain.
