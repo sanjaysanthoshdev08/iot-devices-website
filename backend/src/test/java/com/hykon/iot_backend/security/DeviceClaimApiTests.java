@@ -6,7 +6,7 @@ import com.hykon.iot_backend.dto.ClaimDeviceRequest;
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.exception.GlobalExceptionHandler;
 import com.hykon.iot_backend.repository.UserRepository;
-import com.hykon.iot_backend.service.DeviceClaimService;
+import com.hykon.iot_backend.service.SessionAccessVerificationService;
 import com.hykon.iot_backend.service.JwtService;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +32,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class DeviceClaimApiTests {
 
+    private static final java.util.UUID SESSION_ID =
+            java.util.UUID.randomUUID();
+
+    @org.junit.jupiter.api.BeforeEach
+    void attachAuthenticatedTestSession() {
+        var authentication = org.springframework.security.core.context
+                .SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication instanceof
+                org.springframework.security.authentication.UsernamePasswordAuthenticationToken token) {
+            token.setDetails(SESSION_ID);
+        }
+    }
+
+    @Test
+    @WithMockUser(
+            username = "customer@example.com",
+            roles = "USER"
+    )
+    void missingSessionIdentityIsRejectedBeforeVerification() throws Exception {
+        var authentication = org.springframework.security.core.context
+                .SecurityContextHolder.getContext().getAuthentication();
+
+        ((org.springframework.security.authentication.UsernamePasswordAuthenticationToken)
+                authentication).setDetails(null);
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(APPLICATION_JSON)
+                        .content(VALID_REQUEST))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(claimService);
+    }
+
     private static final String ENDPOINT = "/api/v1/user/devices/claim";
 
     private static final String VALID_REQUEST = """
@@ -45,7 +79,7 @@ class DeviceClaimApiTests {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private DeviceClaimService claimService;
+    private SessionAccessVerificationService claimService;
 
     @MockitoBean
     private JwtService jwtService;
@@ -98,9 +132,9 @@ class DeviceClaimApiTests {
                 null, 1L, 1L, 30L, "ACTIVE", null
         );
 
-        when(claimService.claim(
+        when(claimService.verifyDevice(
                 any(ClaimDeviceRequest.class),
-                eq("customer@example.com")
+                eq("customer@example.com"), eq(SESSION_ID)
         )).thenReturn(response);
 
         mockMvc.perform(post(ENDPOINT)
@@ -113,9 +147,9 @@ class DeviceClaimApiTests {
                 .andExpect(jsonPath("$.data.password").doesNotExist())
                 .andExpect(jsonPath("$.data.accessToken").doesNotExist());
 
-        verify(claimService).claim(
+        verify(claimService).verifyDevice(
                 any(ClaimDeviceRequest.class),
-                eq("customer@example.com")
+                eq("customer@example.com"), eq(SESSION_ID)
         );
     }
 
@@ -138,9 +172,9 @@ class DeviceClaimApiTests {
             roles = "USER"
     )
     void failedVerificationReturnsGenericBadRequest() throws Exception {
-        when(claimService.claim(
+        when(claimService.verifyDevice(
                 any(ClaimDeviceRequest.class),
-                eq("customer@example.com")
+                eq("customer@example.com"), eq(SESSION_ID)
         )).thenThrow(new IllegalArgumentException(
                 "Device verification failed"
         ));

@@ -6,7 +6,7 @@ import com.hykon.iot_backend.dto.DistributorAccessRequest;
 import com.hykon.iot_backend.dto.DistributorAccessResponse;
 import com.hykon.iot_backend.exception.GlobalExceptionHandler;
 import com.hykon.iot_backend.repository.UserRepository;
-import com.hykon.iot_backend.service.DistributorAccessService;
+import com.hykon.iot_backend.service.SessionAccessVerificationService;
 import com.hykon.iot_backend.service.JwtService;
 
 import org.junit.jupiter.api.Test;
@@ -36,6 +36,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class DistributorAccessApiTests {
 
+    private static final java.util.UUID SESSION_ID =
+            java.util.UUID.randomUUID();
+
+    @org.junit.jupiter.api.BeforeEach
+    void attachAuthenticatedTestSession() {
+        var authentication = org.springframework.security.core.context
+                .SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication instanceof
+                org.springframework.security.authentication.UsernamePasswordAuthenticationToken token) {
+            token.setDetails(SESSION_ID);
+        }
+    }
+
+    @Test
+    @WithMockUser(
+            username = "distributor@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void missingSessionIdentityIsRejectedBeforeVerification() throws Exception {
+        var authentication = org.springframework.security.core.context
+                .SecurityContextHolder.getContext().getAuthentication();
+
+        ((org.springframework.security.authentication.UsernamePasswordAuthenticationToken)
+                authentication).setDetails(null);
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(APPLICATION_JSON)
+                        .content(VALID_REQUEST))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(accessService);
+    }
+
     private static final String ENDPOINT =
             "/api/v1/distributor/access/verify";
 
@@ -53,7 +87,7 @@ class DistributorAccessApiTests {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private DistributorAccessService accessService;
+    private SessionAccessVerificationService accessService;
 
     @MockitoBean
     private JwtService jwtService;
@@ -107,8 +141,8 @@ class DistributorAccessApiTests {
                         1L, "MAIN", "ERNAKULAM", "EKM"
                 );
 
-        when(accessService.verify(
-                any(DistributorAccessRequest.class), eq(EMAIL)
+        when(accessService.verifyDistributor(
+                any(DistributorAccessRequest.class), eq(EMAIL), eq(SESSION_ID)
         )).thenReturn(response);
 
         mockMvc.perform(post(ENDPOINT)
@@ -127,7 +161,7 @@ class DistributorAccessApiTests {
         ArgumentCaptor<DistributorAccessRequest> captured =
                 ArgumentCaptor.forClass(DistributorAccessRequest.class);
 
-        verify(accessService).verify(captured.capture(), eq(EMAIL));
+        verify(accessService).verifyDistributor(captured.capture(), eq(EMAIL), eq(SESSION_ID));
 
         assertEquals("DIST-A", captured.getValue().getDistributorCode());
         assertEquals("MAIN", captured.getValue().getBranchCode());
@@ -157,8 +191,8 @@ class DistributorAccessApiTests {
             roles = "DISTRIBUTOR_ADMIN"
     )
     void incorrectDetailsReturnGenericVerificationFailure() throws Exception {
-        when(accessService.verify(
-                any(DistributorAccessRequest.class), eq(EMAIL)
+        when(accessService.verifyDistributor(
+                any(DistributorAccessRequest.class), eq(EMAIL), eq(SESSION_ID)
         )).thenThrow(new IllegalArgumentException(
                 "Distributor verification failed"
         ));
@@ -178,8 +212,8 @@ class DistributorAccessApiTests {
             roles = "DISTRIBUTOR_ADMIN"
     )
     void serviceDenialReturnsForbidden() throws Exception {
-        when(accessService.verify(
-                any(DistributorAccessRequest.class), eq(EMAIL)
+        when(accessService.verifyDistributor(
+                any(DistributorAccessRequest.class), eq(EMAIL), eq(SESSION_ID)
         )).thenThrow(new ResponseStatusException(
                 HttpStatus.FORBIDDEN,
                 "DISTRIBUTOR_ADMIN authentication is required"
