@@ -1,11 +1,11 @@
-
 package com.hykon.iot_backend.service;
 
+import com.hykon.iot_backend.entity.LoginSession;
 import com.hykon.iot_backend.entity.RefreshToken;
 import com.hykon.iot_backend.entity.User;
 import com.hykon.iot_backend.exception.InvalidTokenException;
 import com.hykon.iot_backend.repository.RefreshTokenRepository;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,77 +17,83 @@ import java.util.Base64;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final long refreshTokenExpiration;
+    private final LoginSessionService loginSessionService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
     public RefreshTokenService(
             RefreshTokenRepository refreshTokenRepository,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
+            LoginSessionService loginSessionService
     ) {
         this.refreshTokenRepository = refreshTokenRepository;
-        this.refreshTokenExpiration = refreshTokenExpiration;
+        this.loginSessionService = loginSessionService;
     }
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-
-        byte[] randomBytes = new byte[64];
-        secureRandom.nextBytes(randomBytes);
-
-        String token = Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(randomBytes);
-
-        RefreshToken refreshToken = new RefreshToken();
-
-        refreshToken.setToken(token);
-        refreshToken.setUser(user);
-        refreshToken.setExpiresAt(
-                LocalDateTime.now()
-                        .plusNanos(refreshTokenExpiration * 1_000_000)
-        );
-        refreshToken.setRevoked(false);
-
-        return refreshTokenRepository.save(refreshToken);
+        LoginSession session = loginSessionService.create(user);
+        return createForSession(user, session);
     }
 
     public boolean isTokenValid(RefreshToken refreshToken) {
+        if (refreshToken == null
+                || refreshToken.isRevoked()
+                || refreshToken.getExpiresAt() == null
+                || !refreshToken.getExpiresAt()
+                        .isAfter(LocalDateTime.now())) {
+            return false;
+        }
 
-        return !refreshToken.isRevoked()
-                && refreshToken.getExpiresAt().isAfter(LocalDateTime.now());
+        LoginSession session = refreshToken.getSession();
+
+        return session != null
+                && !session.isRevoked()
+                && session.getExpiresAt() != null
+                && session.getExpiresAt().isAfter(LocalDateTime.now())
+                && session.getUser() != null
+                && refreshToken.getUser() != null
+                && session.getUser().getId() != null
+                && session.getUser().getId().equals(
+                        refreshToken.getUser().getId()
+                );
     }
 
-    // Existing method retained.
     public RefreshToken findByToken(String token) {
-
         return refreshTokenRepository.findByToken(token)
                 .orElseThrow(() ->
                         new InvalidTokenException("Invalid refresh token"));
     }
 
-    // New method: retrieve and lock the token row for the refresh transaction.
     @Transactional
     public RefreshToken findByTokenForUpdate(String token) {
-
         return refreshTokenRepository.findByTokenForUpdate(token)
                 .orElseThrow(() ->
                         new InvalidTokenException("Invalid refresh token"));
     }
 
-    // Existing method retained.
     @Transactional
     public void revokeToken(RefreshToken refreshToken) {
-
         refreshToken.setRevoked(true);
-
         refreshTokenRepository.save(refreshToken);
     }
 
-    // Existing method retained.
+    @Transactional
+    public void revokeTokenAndSession(RefreshToken refreshToken) {
+        if (refreshToken.getSession() == null
+                || refreshToken.getUser() == null) {
+            throw new InvalidTokenException("Login session is missing");
+        }
+
+        loginSessionService.revoke(
+                refreshToken.getSession().getId(),
+                refreshToken.getUser().getId()
+        );
+
+        revokeToken(refreshToken);
+    }
+
     @Transactional
     public RefreshToken rotateRefreshToken(RefreshToken oldRefreshToken) {
-
         if (!isTokenValid(oldRefreshToken)) {
             throw new InvalidTokenException(
                     "Refresh token is expired or revoked"
@@ -96,10 +102,35 @@ public class RefreshTokenService {
 
         User user = oldRefreshToken.getUser();
 
-        // Revoke the old refresh token so it cannot be reused.
+        LoginSession session = loginSessionService.renew(
+                oldRefreshToken.getSession().getId(),
+                user.getId()
+        );
+
+        // Rotation revokes the old token, while retaining its session.
         revokeToken(oldRefreshToken);
 
-        // Create and persist a completely new refresh token.
-        return createRefreshToken(user);
+        return createForSession(user, session);
+    }
+
+    private RefreshToken createForSession(
+            User user,
+            LoginSession session
+    ) {
+        byte[] randomBytes = new byte[64];
+        secureRandom.nextBytes(randomBytes);
+
+        String token = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(randomBytes);
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(token);
+        refreshToken.setUser(user);
+        refreshToken.setSession(session);
+        refreshToken.setExpiresAt(session.getExpiresAt());
+        refreshToken.setRevoked(false);
+
+        return refreshTokenRepository.save(refreshToken);
     }
 }
