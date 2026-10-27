@@ -63,6 +63,16 @@ public class LoginSessionService {
     }
 
     @Transactional
+    public LoginSession requireActiveForUpdate(
+            UUID sessionId,
+            Long userId
+    ) {
+        LoginSession session = findOwnedForUpdate(sessionId, userId);
+        requireNotExpiredOrRevoked(session);
+        return session;
+    }
+
+    @Transactional
     public LoginSession renew(UUID sessionId, Long userId) {
         LoginSession session = findOwnedForUpdate(sessionId, userId);
 
