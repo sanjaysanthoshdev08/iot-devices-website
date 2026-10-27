@@ -48,6 +48,40 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateAccessToken(User user, java.util.UUID sessionId) {
+        if (sessionId == null) {
+            throw new IllegalArgumentException("Login session ID is required");
+        }
+
+        Date now = new Date();
+        Date expiration = new Date(
+                now.getTime() + accessTokenExpiration
+        );
+
+        return Jwts.builder()
+                .subject(user.getEmail())
+                .claim("userId", user.getId())
+                .claim("role", user.getRole().getName().name())
+                .claim("sid", sessionId.toString())
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public java.util.UUID extractSessionId(String token) {
+        String sessionId = extractAllClaims(token)
+                .get("sid", String.class);
+
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Login session ID is missing"
+            );
+        }
+
+        return java.util.UUID.fromString(sessionId);
+    }
+
     public String extractEmail(String token) {
 
         return extractAllClaims(token).getSubject();
