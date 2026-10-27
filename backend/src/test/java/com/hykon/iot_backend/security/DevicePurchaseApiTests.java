@@ -33,6 +33,50 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class DevicePurchaseApiTests {
 
+    private void assertPolicyDenial(
+            org.springframework.http.HttpStatus deniedStatus,
+            String message
+    ) throws Exception {
+        doThrow(new org.springframework.web.server.ResponseStatusException(
+                deniedStatus,
+                message
+        )).when(accessPolicy).requireVerified(
+                any(org.springframework.security.core.Authentication.class)
+        );
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(APPLICATION_JSON)
+                        .content(VALID_REQUEST))
+                .andExpect(status().is(deniedStatus.value()))
+                .andExpect(jsonPath("$.message").value(message));
+
+        verifyNoInteractions(purchaseService);
+    }
+
+    @Test
+    @WithMockUser(
+            username = "creator@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void unverifiedDistributorCannotPerformOperation() throws Exception {
+        assertPolicyDenial(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "Access verification is required"
+        );
+    }
+
+    @Test
+    @WithMockUser(
+            username = "creator@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void missingSessionIdentityBlocksOperation() throws Exception {
+        assertPolicyDenial(
+                org.springframework.http.HttpStatus.UNAUTHORIZED,
+                "An authenticated login session is required"
+        );
+    }
+
     private static final String ENDPOINT =
             "/api/v1/management/device-purchases";
 
@@ -49,6 +93,9 @@ class DevicePurchaseApiTests {
 
     @MockitoBean
     private DevicePurchaseService purchaseService;
+
+    @MockitoBean
+    private com.hykon.iot_backend.service.SessionAccessPolicyService accessPolicy;
 
     @MockitoBean
     private JwtService jwtService;
@@ -102,7 +149,11 @@ class DevicePurchaseApiTests {
                 .andExpect(jsonPath("$.data.password").doesNotExist())
                 .andExpect(jsonPath("$.data.accessToken").doesNotExist());
 
-        verify(purchaseService).record(
+        var order = inOrder(accessPolicy, purchaseService);
+        order.verify(accessPolicy).requireVerified(
+                any(org.springframework.security.core.Authentication.class)
+        );
+        order.verify(purchaseService).record(
                 any(RecordDevicePurchaseRequest.class),
                 eq("creator@example.com")
         );

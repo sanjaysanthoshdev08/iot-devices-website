@@ -33,6 +33,50 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class DeviceRegistrationApiTests {
 
+    private void assertPolicyDenial(
+            org.springframework.http.HttpStatus deniedStatus,
+            String message
+    ) throws Exception {
+        doThrow(new org.springframework.web.server.ResponseStatusException(
+                deniedStatus,
+                message
+        )).when(accessPolicy).requireVerified(
+                any(org.springframework.security.core.Authentication.class)
+        );
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(APPLICATION_JSON)
+                        .content(VALID_REQUEST))
+                .andExpect(status().is(deniedStatus.value()))
+                .andExpect(jsonPath("$.message").value(message));
+
+        verifyNoInteractions(registrationService);
+    }
+
+    @Test
+    @WithMockUser(
+            username = "creator@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void unverifiedDistributorCannotPerformOperation() throws Exception {
+        assertPolicyDenial(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "Access verification is required"
+        );
+    }
+
+    @Test
+    @WithMockUser(
+            username = "creator@example.com",
+            roles = "DISTRIBUTOR_ADMIN"
+    )
+    void missingSessionIdentityBlocksOperation() throws Exception {
+        assertPolicyDenial(
+                org.springframework.http.HttpStatus.UNAUTHORIZED,
+                "An authenticated login session is required"
+        );
+    }
+
     private static final String ENDPOINT = "/api/v1/management/devices";
 
     private static final String VALID_REQUEST = """
@@ -49,6 +93,9 @@ class DeviceRegistrationApiTests {
 
     @MockitoBean
     private DeviceRegistrationService registrationService;
+
+    @MockitoBean
+    private com.hykon.iot_backend.service.SessionAccessPolicyService accessPolicy;
 
     @MockitoBean
     private JwtService jwtService;
@@ -101,7 +148,11 @@ class DeviceRegistrationApiTests {
                 .andExpect(jsonPath("$.data.password").doesNotExist())
                 .andExpect(jsonPath("$.data.accessToken").doesNotExist());
 
-        verify(registrationService).register(
+        var order = inOrder(accessPolicy, registrationService);
+        order.verify(accessPolicy).requireVerified(
+                any(org.springframework.security.core.Authentication.class)
+        );
+        order.verify(registrationService).register(
                 any(RegisterDeviceRequest.class),
                 eq("creator@example.com")
         );
