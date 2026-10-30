@@ -1565,6 +1565,485 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Step 9 Part 6: Gap-filling regression tests
+  // ─────────────────────────────────────────────────────────────────────────────
+  describe('Step 9 Part 6: Gap-filling regression tests', () => {
+
+    beforeEach(() => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({
+        id: 1,
+        name: 'Admin Charlie',
+        email: 'charlie@hykon.com',
+        role: 'HYKON_ADMIN',
+        status: 'ACTIVE'
+      });
+      fixture.detectChanges();
+      app.isDashboardOpen.set(true);
+      app.isDashboardAuthorized.set(true);
+    });
+
+    // ── Direct URL routing ────────────────────────────────────────────────────
+    describe('Direct URL routing', () => {
+      it('/systems direct URL opens Systems tab for authenticated USER via backend verification', () => {
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Alice', email: 'alice@test.com', role: 'USER', status: 'ACTIVE'
+        });
+
+        mockDeviceAccessService.listDevices.mockReturnValue(of({
+          success: true,
+          message: 'OK',
+          data: {
+            content: [{ id: 5, deviceCode: 'DEV-5', serialNumber: 'SN-5', systemName: 'HALO 5K', model: 'H5', branchId: 1, distributorId: 1, ownerUserId: 2, status: 'ACTIVE', createdAt: '' }],
+            totalElements: 1, totalPages: 1, size: 10, number: 0, first: true, last: true
+          }
+        }));
+
+        app.handleUrlRouting('/systems');
+
+        expect(app.isDashboardOpen()).toBe(true);
+        expect(app.activeDashboardNav()).toBe('systems');
+      });
+
+      it('/systems direct URL when backend returns 403 opens correct role gate', () => {
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Bob', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+
+        mockDeviceAccessService.listDevices.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'Not verified' } }))
+        );
+
+        app.handleUrlRouting('/systems');
+
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isDeviceAuthModalOpen()).toBe(true);
+        expect(app.isDistributorRole()).toBe(true);
+      });
+
+      it('/device-login direct URL for unauthenticated user redirects to login', () => {
+        mockAuthService.isAuthenticated.set(false);
+        mockAuthService.currentUser.set(null);
+
+        app.handleUrlRouting('/device-login');
+
+        expect(app.isLoginModalOpen()).toBe(true);
+        expect(app.isDashboardOpen()).toBe(false);
+      });
+
+      it('/device-login direct URL for HYKON_ADMIN bypasses gate and opens dashboard', () => {
+        mockDeviceAccessService.listDevices.mockReturnValue(of({
+          success: true, message: 'OK',
+          data: { content: [], totalElements: 0, totalPages: 0, size: 10, number: 0, first: true, last: true }
+        }));
+
+        app.handleUrlRouting('/device-login');
+
+        expect(app.isDeviceAuthModalOpen()).toBe(false);
+        expect(app.isDashboardOpen()).toBe(true);
+      });
+    });
+
+    // ── Distributor verification error paths ──────────────────────────────────
+    describe('Distributor verification error paths', () => {
+      beforeEach(() => {
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Bob', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+        app.isDashboardOpen.set(false);
+        app.isDashboardAuthorized.set(false);
+        app.isDeviceAuthModalOpen.set(true);
+        app.distributorCode.set('DIST-1');
+        app.branchCode.set('BR-1');
+        app.distributorLocation.set('Kochi');
+      });
+
+      it('non-429 failed distributor verification shows error and keeps gate open', () => {
+        mockDeviceAccessService.verifyDistributor.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 400, error: { message: 'Distributor code not recognised' } }))
+        );
+
+        app.verifyDistributorCredentials();
+
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isAuthVerifying()).toBe(false);
+        expect(app.authErrorMessage()).toBe('Distributor code not recognised');
+      });
+
+      it('401 on distributor verification shows error message in gate (gate remains open)', () => {
+        // verifyDistributorCredentials does not have a special 401 path; it shows
+        // the server error message and leaves the gate open. The auth interceptor
+        // handles true 401s at the HTTP level, so a 401 reaching the component
+        // falls through to the generic error branch.
+        mockDeviceAccessService.verifyDistributor.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 401, error: { message: 'Session expired' } }))
+        );
+
+        app.verifyDistributorCredentials();
+
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isAuthVerifying()).toBe(false);
+        // Gate stays open with error message — user must re-authenticate via login button
+        expect(app.isDeviceAuthModalOpen()).toBe(true);
+        expect(app.authErrorMessage()).toContain('Session expired');
+      });
+
+      it('late distributor verification response after gate closure is ignored', () => {
+        const responseSubject = new Subject<any>();
+        mockDeviceAccessService.verifyDistributor.mockReturnValue(responseSubject.asObservable());
+
+        app.verifyDistributorCredentials();
+        app.closeDeviceAuthModal();
+
+        responseSubject.next({
+          success: true, message: 'Verified',
+          data: { distributorId: 1, distributorCode: 'DIST-1', distributorName: 'Hykon South', branchId: 1, branchCode: 'BR-1', branchName: 'Kochi Branch', location: 'Kochi' }
+        });
+        responseSubject.complete();
+
+        expect(app.isDashboardOpen()).toBe(false);
+      });
+    });
+
+    // ── Purchase recording: additional validation and recovery ────────────────
+    describe('Purchase recording: additional validation and recovery', () => {
+      beforeEach(() => {
+        app.openPurchaseModal();
+        app.purchaseDeviceId.set('10');
+        app.purchaseCustomerUserId.set('20');
+      });
+
+      it('blocks USER role from opening or submitting purchase modal', () => {
+        mockAuthService.currentUser.set({
+          id: 3, name: 'Alice', email: 'alice@test.com', role: 'USER', status: 'ACTIVE'
+        });
+        // Ensure modal is closed before attempting to open as USER
+        app.isPurchaseModalOpen.set(false);
+
+        app.openPurchaseModal();
+        expect(app.isPurchaseModalOpen()).toBe(false);
+
+        app.submitRecordPurchase();
+        expect(mockManagementService.recordDevicePurchase).not.toHaveBeenCalled();
+        expect(app.purchaseError()).toBe('Only administrators can record purchases.');
+      });
+
+      it('validates blank purchase reference is rejected', () => {
+        app.purchaseReference.set('');
+
+        app.submitRecordPurchase();
+
+        expect(mockManagementService.recordDevicePurchase).not.toHaveBeenCalled();
+        expect(app.purchaseError()).toBe('Purchase reference is required.');
+      });
+
+      it('validates purchase reference exceeding 150 characters is rejected', () => {
+        app.purchaseReference.set('X'.repeat(151));
+
+        app.submitRecordPurchase();
+
+        expect(mockManagementService.recordDevicePurchase).not.toHaveBeenCalled();
+        expect(app.purchaseError()).toBe('Purchase reference must not exceed 150 characters.');
+      });
+
+      it('prevents duplicate submission while purchase request is pending', () => {
+        app.purchaseReference.set('INV-PENDING');
+
+        const pendingSubject = new Subject<any>();
+        mockManagementService.recordDevicePurchase.mockReturnValue(pendingSubject.asObservable());
+
+        app.submitRecordPurchase();
+        expect(app.isSubmittingPurchase()).toBe(true);
+
+        // Second attempt while pending must be silently blocked
+        app.submitRecordPurchase();
+        expect(mockManagementService.recordDevicePurchase).toHaveBeenCalledTimes(1);
+
+        pendingSubject.next({ success: true, data: { id: 1 } });
+        pendingSubject.complete();
+
+        expect(app.isSubmittingPurchase()).toBe(false);
+        expect(app.isPurchaseModalOpen()).toBe(false);
+      });
+
+      it('401 on purchase recording closes modal and opens login', () => {
+        app.purchaseReference.set('INV-401-TEST');
+        mockManagementService.recordDevicePurchase.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 401, error: { message: 'Token expired' } }))
+        );
+
+        app.submitRecordPurchase();
+
+        expect(app.isPurchaseModalOpen()).toBe(false);
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isLoginModalOpen()).toBe(true);
+      });
+
+      it('403 on purchase for DISTRIBUTOR_ADMIN redirects to distributor gate', () => {
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Bob', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+        app.isPurchaseModalOpen.set(true);
+        app.purchaseDeviceId.set('10');
+        app.purchaseCustomerUserId.set('20');
+        app.purchaseReference.set('INV-403-DA');
+
+        mockManagementService.recordDevicePurchase.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'Distributor session unverified' } }))
+        );
+
+        app.submitRecordPurchase();
+
+        expect(app.isPurchaseModalOpen()).toBe(false);
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isDeviceAuthModalOpen()).toBe(true);
+        expect(app.isDistributorRole()).toBe(true);
+      });
+
+      it('403 on purchase for HYKON_ADMIN shows toast — never opens gate', () => {
+        app.purchaseReference.set('INV-403-ADMIN');
+        mockManagementService.recordDevicePurchase.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'Forbidden' } }))
+        );
+
+        app.submitRecordPurchase();
+
+        expect(app.isPurchaseModalOpen()).toBe(false);
+        expect(app.isDeviceAuthModalOpen()).toBe(false);
+        expect(app.dashboardToast()).toContain('Access denied');
+      });
+
+      it('ignores late purchase response after logout', () => {
+        app.purchaseReference.set('INV-LATE');
+        const pendingSubject = new Subject<any>();
+        mockManagementService.recordDevicePurchase.mockReturnValue(pendingSubject.asObservable());
+
+        app.submitRecordPurchase();
+        expect(app.isSubmittingPurchase()).toBe(true);
+
+        app.onLogout();
+        mockAuthService.clearSession();
+        fixture.detectChanges();
+
+        pendingSubject.next({ success: true, data: { id: 55 } });
+        pendingSubject.complete();
+
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isPurchaseModalOpen()).toBe(false);
+      });
+    });
+
+    // ── Distributor admin: field validation and duplicate-submit prevention ───
+    describe('Distributor admin: field validation and duplicate submission', () => {
+      it('rejects short name (< 2 chars)', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('A');
+        app.distAdminEmail.set('a@test.com');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('Password1!');
+
+        app.submitCreateDistAdmin();
+
+        expect(mockManagementService.createDistributorAdmin).not.toHaveBeenCalled();
+        expect(app.distAdminError()).toBe('Name must be at least 2 characters.');
+      });
+
+      it('rejects invalid email format', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('not-an-email');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('Password1!');
+
+        app.submitCreateDistAdmin();
+
+        expect(mockManagementService.createDistributorAdmin).not.toHaveBeenCalled();
+        expect(app.distAdminError()).toBe('Valid email address is required.');
+      });
+
+      it('rejects password shorter than 8 characters', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('jane@test.com');
+        app.distAdminPassword.set('abc');
+        app.distAdminConfirmPassword.set('abc');
+
+        app.submitCreateDistAdmin();
+
+        expect(mockManagementService.createDistributorAdmin).not.toHaveBeenCalled();
+        expect(app.distAdminError()).toBe('Password must be at least 8 characters.');
+      });
+
+      it('rejects mismatched passwords', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('jane@test.com');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('DifferentPass!');
+
+        app.submitCreateDistAdmin();
+
+        expect(mockManagementService.createDistributorAdmin).not.toHaveBeenCalled();
+        expect(app.distAdminError()).toBe('Passwords do not match.');
+      });
+
+      it('prevents duplicate admin submission while request is pending', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('jane@test.com');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('Password1!');
+
+        const pendingSubject = new Subject<any>();
+        mockManagementService.createDistributorAdmin.mockReturnValue(pendingSubject.asObservable());
+
+        app.submitCreateDistAdmin();
+        expect(app.isSubmittingDistAdmin()).toBe(true);
+
+        app.submitCreateDistAdmin();
+        expect(mockManagementService.createDistributorAdmin).toHaveBeenCalledTimes(1);
+
+        pendingSubject.next({ success: true, data: { id: 99, name: 'Jane Doe', email: 'jane@test.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE', createdAt: '' } });
+        pendingSubject.complete();
+
+        expect(app.isSubmittingDistAdmin()).toBe(false);
+        expect(app.isCreateDistAdminModalOpen()).toBe(false);
+      });
+
+      it('displays backend 400 validation error without closing admin modal', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('jane@test.com');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('Password1!');
+
+        mockManagementService.createDistributorAdmin.mockReturnValue(
+          throwError(() => new HttpErrorResponse({
+            status: 400,
+            error: { success: false, status: 400, message: 'Email already registered', errors: { email: 'Email already registered' } }
+          }))
+        );
+
+        app.submitCreateDistAdmin();
+
+        expect(app.isCreateDistAdminModalOpen()).toBe(true);
+        expect(app.distAdminError()).toBe('Email already registered');
+      });
+
+      it('401 on admin creation closes modal and opens login', () => {
+        app.openCreateDistAdminModal();
+        app.distAdminName.set('Jane Doe');
+        app.distAdminEmail.set('jane@test.com');
+        app.distAdminPassword.set('Password1!');
+        app.distAdminConfirmPassword.set('Password1!');
+
+        mockManagementService.createDistributorAdmin.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 401, error: { message: 'Token expired' } }))
+        );
+
+        app.submitCreateDistAdmin();
+
+        expect(app.isCreateDistAdminModalOpen()).toBe(false);
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isLoginModalOpen()).toBe(true);
+      });
+
+      it('401 on distributor creation closes modal and opens login', () => {
+        app.lastCreatedAdminId.set(88);
+        app.openCreateDistributorModal();
+        app.distCode.set('DIST-88');
+        app.distName.set('Hykon West');
+        app.distAdminUserId.set('88');
+        app.distBranchCode.set('BR-WEST-01');
+        app.distBranchName.set('West Branch');
+        app.distLocation.set('Kochi');
+
+        mockManagementService.createDistributor.mockReturnValue(
+          throwError(() => new HttpErrorResponse({ status: 401, error: { message: 'Token expired' } }))
+        );
+
+        app.submitCreateDistributor();
+
+        expect(app.isCreateDistributorModalOpen()).toBe(false);
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isLoginModalOpen()).toBe(true);
+      });
+
+      it('prevents duplicate distributor submission while request is pending', () => {
+        app.lastCreatedAdminId.set(88);
+        app.openCreateDistributorModal();
+        app.distCode.set('DIST-88');
+        app.distName.set('Hykon West');
+        app.distAdminUserId.set('88');
+        app.distBranchCode.set('BR-WEST-01');
+        app.distBranchName.set('West Branch');
+        app.distLocation.set('Kochi');
+
+        const pendingSubject = new Subject<any>();
+        mockManagementService.createDistributor.mockReturnValue(pendingSubject.asObservable());
+
+        app.submitCreateDistributor();
+        expect(app.isSubmittingDistributor()).toBe(true);
+
+        app.submitCreateDistributor();
+        expect(mockManagementService.createDistributor).toHaveBeenCalledTimes(1);
+
+        pendingSubject.next({ success: true, data: { id: 15, distributorCode: 'DIST-88', name: 'Hykon West', administratorUserId: 88, status: 'ACTIVE', branchId: 10, branchCode: 'BR-WEST-01', branchName: 'West Branch', location: 'Kochi', branchStatus: 'ACTIVE' } });
+        pendingSubject.complete();
+
+        expect(app.isSubmittingDistributor()).toBe(false);
+        expect(app.isCreateDistributorModalOpen()).toBe(false);
+      });
+
+      it('distributor creation: validates required fields', () => {
+        app.lastCreatedAdminId.set(88);
+        app.openCreateDistributorModal();
+        // Missing distributorCode
+        app.distAdminUserId.set('88');
+        app.distCode.set('');
+        app.distName.set('Hykon West');
+        app.distBranchCode.set('BR-1');
+        app.distBranchName.set('Branch 1');
+        app.distLocation.set('Kochi');
+
+        app.submitCreateDistributor();
+        expect(mockManagementService.createDistributor).not.toHaveBeenCalled();
+        expect(app.distError()).toBe('Distributor ID is required.');
+      });
+    });
+
+    // ── Unauthenticated check (post-logout state guard) ───────────────────────
+    describe('Post-logout state guards', () => {
+      it('dashboard-open flag is false immediately after logout clears session', () => {
+        app.isDashboardOpen.set(true);
+        app.isDashboardAuthorized.set(true);
+
+        mockAuthService.clearSession();
+        fixture.detectChanges();
+
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isDashboardAuthorized()).toBe(false);
+        expect(app.isDeviceAuthModalOpen()).toBe(false);
+      });
+
+      it('clearDashboardAndGateState wipes all form fields and passwords', () => {
+        app.distAdminPassword.set('S3cret!');
+        app.distAdminConfirmPassword.set('S3cret!');
+        app.newSystemDeviceCode.set('DEV-X');
+        app.purchaseReference.set('INV-99');
+
+        app.clearDashboardAndGateState();
+
+        expect(app.distAdminPassword()).toBe('');
+        expect(app.distAdminConfirmPassword()).toBe('');
+        // Dashboard and gate state cleared
+        expect(app.isDashboardOpen()).toBe(false);
+        expect(app.isDashboardAuthorized()).toBe(false);
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Step 9 Part 5: Overview and Warnings accuracy
   // ─────────────────────────────────────────────────────────────────────────────
   describe('Step 9 Part 5: Overview and Warnings accuracy', () => {
