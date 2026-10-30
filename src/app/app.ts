@@ -1,9 +1,10 @@
-import { Component, signal, computed, HostListener, ViewChild, ElementRef, AfterViewInit, OnDestroy, Inject, PLATFORM_ID, inject } from '@angular/core';
+import { Component, signal, computed, effect, untracked, HostListener, ViewChild, ElementRef, AfterViewInit, OnDestroy, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
+import { DeviceAccessService } from './services/device-access.service';
 import { SystemRecordsService, SystemRecord, SystemStatus } from './services/system-records.service';
 import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus, CreateAccountRequest } from './services/accounts.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -43,24 +44,30 @@ export interface InfinityParticle {
 })
 export class App implements AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
+  readonly deviceAccessService = inject(DeviceAccessService);
   readonly systemRecordsService = inject(SystemRecordsService);
   readonly accountsService = inject(AccountsService);
   private readonly http = inject(HttpClient);
 
+  // In-memory authorization state originating strictly from backend success (never persisted in storage)
+  readonly isDashboardAuthorized = signal<boolean>(false);
+  readonly dashboardRetryAction = signal<(() => void) | null>(null);
+
   constructor(
     @Inject(PLATFORM_ID) private platformId: object
   ) {
-    if (isPlatformBrowser(this.platformId)) {
-      if (window.location.pathname.includes('device-login')) {
-        this.isDeviceAuthModalOpen.set(true);
-      } else if (window.location.pathname.includes('systems')) {
-        this.isDashboardOpen.set(true);
-        this.activeDashboardNav.set('systems');
-      } else if (window.location.pathname.includes('dashboard')) {
-        this.isDashboardOpen.set(true);
-        this.activeDashboardNav.set('overview');
-      }
-    }
+    // Reactively observe authentication state.
+    // When authentication clears, immediately close protected content/gates, reset state,
+    // and invalidate pending requests without accidentally tracking dashboard/form signals.
+    effect(() => {
+      const isAuth = this.isAuthenticated();
+      const user = this.currentUser();
+      untracked(() => {
+        if (!isAuth || !user) {
+          this.handleAuthenticationCleared();
+        }
+      });
+    });
   }
   @ViewChild('aboutCanvas') aboutCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('profileContainerRef') profileContainerRef!: ElementRef<HTMLElement>;
@@ -70,6 +77,13 @@ export class App implements AfterViewInit, OnDestroy {
   // Authentication state exposed from AuthService
   readonly isAuthenticated = this.authService.isAuthenticated;
   readonly currentUser = this.authService.currentUser;
+  readonly currentRole = computed(() => this.currentUser()?.role || '');
+  readonly isDistributorRole = computed(() => this.currentRole() === 'DISTRIBUTOR_ADMIN');
+  readonly isCustomerRole = computed(() => this.currentRole() === 'USER');
+  readonly isHykonAdminRole = computed(() => this.currentRole() === 'HYKON_ADMIN');
+
+  // Navigation request tracking token for cancelling/ignoring outdated async responses
+  navigationRequestId = 0;
 
   // Profile avatar initial letter (uppercase)
   readonly userInitial = computed(() => {
@@ -125,10 +139,13 @@ export class App implements AfterViewInit, OnDestroy {
   contactSubmitSuccess = signal<string>('');
   contactSubmitError = signal<string>('');
 
-  // ===== DEVICE AUTHENTICATION MODAL STATE =====
+  // ===== DEVICE & DISTRIBUTOR AUTHENTICATION MODAL STATE =====
   isDeviceAuthModalOpen = signal<boolean>(false);
   authDeviceId = signal<string>('');
   authSerialNumber = signal<string>('');
+  distributorCode = signal<string>('');
+  branchCode = signal<string>('');
+  distributorLocation = signal<string>('');
   authErrorMessage = signal<string>('');
   authSuccessMessage = signal<string>('');
   isAuthVerifying = signal<boolean>(false);
@@ -223,32 +240,87 @@ export class App implements AfterViewInit, OnDestroy {
     this.activeTestimonialIndex.set(index);
   }
 
-  onExploreDashboard() {
-    this.openDeviceAuthModal();
-  }
-
-  // ===== DEVICE AUTHENTICATION MODAL METHODS =====
-  openDeviceAuthModal(boxName?: string) {
+  // ===== ROLE-AWARE ENTRY & GATE METHODS =====
+  handleFeatureEntry(boxName?: string) {
     if (boxName) {
       this.selectedFeatureBox.set(boxName);
     }
     this.authErrorMessage.set('');
     this.authSuccessMessage.set('');
+
+    // 1. Unauthenticated: open the existing Login form
+    if (!this.isAuthenticated()) {
+      this.openLoginModal(false);
+      return;
+    }
+
+    const role = this.currentRole();
+
+    // 2. USER: show the existing Device ID / Serial Number gate
+    if (role === 'USER') {
+      this.openDeviceGate();
+      return;
+    }
+
+    // 3. DISTRIBUTOR_ADMIN: show a distributor verification form
+    if (role === 'DISTRIBUTOR_ADMIN') {
+      this.openDistributorGate();
+      return;
+    }
+
+    // 4. HYKON_ADMIN: bypass verification and open Overview
+    if (role === 'HYKON_ADMIN') {
+      this.openDashboard('overview');
+      this.setDashboardNav('overview');
+      return;
+    }
+
+    // 5. Unknown roles: deny dashboard entry
+    this.showDashboardToast('Access denied: Unauthorized role.');
+  }
+
+  onExploreDashboard() {
+    this.handleFeatureEntry();
+  }
+
+  openDeviceAuthModal(boxName?: string) {
+    this.handleFeatureEntry(boxName);
+  }
+
+  openDeviceGate() {
+    this.navigationRequestId++;
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
     this.isDeviceAuthModalOpen.set(true);
     if (isPlatformBrowser(this.platformId)) {
-      if (!window.location.pathname.includes('device-login')) {
+      if (this.normalizePath(window.location.pathname) !== '/device-login') {
+        window.history.pushState({ page: 'device-login' }, '', '/device-login');
+      }
+    }
+  }
+
+  openDistributorGate() {
+    this.navigationRequestId++;
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+    this.isDeviceAuthModalOpen.set(true);
+    if (isPlatformBrowser(this.platformId)) {
+      if (this.normalizePath(window.location.pathname) !== '/device-login') {
         window.history.pushState({ page: 'device-login' }, '', '/device-login');
       }
     }
   }
 
   closeDeviceAuthModal() {
+    this.navigationRequestId++;
     this.isDeviceAuthModalOpen.set(false);
     this.authErrorMessage.set('');
     this.authSuccessMessage.set('');
     this.isAuthVerifying.set(false);
-    if (isPlatformBrowser(this.platformId) && window.location.pathname.includes('device-login')) {
-      window.history.pushState({ page: 'home' }, '', '/');
+    if (isPlatformBrowser(this.platformId)) {
+      if (this.normalizePath(window.location.pathname) === '/device-login') {
+        window.history.pushState({ page: 'home' }, '', '/');
+      }
     }
   }
 
@@ -260,6 +332,8 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   verifyDeviceCredentials() {
+    if (this.isAuthVerifying()) return;
+
     const rawDevice = this.authDeviceId().trim();
     const rawSerial = this.authSerialNumber().trim();
 
@@ -278,76 +352,344 @@ export class App implements AfterViewInit, OnDestroy {
       this.authErrorMessage.set('Please enter the Serial Number.');
       return;
     }
-
-    // Hyphen is mandatory in Device ID (e.g. halo1200-1, halo1200-2, etc.)
-    if (!rawDevice.includes('-')) {
-      this.authErrorMessage.set("Invalid Device ID. The hyphen '-' is mandatory (e.g., halo1200-1).");
+    if (rawDevice.length > 100) {
+      this.authErrorMessage.set('Device ID must not exceed 100 characters.');
+      return;
+    }
+    if (rawSerial.length > 150) {
+      this.authErrorMessage.set('Serial number must not exceed 150 characters.');
       return;
     }
 
-    // Device ID pattern: name followed by '-' followed by number
-    const devicePattern = /^[a-zA-Z0-9]+-[0-9]+$/;
-    if (!devicePattern.test(rawDevice)) {
-      this.authErrorMessage.set("Invalid Device ID format. Must be device name and unit number separated by '-' (e.g., halo1200-1, halo1200-2).");
-      return;
-    }
-
-    const parts = rawDevice.split('-');
-    const model = parts[0].toLowerCase();
-    const unitNumber = parts[1];
-    const serialUpper = rawSerial.toUpperCase();
-
-    // Serial number format check
-    const isSerialFormatValid = /^[a-zA-Z0-9\-_]{5,}$/.test(rawSerial);
-    if (!isSerialFormatValid) {
-      this.authErrorMessage.set('Invalid Serial Number. Must be at least 5 alphanumeric characters (e.g., SN-HYK-1200-01).');
-      return;
-    }
-
-    // Model validation (HALO/HYKON device families)
-    const validModels = ['halo1200', 'halo3000', 'hy1200', 'halo', 'hyx5000', 'hykon1200', 'hykon'];
-    const isValidModel = validModels.some(m => model.includes(m) || m.includes(model));
-
-    const expectedPad = unitNumber.padStart(2, '0');
-    const isUnitSerialMatch = serialUpper.endsWith(unitNumber) || serialUpper.endsWith(expectedPad) || serialUpper.includes('SN') || serialUpper.startsWith('SN-');
-
-    if (!isValidModel || !isUnitSerialMatch) {
-      this.authErrorMessage.set('Invalid Device ID or Serial Number. The credentials provided do not match any registered device.');
-      return;
-    }
-
-    // Credentials verified!
+    const currentReq = ++this.navigationRequestId;
     this.isAuthVerifying.set(true);
-    this.authSuccessMessage.set('Credentials verified successfully! Connecting to Live Dashboard...');
 
-    setTimeout(() => {
-      const formattedModel = model.includes('3000') ? 'HALO 3000' : (model.includes('5000') ? 'HY-X5000' : 'HALO 1200');
-      this.activeDashboardDevice.set(formattedModel);
-      this.closeDeviceAuthModal();
-      this.openDashboard(this.selectedFeatureBox());
-    }, 700);
+    this.deviceAccessService.verifyDevice({
+      deviceCode: rawDevice,
+      serialNumber: rawSerial
+    }).subscribe({
+      next: (res) => {
+        if (currentReq !== this.navigationRequestId || !this.isAuthenticated() || !this.isDeviceAuthModalOpen()) {
+          return;
+        }
+
+        this.isAuthVerifying.set(false);
+        this.isDashboardAuthorized.set(true);
+
+        const dev = res.data;
+        const deviceLabel = dev?.systemName || dev?.model || dev?.deviceCode || rawDevice;
+
+        this.isDeviceAuthModalOpen.set(false);
+        this.renderDashboard('systems', deviceLabel);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.navigationRequestId) return;
+        this.isAuthVerifying.set(false);
+
+        if (err.status === 429) {
+          this.authErrorMessage.set('Too many verification attempts. Temporary lockout in effect. Please try again later.');
+        } else {
+          const body = err?.error;
+          const msg = body?.message || body?.errors?.deviceCode || body?.errors?.serialNumber || 'Device verification failed. Please check credentials and try again.';
+          this.authErrorMessage.set(msg);
+        }
+      }
+    });
+  }
+
+  verifyDistributorCredentials() {
+    if (this.isAuthVerifying()) return;
+
+    const distCode = this.distributorCode().trim();
+    const bCode = this.branchCode().trim();
+    const loc = this.distributorLocation().trim();
+
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+
+    if (!distCode && !bCode && !loc) {
+      this.authErrorMessage.set('Please enter Distributor Code, Branch Code, and Location.');
+      return;
+    }
+    if (!distCode) {
+      this.authErrorMessage.set('Please enter Distributor Code.');
+      return;
+    }
+    if (!bCode) {
+      this.authErrorMessage.set('Please enter Branch Code.');
+      return;
+    }
+    if (!loc) {
+      this.authErrorMessage.set('Please enter Location.');
+      return;
+    }
+    if (distCode.length > 100) {
+      this.authErrorMessage.set('Distributor code must not exceed 100 characters.');
+      return;
+    }
+    if (bCode.length > 100) {
+      this.authErrorMessage.set('Branch code must not exceed 100 characters.');
+      return;
+    }
+    if (loc.length > 150) {
+      this.authErrorMessage.set('Location must not exceed 150 characters.');
+      return;
+    }
+
+    const currentReq = ++this.navigationRequestId;
+    this.isAuthVerifying.set(true);
+
+    this.deviceAccessService.verifyDistributor({
+      distributorCode: distCode,
+      branchCode: bCode,
+      location: loc
+    }).subscribe({
+      next: () => {
+        if (currentReq !== this.navigationRequestId || !this.isAuthenticated() || !this.isDeviceAuthModalOpen()) {
+          return;
+        }
+
+        this.isAuthVerifying.set(false);
+        this.isDashboardAuthorized.set(true);
+
+        this.isDeviceAuthModalOpen.set(false);
+        this.renderDashboard('overview');
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.navigationRequestId) return;
+        this.isAuthVerifying.set(false);
+
+        if (err.status === 429) {
+          this.authErrorMessage.set('Too many verification attempts. Temporary lockout in effect. Please try again later.');
+        } else {
+          const body = err?.error;
+          const msg = body?.message || body?.errors?.distributorCode || body?.errors?.branchCode || body?.errors?.location || 'Distributor verification failed. Please check credentials and try again.';
+          this.authErrorMessage.set(msg);
+        }
+      }
+    });
+  }
+
+  handleAuthenticationCleared() {
+    this.clearDashboardAndGateState();
+  }
+
+  clearDashboardAndGateState() {
+    this.navigationRequestId++;
+    this.isDashboardAuthorized.set(false);
+    this.isDashboardOpen.set(false);
+    this.isDeviceAuthModalOpen.set(false);
+    this.authDeviceId.set('');
+    this.authSerialNumber.set('');
+    this.distributorCode.set('');
+    this.branchCode.set('');
+    this.distributorLocation.set('');
+    this.authErrorMessage.set('');
+    this.authSuccessMessage.set('');
+    this.isAuthVerifying.set(false);
+    this.dashboardRetryAction.set(null);
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+      this.clockInterval = null;
+    }
+  }
+
+  // ===== NAVIGATION PERMISSION & URL ROUTING =====
+  canAccessTab(tab: 'overview' | 'systems' | 'accounts' | 'alerts'): boolean {
+    const role = this.currentRole();
+    switch (role) {
+      case 'USER':
+        return tab === 'systems' || tab === 'alerts';
+      case 'DISTRIBUTOR_ADMIN':
+        return tab === 'overview' || tab === 'systems' || tab === 'alerts';
+      case 'HYKON_ADMIN':
+        return tab === 'overview' || tab === 'systems' || tab === 'accounts' || tab === 'alerts';
+      default:
+        return false;
+    }
+  }
+
+  normalizePath(pathname: string): string {
+    if (!pathname) return '/';
+    const clean = pathname.split('?')[0].split('#')[0].trim();
+    const noTrailing = clean.replace(/\/+$/, '');
+    return noTrailing === '' ? '/' : noTrailing;
+  }
+
+  handleUrlRouting(pathname: string) {
+    const path = this.normalizePath(pathname);
+
+    if (path === '/dashboard' || path === '/systems') {
+      this.openDashboard(path === '/systems' ? 'systems' : 'overview');
+      return;
+    }
+
+    if (path === '/device-login') {
+      if (!this.isAuthenticated()) {
+        this.clearDashboardAndGateState();
+        this.openLoginModal(false);
+        if (isPlatformBrowser(this.platformId)) {
+          window.history.replaceState({ page: 'home' }, '', '/');
+        }
+        return;
+      }
+      const role = this.currentRole();
+      if (role === 'USER') {
+        this.openDeviceGate();
+      } else if (role === 'DISTRIBUTOR_ADMIN') {
+        this.openDistributorGate();
+      } else if (role === 'HYKON_ADMIN') {
+        this.openDashboard('overview');
+      } else {
+        this.closeDeviceAuthModal();
+        this.showDashboardToast('Access denied: Unauthorized role.');
+        if (isPlatformBrowser(this.platformId)) {
+          window.history.replaceState({ page: 'home' }, '', '/');
+        }
+      }
+      return;
+    }
+
+    if (path === '/' || path === '') {
+      this.clearDashboardAndGateState();
+    }
   }
 
   // ===== DASHBOARD METHODS =====
   openDashboard(section?: string) {
+    const currentReq = ++this.navigationRequestId;
+    this.isAuthVerifying.set(true);
+
+    if (!this.isAuthenticated()) {
+      this.isAuthVerifying.set(false);
+      this.isDashboardAuthorized.set(false);
+      this.isDashboardOpen.set(false);
+      this.isDeviceAuthModalOpen.set(false);
+      this.openLoginModal(false);
+      if (isPlatformBrowser(this.platformId)) {
+        window.history.replaceState({ page: 'home' }, '', '/');
+      }
+      return;
+    }
+
+    // Role check: Ensure user role is permitted to enter dashboard at all
+    if (!this.canAccessTab('systems') && !this.canAccessTab('overview')) {
+      this.isAuthVerifying.set(false);
+      this.isDashboardAuthorized.set(false);
+      this.isDashboardOpen.set(false);
+      this.showDashboardToast('Access denied: Unauthorized role.');
+      return;
+    }
+
+    const requestedTab = (section === 'systems' || section === 'overview' || section === 'accounts' || section === 'alerts') ? section : undefined;
+
+    this.deviceAccessService.listDevices(0, 1).subscribe({
+      next: (res) => {
+        if (currentReq !== this.navigationRequestId || !this.isAuthenticated()) {
+          return;
+        }
+        this.isAuthVerifying.set(false);
+        this.isDashboardAuthorized.set(true);
+
+        const targetTab: 'overview' | 'systems' | 'accounts' | 'alerts' =
+          (requestedTab && this.canAccessTab(requestedTab))
+            ? requestedTab
+            : (this.canAccessTab('overview') ? 'overview' : 'systems');
+
+        if (!this.canAccessTab(targetTab)) {
+          this.isDashboardAuthorized.set(false);
+          this.isDashboardOpen.set(false);
+          this.showDashboardToast('Access denied: Unauthorized destination.');
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'home' }, '', '/');
+          }
+          return;
+        }
+
+        let deviceLabel: string | undefined;
+        if (res.data?.content && res.data.content.length > 0) {
+          const dev = res.data.content[0];
+          deviceLabel = dev.systemName || dev.model || dev.deviceCode;
+        }
+
+        this.renderDashboard(targetTab, deviceLabel);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.navigationRequestId) return;
+        this.isAuthVerifying.set(false);
+        this.isDashboardAuthorized.set(false);
+        this.isDashboardOpen.set(false);
+
+        if (err.status === 403) {
+          const role = this.currentRole();
+          if (role === 'USER') {
+            this.openDeviceGate();
+          } else if (role === 'DISTRIBUTOR_ADMIN') {
+            this.openDistributorGate();
+          } else {
+            this.showDashboardToast('Access verification required.');
+          }
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'device-login' }, '', '/device-login');
+          }
+        } else if (err.status === 401) {
+          this.isDeviceAuthModalOpen.set(false);
+          this.openLoginModal(false);
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'home' }, '', '/');
+          }
+        } else {
+          this.isDeviceAuthModalOpen.set(false);
+          this.showDashboardToast('Unable to verify session with server. Click to retry.');
+          this.dashboardRetryAction.set(() => this.openDashboard(section));
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'home' }, '', '/');
+          }
+        }
+      }
+    });
+  }
+
+  private renderDashboard(targetTab: 'overview' | 'systems' | 'accounts' | 'alerts', deviceLabel?: string) {
+    if (!this.isAuthenticated() || !this.isDashboardAuthorized()) {
+      this.isDashboardOpen.set(false);
+      return;
+    }
+    if (!this.canAccessTab(targetTab)) {
+      this.isDashboardOpen.set(false);
+      this.showDashboardToast('Access denied: Unauthorized destination.');
+      return;
+    }
+    if (deviceLabel) {
+      this.activeDashboardDevice.set(deviceLabel);
+    }
+    this.isDeviceAuthModalOpen.set(false);
     this.isDashboardOpen.set(true);
+    this.activeDashboardNav.set(targetTab);
     this.updateDashboardScale();
     if (isPlatformBrowser(this.platformId)) {
-      if (!window.location.pathname.includes('dashboard')) {
-        window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
+      const targetPath = targetTab === 'systems' ? '/systems' : '/dashboard';
+      if (this.normalizePath(window.location.pathname) !== targetPath) {
+        window.history.replaceState({ page: targetTab }, '', targetPath);
       }
       if (!this.clockInterval) {
         this.startDashboardClock();
       }
     }
-    if (section) {
-      this.showDashboardToast(`Viewing ${section.toUpperCase()} telemetry on Live Dashboard`);
-    } else {
-      this.showDashboardToast('Connected to HYKON HALO 1200 Live IoT Telemetry');
+  }
+
+  retryDashboardAuthorization() {
+    const retryFn = this.dashboardRetryAction();
+    if (retryFn) {
+      this.dashboardRetryAction.set(null);
+      this.dashboardToast.set('');
+      retryFn();
     }
   }
 
   closeDashboard() {
+    this.navigationRequestId++;
+    this.isAuthVerifying.set(false);
     this.isDashboardOpen.set(false);
     this.deviceDropdownOpen.set(false);
     this.connectionDropdownOpen.set(false);
@@ -355,34 +697,54 @@ export class App implements AfterViewInit, OnDestroy {
     this.isStatusDropdownOpen.set(false);
     this.isSystemsSidebarOpen.set(false);
     this.aiResponse.set('');
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+      this.clockInterval = null;
+    }
     if (isPlatformBrowser(this.platformId)) {
-      if (window.location.pathname.includes('dashboard') || window.location.pathname.includes('systems')) {
+      const path = this.normalizePath(window.location.pathname);
+      if (path === '/dashboard' || path === '/systems') {
         window.history.pushState({ page: 'site' }, '', '/');
       }
       setTimeout(() => {
         const featuresEl = document.getElementById('features-section');
         const scroller = document.querySelector('.viewport-wrapper');
-        if (featuresEl && scroller) {
-          scroller.scrollTo({ top: featuresEl.offsetTop, behavior: 'smooth' });
+        if (featuresEl && scroller && typeof (scroller as HTMLElement).scrollTo === 'function') {
+          (scroller as HTMLElement).scrollTo({ top: featuresEl.offsetTop, behavior: 'smooth' });
         }
       }, 50);
     }
   }
 
   setDashboardNav(tab: 'overview' | 'systems' | 'accounts' | 'alerts') {
+    if (!this.canAccessTab(tab)) {
+      this.showDashboardToast('Access denied: You do not have permission to view this tab.');
+      return;
+    }
+    if (!this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isDashboardOpen()) {
+      this.openDashboard(tab);
+      return;
+    }
     this.activeDashboardNav.set(tab);
     if (isPlatformBrowser(this.platformId)) {
       if (tab === 'systems') {
-        if (!window.location.pathname.includes('systems')) {
+        if (this.normalizePath(window.location.pathname) !== '/systems') {
           window.history.pushState({ page: 'systems' }, '', '/systems');
         }
       } else if (tab === 'overview') {
-        if (!window.location.pathname.includes('dashboard')) {
+        if (this.normalizePath(window.location.pathname) !== '/dashboard') {
           window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
         }
       }
     }
-    this.showDashboardToast(`Navigated to ${tab.toUpperCase()} ${tab === 'systems' ? 'management' : 'telemetry'} tab`);
+  }
+
+  onBrandClick() {
+    if (this.canAccessTab('overview')) {
+      this.setDashboardNav('overview');
+    } else {
+      this.setDashboardNav('systems');
+    }
   }
 
   toggleSampleData() {
@@ -640,17 +1002,7 @@ export class App implements AfterViewInit, OnDestroy {
   @HostListener('window:popstate')
   onPopState() {
     if (isPlatformBrowser(this.platformId)) {
-      if (window.location.pathname.includes('dashboard')) {
-        this.isDashboardOpen.set(true);
-        this.isDeviceAuthModalOpen.set(false);
-        this.updateDashboardScale();
-      } else if (window.location.pathname.includes('device-login')) {
-        this.isDeviceAuthModalOpen.set(true);
-        this.isDashboardOpen.set(false);
-      } else {
-        this.isDashboardOpen.set(false);
-        this.isDeviceAuthModalOpen.set(false);
-      }
+      this.handleUrlRouting(window.location.pathname);
     }
   }
 
@@ -659,10 +1011,10 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   scrollToTop() {
-    const scroller = document.querySelector('.viewport-wrapper');
-    if (scroller) {
+    const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
+    if (scroller && typeof scroller.scrollTo === 'function') {
       scroller.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
+    } else if (typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
@@ -697,6 +1049,7 @@ export class App implements AfterViewInit, OnDestroy {
 
   onLogout() {
     this.closeProfileDropdown();
+    this.clearDashboardAndGateState();
     this.authService.logout().subscribe({
       next: () => {
         this.redirectToHome();
@@ -709,14 +1062,20 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   redirectToHome() {
+    this.navigationRequestId++;
+    this.isAuthVerifying.set(false);
+    this.isDashboardOpen.set(false);
+    this.isDeviceAuthModalOpen.set(false);
     this.setActiveNav(0);
     this.isNavbarHidden.set(false);
     if (isPlatformBrowser(this.platformId)) {
       const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
-      if (scroller) {
+      if (scroller && typeof scroller.scrollTo === 'function') {
         scroller.scrollTo({ top: 0, behavior: 'smooth' });
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }
 
@@ -772,8 +1131,10 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   
-  onLoginSubmit(event: Event) {
-    event.preventDefault();
+  onLoginSubmit(event?: Event) {
+    if (event) {
+      event.preventDefault();
+    }
     this.clearErrors();
 
     let hasError = false;
@@ -897,12 +1258,13 @@ export class App implements AfterViewInit, OnDestroy {
         password: this.loginPassword()
       }).subscribe({
         next: (response) => {
-this.isSubmitting.set(false);
-this.authSuccess.set(response.message || 'Login successful.');
-this.loginPassword.set('');
+          this.clearDashboardAndGateState();
+          this.isSubmitting.set(false);
+          this.authSuccess.set(response.message || 'Login successful.');
+          this.loginPassword.set('');
 
-// Close the Login modal after successful login.
-this.closeLoginModal();
+          // Close the Login modal after successful login.
+          this.closeLoginModal();
 
           // Return to the Home page.
           this.redirectToHome();
@@ -1135,15 +1497,7 @@ this.closeLoginModal();
       this.updateDashboardScale();
       this.initInfinityParticleSystem();
 
-      if (window.location.pathname.includes('systems')) {
-        this.openDashboard();
-        this.activeDashboardNav.set('systems');
-      } else if (window.location.pathname.includes('dashboard')) {
-        this.openDashboard();
-        this.activeDashboardNav.set('overview');
-      } else if (window.location.pathname.includes('device-login')) {
-        this.openDeviceAuthModal();
-      }
+      this.handleUrlRouting(window.location.pathname);
 
       this.resizeListener = () => {
         this.drawFrame(this.currentFrame);
@@ -1166,6 +1520,8 @@ this.closeLoginModal();
   }
 
   ngOnDestroy() {
+    this.navigationRequestId++;
+    this.isAuthVerifying.set(false);
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
@@ -1174,6 +1530,7 @@ this.closeLoginModal();
     }
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
+      this.clockInterval = null;
     }
     if (this.toastTimer) {
       clearTimeout(this.toastTimer);
@@ -1293,6 +1650,8 @@ this.closeLoginModal();
   }
 
   setActiveNav(index: number) {
+    this.navigationRequestId++;
+    this.isAuthVerifying.set(false);
     // Lock underline immediately to clicked nav item
     this.updateActiveNavIndex(index);
 

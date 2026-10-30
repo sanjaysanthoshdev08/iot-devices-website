@@ -1417,9 +1417,10 @@
 
     <!-- Clean, Sleek Device Access Card (compact/smaller size, perfectly centered) -->
     <div class="device-access-card" (click)="$event.stopPropagation()">
-      <h2 class="dac-title">Access your device</h2>
+      <h2 class="dac-title">{{ isDistributorRole() ? 'Verify distributor access' : 'Access your device' }}</h2>
 
-      <form class="dac-form" (ngSubmit)="verifyDeviceCredentials()">
+      <!-- USER Form: Device ID & Serial number -->
+      <form class="dac-form" *ngIf="!isDistributorRole()" (ngSubmit)="verifyDeviceCredentials()">
         <!-- Field 1: Device ID -->
         <div class="dac-field" [class.has-value]="authDeviceId()">
           <div class="dac-field-icon">
@@ -1464,7 +1465,95 @@
         <!-- Access device Button -->
         <button type="submit" class="dac-btn-access" [disabled]="isAuthVerifying()">
           <span *ngIf="!isAuthVerifying()">Access device</span>
-          <span *ngIf="isAuthVerifying()">Accessing device...</span>
+          <span *ngIf="isAuthVerifying()">Verifying device...</span>
+        </button>
+
+        <!-- Error Alert Banner -->
+        <div class="dac-auth-alert dac-alert-error" *ngIf="authErrorMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ authErrorMessage() }}</span>
+        </div>
+
+        <!-- Success Alert Banner -->
+        <div class="dac-auth-alert dac-alert-success" *ngIf="authSuccessMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>{{ authSuccessMessage() }}</span>
+        </div>
+      </form>
+
+      <!-- DISTRIBUTOR_ADMIN Form: distributorCode, branchCode, location -->
+      <form class="dac-form" *ngIf="isDistributorRole()" (ngSubmit)="verifyDistributorCredentials()">
+        <!-- Field 1: Distributor Code -->
+        <div class="dac-field" [class.has-value]="distributorCode()">
+          <div class="dac-field-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div class="dac-field-content">
+            <span class="dac-field-label">Distributor Code</span>
+            <input type="text"
+                   class="dac-field-input"
+                   name="distributorCode"
+                   [ngModel]="distributorCode()"
+                   (ngModelChange)="distributorCode.set($event)"
+                   placeholder="Enter distributor code"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Field 2: Branch Code -->
+        <div class="dac-field" [class.has-value]="branchCode()">
+          <div class="dac-field-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          </div>
+          <div class="dac-field-content">
+            <span class="dac-field-label">Branch Code</span>
+            <input type="text"
+                   class="dac-field-input"
+                   name="branchCode"
+                   [ngModel]="branchCode()"
+                   (ngModelChange)="branchCode.set($event)"
+                   placeholder="Enter branch code"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Field 3: Location -->
+        <div class="dac-field" [class.has-value]="distributorLocation()">
+          <div class="dac-field-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+          <div class="dac-field-content">
+            <span class="dac-field-label">Location</span>
+            <input type="text"
+                   class="dac-field-input"
+                   name="distributorLocation"
+                   [ngModel]="distributorLocation()"
+                   (ngModelChange)="distributorLocation.set($event)"
+                   placeholder="Enter branch location"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Verify access Button -->
+        <button type="submit" class="dac-btn-access" [disabled]="isAuthVerifying()">
+          <span *ngIf="!isAuthVerifying()">Verify access</span>
+          <span *ngIf="isAuthVerifying()">Verifying access...</span>
         </button>
 
         <!-- Error Alert Banner -->
@@ -1491,10 +1580,10 @@
 </div>
 
 <!-- ===== FULLSCREEN DASHBOARD PAGE (EXACT SAME AS REFERENCE IMAGE) ===== -->
-<div class="dashboard-fullscreen-page" *ngIf="isDashboardOpen()" [class.active]="isDashboardOpen()">
+<div class="dashboard-fullscreen-page" *ngIf="isAuthenticated() && isDashboardAuthorized() && isDashboardOpen()" [class.active]="isDashboardOpen()">
 
   <!-- Outer Dashboard App Frame (Overview View) -->
-  <div class="dash-app-window" *ngIf="activeDashboardNav() === 'overview'">
+  <div class="dash-app-window" *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('overview') && activeDashboardNav() === 'overview'">
 
     <!-- 1. Left Vertical Icon Sidebar -->
     <aside class="dash-left-rail">
@@ -1526,6 +1615,7 @@
         <nav class="dash-header-nav">
           <button type="button" 
                   class="dash-nav-link" 
+                  *ngIf="canAccessTab('overview')"
                   [class.active]="activeDashboardNav() === 'overview'"
                   (click)="setDashboardNav('overview')">
             <span>Overview</span>
@@ -1533,6 +1623,7 @@
           </button>
           <button type="button" 
                   class="dash-nav-link" 
+                  *ngIf="canAccessTab('systems')"
                   [class.active]="activeDashboardNav() === 'systems'"
                   (click)="setDashboardNav('systems')">
             <span>Systems</span>
@@ -1540,6 +1631,7 @@
           </button>
           <button type="button" 
                   class="dash-nav-link" 
+                  *ngIf="canAccessTab('accounts')"
                   [class.active]="activeDashboardNav() === 'accounts'"
                   (click)="setDashboardNav('accounts')">
             <span>Accounts</span>
@@ -1547,9 +1639,10 @@
           </button>
           <button type="button" 
                   class="dash-nav-link" 
+                  *ngIf="canAccessTab('alerts')"
                   [class.active]="activeDashboardNav() === 'alerts'"
                   (click)="setDashboardNav('alerts')">
-            <span>Alerts</span>
+            <span>Warnings</span>
             <span class="nav-active-pill" *ngIf="activeDashboardNav() === 'alerts'"></span>
           </button>
         </nav>
@@ -1753,12 +1846,12 @@
   </div>
 
   <!-- ===== SYSTEMS / DEVICE MANAGEMENT VIEW (EXACT MATCH TO REFERENCE IMAGE) ===== -->
-  <div class="systems-page-layout" *ngIf="activeDashboardNav() === 'systems' || activeDashboardNav() === 'accounts' || activeDashboardNav() === 'alerts'">
+  <div class="systems-page-layout" *ngIf="isAuthenticated() && isDashboardAuthorized() && (activeDashboardNav() === 'systems' || activeDashboardNav() === 'accounts' || activeDashboardNav() === 'alerts')">
 
     <!-- 1. LEFT SIDEBAR -->
     <aside class="systems-sidebar" [class.open]="isSystemsSidebarOpen()">
       <!-- Company Brand Header -->
-      <div class="systems-sidebar-brand" (click)="setDashboardNav('overview')">
+      <div class="systems-sidebar-brand" (click)="onBrandClick()">
         <div class="brand-icon-box">
           <svg viewBox="0 0 24 24" fill="none" class="brand-spark-svg">
             <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#258BFF"/>
@@ -1780,6 +1873,7 @@
         <!-- Overview -->
         <button type="button" 
                 class="systems-nav-item"
+                *ngIf="canAccessTab('overview')"
                 [class.active]="activeDashboardNav() === 'overview'"
                 (click)="setDashboardNav('overview')" 
                 title="Go to Overview">
@@ -1793,6 +1887,7 @@
         <!-- Device -->
         <button type="button" 
                 class="systems-nav-item" 
+                *ngIf="canAccessTab('systems')"
                 [class.active]="activeDashboardNav() === 'systems'"
                 (click)="setDashboardNav('systems')"
                 title="Device Management">
@@ -1808,6 +1903,7 @@
         <!-- Account -->
         <button type="button" 
                 class="systems-nav-item" 
+                *ngIf="canAccessTab('accounts')"
                 [class.active]="activeDashboardNav() === 'accounts'"
                 (click)="setDashboardNav('accounts')" 
                 title="Account Settings">
@@ -1818,9 +1914,10 @@
           <span class="nav-text">Account</span>
         </button>
 
-        <!-- Warning (Renamed from Alarm with clean warning-triangle outline icon) -->
+        <!-- Warnings (Renamed from Alarm with clean warning-triangle outline icon) -->
         <button type="button" 
                 class="systems-nav-item" 
+                *ngIf="canAccessTab('alerts')"
                 [class.active]="activeDashboardNav() === 'alerts'"
                 (click)="setDashboardNav('alerts')" 
                 title="Warning & Alerts">
@@ -1829,7 +1926,7 @@
             <line x1="12" y1="9" x2="12" y2="13"/>
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span class="nav-text">Warning</span>
+          <span class="nav-text">Warnings</span>
         </button>
       </nav>
 
@@ -1935,7 +2032,7 @@
       </header>
 
       <!-- ===== ACCOUNTS PAGE ===== -->
-      <ng-container *ngIf="activeDashboardNav() === 'accounts'">
+      <ng-container *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('accounts') && activeDashboardNav() === 'accounts'">
 
         <!-- ACCOUNT TABS -->
         <nav class="acct-tabs" role="tablist" aria-label="Account sections">
@@ -2228,7 +2325,7 @@
       </ng-container><!-- /accounts page -->
 
       <!-- 3. FOUR PROFESSIONAL SUMMARY METRICS CARDS (Device page only) -->
-      <section class="systems-metrics-grid" aria-label="System status metrics" *ngIf="activeDashboardNav() === 'systems'">
+      <section class="systems-metrics-grid" aria-label="System status metrics" *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('systems') && activeDashboardNav() === 'systems'">
 
         <!-- Card 1: All -->
         <div class="metric-card card-all" 
@@ -2312,7 +2409,7 @@
       </section>
 
       <!-- 4. SYSTEM LIST TABLE PANEL -->
-      <section class="systems-table-panel" aria-label="System record list" *ngIf="activeDashboardNav() === 'systems'">
+      <section class="systems-table-panel" aria-label="System record list" *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('systems') && activeDashboardNav() === 'systems'">
 
         <!-- Panel Header with Title & Filter Controls -->
         <div class="systems-panel-header">
@@ -2676,6 +2773,7 @@
       <polyline points="22 4 12 14.01 9 11.01"></polyline>
     </svg>
     <span>{{ dashboardToast() }}</span>
+    <button *ngIf="dashboardRetryAction()" type="button" class="dash-toast-retry-btn" (click)="retryDashboardAuthorization()">Retry</button>
   </div>
 
 </div>

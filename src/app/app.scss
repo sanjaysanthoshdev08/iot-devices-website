@@ -5627,6 +5627,22 @@
     height: 18px;
     flex-shrink: 0;
   }
+
+  .dash-toast-retry-btn {
+    background: #258bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background 0.2s;
+    &:hover {
+      background: #1976d2;
+    }
+  }
 }
 
 @keyframes dashToastPop {
