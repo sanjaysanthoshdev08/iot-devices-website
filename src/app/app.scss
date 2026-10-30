@@ -7934,3 +7934,71 @@
   }
 }
 
+// Overview — unavailable telemetry notice inside warning card
+.dash-unavailable-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  span {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+}
+
+// Warnings / Alerts tab — unavailable panel
+.warnings-unavailable-panel {
+  padding: 32px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.warnings-unavail-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 20px 24px;
+  max-width: 680px;
+}
+
+.warnings-unavail-icon {
+  width: 28px;
+  height: 28px;
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.warnings-unavail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.warnings-unavail-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.warnings-unavail-desc {
+  font-size: 13.5px;
+  color: #94a3b8;
+  line-height: 1.55;
+  margin: 0;
+}
+

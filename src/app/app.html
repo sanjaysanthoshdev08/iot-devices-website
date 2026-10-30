@@ -1692,8 +1692,8 @@
 
               <!-- Raised 3D Center Dial -->
               <div class="dash-dial-core">
-                <span class="dial-percent">-:--:-</span>
-                <span class="dial-caption">Systems healthy</span>
+                <span class="dial-percent">{{ totalSystemsCount() }}</span>
+                <span class="dial-caption">Registered</span>
               </div>
             </div>
           </div>
@@ -1702,8 +1702,8 @@
           <div class="dash-fleet-summary">
             <span class="fleet-summary-label">Fleet summary</span>
             <h2 class="fleet-summary-heading">
-              -- systems healthy.<br>
-              -- need your attention.
+              {{ totalSystemsCount() }} registered device{{ totalSystemsCount() !== 1 ? 's' : '' }}.<br>
+              Live monitoring not yet available.
             </h2>
           </div>
 
@@ -1717,7 +1717,7 @@
             <!-- Card 1: Total Systems (Top Left) -->
             <div class="dash-card dash-card-totals">
               <span class="card-meta-lbl">Total systems</span>
-              <div class="card-hero-num">-:--:-</div>
+              <div class="card-hero-num">{{ totalSystemsCount() }}</div>
               
               <!-- Pulse Wave & Equalizer Visualizer -->
               <div class="card-visual-wave">
@@ -1739,13 +1739,13 @@
                 </svg>
               </div>
 
-              <span class="card-footer-lbl">Across -- locations</span>
+              <span class="card-footer-lbl">Registered in fleet</span>
             </div>
 
-            <!-- Card 2: Healthy (Top Right) -->
+            <!-- Card 2: Online / Telemetry (Top Right) -->
             <div class="dash-card dash-card-healthy">
-              <span class="card-meta-lbl">Healthy</span>
-              <div class="card-hero-num">-:--:-</div>
+              <span class="card-meta-lbl">Online</span>
+              <div class="card-hero-num">—</div>
 
               <!-- Digital Matrix / Morse LED Visualizer -->
               <div class="card-visual-matrix">
@@ -1778,48 +1778,36 @@
                 </svg>
               </div>
 
-              <span class="card-footer-lbl">Operating normally</span>
+              <span class="card-footer-lbl">Live monitoring not available</span>
             </div>
 
-            <!-- Card 3: Needs Attention (Bottom Left) -->
+            <!-- Card 3: Warning / Telemetry (Bottom Left) -->
             <div class="dash-card dash-card-attention">
-              <span class="card-meta-lbl">Needs attention</span>
-              <div class="card-hero-num">-:--:-</div>
+              <span class="card-meta-lbl">Warning</span>
+              <div class="card-hero-num">—</div>
 
-              <!-- Alert Item List -->
-              <div class="dash-alert-list">
-                <div class="dash-alert-item">
-                  <span class="dash-alert-dot"></span>
-                  <span class="dash-alert-id">UPS-014</span>
-                  <span class="dash-alert-sep">&middot;</span>
-                  <span class="dash-alert-text">High load</span>
-                </div>
-                <div class="dash-alert-item">
-                  <span class="dash-alert-dot"></span>
-                  <span class="dash-alert-id">INV-032</span>
-                  <span class="dash-alert-sep">&middot;</span>
-                  <span class="dash-alert-text">Low battery</span>
-                </div>
-                <div class="dash-alert-item">
-                  <span class="dash-alert-dot"></span>
-                  <span class="dash-alert-id">UPS-087</span>
-                  <span class="dash-alert-sep">&middot;</span>
-                  <span class="dash-alert-text">Battery check due</span>
-                </div>
+              <!-- Notice in place of hardcoded alert list -->
+              <div class="dash-unavailable-notice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>Live monitoring data is not available yet.</span>
               </div>
             </div>
 
-            <!-- Card 4: Offline (Bottom Right) -->
+            <!-- Card 4: Offline / Telemetry (Bottom Right) -->
             <div class="dash-card dash-card-offline">
               <span class="card-meta-lbl">Offline</span>
-              <div class="card-hero-num">-:--:-</div>
+              <div class="card-hero-num">—</div>
 
               <!-- 3D Hardware Inverter Unit Display -->
               <div class="dash-inverter-showcase">
                 <img src="assets/dash-inverter.png" alt="Inverter Hardware Unit" class="dash-inverter-img" />
               </div>
 
-              <span class="card-footer-lbl">Check connectivity</span>
+              <span class="card-footer-lbl">Telemetry not yet connected</span>
             </div>
 
           </div>
@@ -1827,7 +1815,7 @@
           <!-- Bottom Footer Action Bar -->
           <footer class="dash-footer-bar">
             <div class="dash-footer-text">
-              <span>-- systems are offline. Review their connection status.</span>
+              <span>{{ totalSystemsCount() }} registered device{{ totalSystemsCount() !== 1 ? 's' : '' }}. Live monitoring not yet available.</span>
             </div>
 
             <div class="dash-footer-actions">
@@ -1969,7 +1957,11 @@
             <h1 class="systems-page-title">Accounts</h1>
             <p class="systems-page-subtitle">Manage users, groups, and system access.</p>
           </div>
-          <h1 class="systems-page-title" *ngIf="activeDashboardNav() !== 'accounts'">Device</h1>
+          <div class="systems-header-title-block" *ngIf="activeDashboardNav() === 'alerts'">
+            <h1 class="systems-page-title">Warnings</h1>
+            <p class="systems-page-subtitle">Live warning monitoring is not yet available.</p>
+          </div>
+          <h1 class="systems-page-title" *ngIf="activeDashboardNav() !== 'accounts' && activeDashboardNav() !== 'alerts'">Device</h1>
         </div>
 
         <div class="systems-header-right">
@@ -2103,6 +2095,23 @@
         </section>
 
       </ng-container><!-- /accounts page -->
+
+      <!-- WARNINGS / ALERTS VIEW -->
+      <ng-container *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('alerts') && activeDashboardNav() === 'alerts'">
+        <section class="warnings-unavailable-panel" aria-label="Warnings">
+          <div class="warnings-unavail-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="warnings-unavail-icon">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div class="warnings-unavail-text">
+              <h2 class="warnings-unavail-title">Warning Monitoring Not Available</h2>
+              <p class="warnings-unavail-desc">Live warning data will appear here when device monitoring is connected. Device lifecycle status (ACTIVE / INACTIVE) is not a telemetry warning signal.</p>
+            </div>
+          </div>
+        </section>
+      </ng-container><!-- /alerts page -->
 
       <!-- 3. FOUR PROFESSIONAL SUMMARY METRICS CARDS (Device page only) -->
       <section class="systems-metrics-grid" aria-label="System status metrics"

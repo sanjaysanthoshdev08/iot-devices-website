@@ -1563,4 +1563,108 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       });
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Step 9 Part 5: Overview and Warnings accuracy
+  // ─────────────────────────────────────────────────────────────────────────────
+  describe('Step 9 Part 5: Overview and Warnings accuracy', () => {
+
+    it('totalSystemsCount uses totalElements from backend, not current page length', () => {
+      // Seed 42 total devices in the service but only 3 loaded on the current page
+      app.systemRecordsService.totalElements.set(42);
+      app.systemRecordsService.devices.set([
+        { id: 1, deviceCode: 'A1', serialNumber: 'SN1', systemName: 'Dev 1', model: 'M1', status: 'ACTIVE', branchId: null, ownerUserId: null },
+        { id: 2, deviceCode: 'A2', serialNumber: 'SN2', systemName: 'Dev 2', model: 'M2', status: 'ACTIVE', branchId: null, ownerUserId: null },
+        { id: 3, deviceCode: 'A3', serialNumber: 'SN3', systemName: 'Dev 3', model: 'M3', status: 'ACTIVE', branchId: null, ownerUserId: null }
+      ] as any);
+
+      // totalSystemsCount() must reflect the server total, not just the loaded page
+      expect(app.totalSystemsCount()).toBe(42);
+    });
+
+    it('onlineSystemsCount returns "—" — unavailable telemetry is not shown as zero', () => {
+      expect(app.onlineSystemsCount()).toBe('—');
+    });
+
+    it('warningSystemsCount returns "—" — unavailable telemetry is not shown as zero', () => {
+      expect(app.warningSystemsCount()).toBe('—');
+    });
+
+    it('offlineSystemsCount returns "—" — unavailable telemetry is not shown as zero', () => {
+      expect(app.offlineSystemsCount()).toBe('—');
+    });
+
+    it('submitAiQuery sets honest unavailability response — no fabricated telemetry values', () => {
+      app.submitAiQuery();
+
+      const response = app.aiResponse();
+      expect(response).toContain('not available');
+      // Must not contain fabricated measurement values that were previously hardcoded
+      expect(response).not.toContain('983W');
+      expect(response).not.toContain('95.5%');
+      expect(response).not.toContain('51.2V');
+      expect(response).not.toContain('Inverter Normal');
+    });
+
+    it('selectSidebarTab does not fire any toast — no fake health/sync claims', () => {
+      app.dashboardToast.set('');
+
+      app.selectSidebarTab('alerts');
+      expect(app.dashboardToast()).toBe('');
+
+      app.selectSidebarTab('overview');
+      expect(app.dashboardToast()).toBe('');
+
+      app.selectSidebarTab('systems');
+      expect(app.dashboardToast()).toBe('');
+    });
+
+    it('openDashboard seeds totalElements from listDevices page response', () => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 1, email: 'u@x.com', name: 'User', role: 'USER', verified: true } as any);
+
+      mockDeviceAccessService.listDevices.mockReturnValue(of({
+        success: true,
+        message: 'OK',
+        data: {
+          content: [],
+          totalElements: 7,
+          totalPages: 1,
+          size: 10,
+          number: 0,
+          first: true,
+          last: true,
+          numberOfElements: 0,
+          empty: true
+        }
+      }));
+
+      app.systemRecordsService.totalElements.set(0);
+      app.openDashboard('overview');
+
+      expect(app.totalSystemsCount()).toBe(7);
+    });
+
+    it('Warnings tab is accessible to USER, DISTRIBUTOR_ADMIN, and HYKON_ADMIN', () => {
+      // USER
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 1, email: 'u@x.com', name: 'User', role: 'USER', verified: true } as any);
+      expect(app.canAccessTab('alerts')).toBe(true);
+
+      // DISTRIBUTOR_ADMIN
+      mockAuthService.currentUser.set({ id: 2, email: 'd@x.com', name: 'DA', role: 'DISTRIBUTOR_ADMIN', verified: true } as any);
+      expect(app.canAccessTab('alerts')).toBe(true);
+
+      // HYKON_ADMIN
+      mockAuthService.currentUser.set({ id: 3, email: 'h@x.com', name: 'HA', role: 'HYKON_ADMIN', verified: true } as any);
+      expect(app.canAccessTab('alerts')).toBe(true);
+    });
+
+    it('initial dashboard signals are honest — no live-connection claims', () => {
+      // These are the values set before any backend call succeeds
+      expect(app.activeDashboardDevice()).toBe('No device selected');
+      expect(app.activeDashboardConnection()).toBe('Not connected');
+      expect(app.activeDashboardDataSource()).toBe('Not available');
+    });
+  });
 });

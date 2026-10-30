@@ -155,9 +155,9 @@ export class App implements AfterViewInit, OnDestroy {
 
   // ===== DASHBOARD MODAL / PAGE STATE =====
   isDashboardOpen = signal<boolean>(false);
-  activeDashboardDevice = signal<string>('HALO 1200');
-  activeDashboardConnection = signal<string>('Live IoT');
-  activeDashboardDataSource = signal<string>('Inverter Physical');
+  activeDashboardDevice = signal<string>('No device selected');
+  activeDashboardConnection = signal<string>('Not connected');
+  activeDashboardDataSource = signal<string>('Not available');
   deviceDropdownOpen = signal<boolean>(false);
   connectionDropdownOpen = signal<boolean>(false);
   dataSourceDropdownOpen = signal<boolean>(false);
@@ -378,6 +378,8 @@ export class App implements AfterViewInit, OnDestroy {
         this.isAuthVerifying.set(false);
         this.isDashboardAuthorized.set(true);
 
+        // verifyDevice returns a single DeviceResponse; totalElements not available here.
+        // totalElements will be populated when the Systems list first loads.
         const dev = res.data;
         const deviceLabel = dev?.systemName || dev?.model || dev?.deviceCode || rawDevice;
 
@@ -454,6 +456,7 @@ export class App implements AfterViewInit, OnDestroy {
         this.isAuthVerifying.set(false);
         this.isDashboardAuthorized.set(true);
 
+        // verifyDistributor returns void success; totalElements populated on first Systems load.
         this.isDeviceAuthModalOpen.set(false);
         this.renderDashboard('overview');
       },
@@ -620,6 +623,10 @@ export class App implements AfterViewInit, OnDestroy {
         }
         this.isAuthVerifying.set(false);
         this.isDashboardAuthorized.set(true);
+
+        if (res.data && typeof (res.data as any).totalElements === 'number') {
+          this.systemRecordsService.totalElements.set((res.data as any).totalElements);
+        }
 
         const targetTab: 'overview' | 'systems' | 'accounts' | 'alerts' =
           (requestedTab && this.canAccessTab(requestedTab))
@@ -799,7 +806,7 @@ export class App implements AfterViewInit, OnDestroy {
 
   toggleSampleData() {
     this.dashboardSampleDataActive.update(v => !v);
-    this.showDashboardToast(this.dashboardSampleDataActive() ? 'Sample telemetry dataset loaded' : 'Live telemetry stream active');
+    this.showDashboardToast(this.dashboardSampleDataActive() ? 'Sample display mode active (data not from live devices)' : 'Sample mode off');
   }
 
   viewAllSystems() {
@@ -1583,52 +1590,22 @@ export class App implements AfterViewInit, OnDestroy {
 
   selectSidebarTab(tab: string) {
     this.activeSidebarTab.set(tab);
-    if (tab === 'alerts') {
-      this.showDashboardToast('Alerts: System healthy. 0 active warnings.');
-    } else if (tab === 'battery') {
-      this.showDashboardToast('Battery: 48V LiFePO4 battery pack at 95.5% (51.2V).');
-    } else if (tab === 'protections') {
-      this.showDashboardToast('Protections: 5 of 5 safety modules verified OK.');
-    } else if (tab === 'users') {
-      this.showDashboardToast('Fleet Access: Admin operator session active.');
-    } else if (tab === 'cloud') {
-      this.showDashboardToast('Cloud Sync: 100% synchronised (14ms latency).');
-    } else if (tab === 'settings') {
-      this.showDashboardToast('Settings: Inverter baud 9600, telemetry poll 500ms.');
-    } else {
-      this.showDashboardToast('System Status: Telemetry overview active.');
-    }
+    // No live telemetry is available; do not claim health, measurements, or sync status.
   }
 
   toggleUpsMode(event: Event) {
     if (event) event.stopPropagation();
-    this.showDashboardToast('System Mode: ACTIVE UPS MODE (Inverter Normal, Li-Ion Active)');
+    // UPS mode control requires live device telemetry; not yet available.
   }
 
   checkWifiStatus(event: Event) {
     if (event) event.stopPropagation();
-    this.showDashboardToast('Wi-Fi Status: Connected (Signal strength: -42dBm, 100% sync)');
+    // Wi-Fi status requires live device telemetry; not yet available.
   }
 
   submitAiQuery() {
-    const q = this.aiQuestion().trim().toLowerCase();
-    if (!q) {
-      this.aiResponse.set('HALO 1200 Telemetry: System operational in UPS mode. Current load 983W, efficiency 94%, battery 95.5% (approx. 5h 30m runtime remaining).');
-      return;
-    }
-
-    if (q.includes('battery') || q.includes('charge')) {
-      this.aiResponse.set('Battery Telemetry: Lithium-Ion (48V nominal). Current state of charge is 95.5%, terminal voltage 51.2V. Battery charging rate 8.5A. Estimated backup duration is 5h 30m under current 983W continuous load.');
-    } else if (q.includes('power') || q.includes('watt') || q.includes('load')) {
-      this.aiResponse.set('Power Telemetry: Active load is 983 Watts (Apparent power: 1.1 kVA). Operating inverter efficiency is currently 94% with pure sine wave output at 220V / 50Hz.');
-    } else if (q.includes('voltage') || q.includes('grid') || q.includes('utility')) {
-      this.aiResponse.set('Voltage Telemetry: Utility grid is currently offline (0V). Inverter UPS mode is active, providing stable 220V output to connected appliances.');
-    } else if (q.includes('protect') || q.includes('safe') || q.includes('temp')) {
-      this.aiResponse.set('Protections Status: All 5 monitored protection circuits are active and OK (Overload: Normal, Short Circuit: Protected, Over-Temp: Active, Ground Fault: Normal, Surge: Good).');
-    } else {
-      this.aiResponse.set(`Halo AI Response: ${this.activeDashboardDevice()} is operating nominally on ${this.activeDashboardConnection()}. Telemetry is 100% synchronized with no faults detected.`);
-    }
-    this.showDashboardToast('AI Assistant telemetry response received');
+    // Live telemetry AI assistant requires device monitoring connection; not yet available.
+    this.aiResponse.set('Live monitoring data is not available yet. AI telemetry assistance will be enabled when device monitoring is connected.');
   }
 
   askPresetQuery(query: string) {
