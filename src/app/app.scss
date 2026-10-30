@@ -7813,3 +7813,124 @@
     transform: rotate(360deg);
   }
 }
+
+/* ===== ACCOUNTS PROVISIONING PANEL ===== */
+.acct-provisioning-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.acct-unavailable-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(37, 139, 255, 0.08);
+  border: 1px solid rgba(37, 139, 255, 0.25);
+  border-radius: 10px;
+  padding: 16px 20px;
+  color: #c8d8f0;
+
+  .banner-icon {
+    width: 22px;
+    height: 22px;
+    color: #38bdf8;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .banner-text {
+    .banner-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0 0 4px 0;
+    }
+
+    .banner-desc {
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin: 0;
+      color: #94a3b8;
+    }
+  }
+}
+
+.provisioning-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.provisioning-card {
+  background: #141820;
+  border: 1px solid #232936;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+  }
+
+  .provisioning-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .prov-card-icon {
+      width: 24px;
+      height: 24px;
+      color: #38bdf8;
+    }
+
+    .prov-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin: 0;
+    }
+  }
+
+  .prov-card-desc {
+    font-size: 13.5px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0 0 8px 0;
+    flex: 1;
+  }
+
+  .btn-prov-action {
+    background: #258bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    align-self: flex-start;
+
+    &:hover {
+      background: #1d70d4;
+    }
+  }
+}
+
+.btn-record-purchase {
+  background: #182030 !important;
+  border: 1px solid #25406b !important;
+  color: #38bdf8 !important;
+
+  &:hover {
+    background: #202c44 !important;
+    border-color: #38bdf8 !important;
+  }
+}
+

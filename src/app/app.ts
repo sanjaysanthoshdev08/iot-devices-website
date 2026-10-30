@@ -5,8 +5,9 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
+import { ManagementService } from './services/management.service';
 import { SystemRecordsService, SystemStatus } from './services/system-records.service';
-import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus, CreateAccountRequest } from './services/accounts.service';
+import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus } from './services/accounts.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 export interface HykonBranch {
@@ -45,6 +46,7 @@ export interface InfinityParticle {
 export class App implements AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
   readonly deviceAccessService = inject(DeviceAccessService);
+  readonly managementService = inject(ManagementService);
   readonly systemRecordsService = inject(SystemRecordsService);
   readonly accountsService = inject(AccountsService);
   private readonly http = inject(HttpClient);
@@ -478,12 +480,15 @@ export class App implements AfterViewInit, OnDestroy {
     this.navigationRequestId++;
     this.systemsRequestId++;
     this.detailRequestId++;
+    this.managementRequestId++;
     this.isDashboardAuthorized.set(false);
     this.isDashboardOpen.set(false);
     this.isDeviceAuthModalOpen.set(false);
     this.isDeviceDetailModalOpen.set(false);
     this.isAddSystemModalOpen.set(false);
-    this.isCreateAccountModalOpen.set(false);
+    this.isPurchaseModalOpen.set(false);
+    this.isCreateDistAdminModalOpen.set(false);
+    this.isCreateDistributorModalOpen.set(false);
     this.selectedDevice.set(null);
     this.detailError.set(null);
     this.isDetailLoading.set(false);
@@ -504,6 +509,15 @@ export class App implements AfterViewInit, OnDestroy {
     this.authSuccessMessage.set('');
     this.isAuthVerifying.set(false);
     this.dashboardRetryAction.set(null);
+
+    // Clear sensitive registration/provisioning form states
+    this.distAdminPassword.set('');
+    this.distAdminConfirmPassword.set('');
+    this.newSystemError.set('');
+    this.purchaseError.set('');
+    this.distAdminError.set('');
+    this.distError.set('');
+
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
       this.clockInterval = null;
@@ -710,9 +724,14 @@ export class App implements AfterViewInit, OnDestroy {
     this.navigationRequestId++;
     this.systemsRequestId++;
     this.detailRequestId++;
+    this.managementRequestId++;
     this.isAuthVerifying.set(false);
     this.isDashboardOpen.set(false);
     this.isDeviceDetailModalOpen.set(false);
+    this.isAddSystemModalOpen.set(false);
+    this.isPurchaseModalOpen.set(false);
+    this.isCreateDistAdminModalOpen.set(false);
+    this.isCreateDistributorModalOpen.set(false);
     this.selectedDevice.set(null);
     this.detailError.set(null);
     this.isDetailLoading.set(false);
@@ -722,6 +741,8 @@ export class App implements AfterViewInit, OnDestroy {
     this.dataSourceDropdownOpen.set(false);
     this.isStatusDropdownOpen.set(false);
     this.isSystemsSidebarOpen.set(false);
+    this.distAdminPassword.set('');
+    this.distAdminConfirmPassword.set('');
     this.aiResponse.set('');
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
@@ -817,12 +838,48 @@ export class App implements AfterViewInit, OnDestroy {
   headerSearchQuery = signal<string>('');
 
   isAddSystemModalOpen = signal<boolean>(false);
-  newSystemName = signal<string>('');
+  newSystemDeviceCode = signal<string>('');
   newSystemSN = signal<string>('');
-  newSystemStatus = signal<SystemStatus>('online');
-  newSystemUser = signal<string>('');
+  newSystemName = signal<string>('');
+  newSystemModel = signal<string>('');
+  newSystemBranchId = signal<string>('');
   newSystemError = signal<string>('');
+  newSystemSuccess = signal<string>('');
   isSubmittingSystem = signal<boolean>(false);
+
+  // Purchase Recording Modal state
+  isPurchaseModalOpen = signal<boolean>(false);
+  purchaseDeviceId = signal<string>('');
+  purchaseCustomerUserId = signal<string>('');
+  purchaseReference = signal<string>('');
+  purchaseError = signal<string>('');
+  purchaseSuccess = signal<string>('');
+  isSubmittingPurchase = signal<boolean>(false);
+
+  // HYKON Admin Provisioning Modals state
+  isCreateDistAdminModalOpen = signal<boolean>(false);
+  distAdminName = signal<string>('');
+  distAdminEmail = signal<string>('');
+  distAdminPassword = signal<string>('');
+  distAdminConfirmPassword = signal<string>('');
+  distAdminError = signal<string>('');
+  distAdminSuccess = signal<string>('');
+  isSubmittingDistAdmin = signal<boolean>(false);
+  lastCreatedAdminId = signal<number | null>(null);
+
+  isCreateDistributorModalOpen = signal<boolean>(false);
+  distCode = signal<string>('');
+  distName = signal<string>('');
+  distAdminUserId = signal<string>('');
+  distBranchCode = signal<string>('');
+  distBranchName = signal<string>('');
+  distLocation = signal<string>('');
+  distError = signal<string>('');
+  distSuccess = signal<string>('');
+  isSubmittingDistributor = signal<boolean>(false);
+
+  // Request cancellation tokens
+  managementRequestId = 0;
 
   toggleStatusDropdown(event?: Event) {
     if (event) event.stopPropagation();
@@ -978,24 +1035,474 @@ export class App implements AfterViewInit, OnDestroy {
     this.isDetailLoading.set(false);
   }
 
+  extractErrorMessage(err: HttpErrorResponse, fallback: string): string {
+    if (err.status === 0) {
+      return 'Network communication failed or timed out. Please check existing records to confirm whether this action completed before submitting again.';
+    }
+    if (err.error) {
+      if (err.error.errors && typeof err.error.errors === 'object') {
+        const errorValues = Object.values(err.error.errors);
+        if (errorValues.length > 0 && typeof errorValues[0] === 'string') {
+          return errorValues.join('. ');
+        }
+      }
+      if (err.error.message && typeof err.error.message === 'string') {
+        return err.error.message;
+      }
+      if (err.error.error && typeof err.error.error === 'string') {
+        return err.error.error;
+      }
+    }
+    if (err.statusText && err.statusText !== 'OK') {
+      return `${fallback}: ${err.statusText}`;
+    }
+    return fallback;
+  }
+
   openAddSystemModal() {
     if (this.isCustomerRole()) return;
-    this.newSystemName.set('');
-    this.newSystemSN.set('');
-    this.newSystemStatus.set('online');
-    const user = this.currentUser();
-    this.newSystemUser.set(user?.email || user?.name || '');
-    this.newSystemError.set('Device registration is currently unavailable.');
+    this.newSystemError.set('');
+    this.newSystemSuccess.set('');
     this.isAddSystemModalOpen.set(true);
   }
 
   closeAddSystemModal() {
+    this.managementRequestId++;
     this.isAddSystemModalOpen.set(false);
     this.newSystemError.set('');
+    this.newSystemSuccess.set('');
   }
 
   submitAddSystem() {
-    this.newSystemError.set('Device registration is currently unavailable.');
+    if (this.isCustomerRole()) {
+      this.newSystemError.set('Only administrators can register devices.');
+      return;
+    }
+    if (this.isSubmittingSystem()) return;
+
+    const deviceCode = this.newSystemDeviceCode().trim();
+    const serialNumber = this.newSystemSN().trim();
+    const systemName = this.newSystemName().trim();
+    const model = this.newSystemModel().trim();
+    const branchIdStr = this.newSystemBranchId().trim();
+
+    this.newSystemError.set('');
+    this.newSystemSuccess.set('');
+
+    if (!deviceCode) {
+      this.newSystemError.set('Device ID is required.');
+      return;
+    }
+    if (deviceCode.length > 100) {
+      this.newSystemError.set('Device ID must not exceed 100 characters.');
+      return;
+    }
+    if (!serialNumber) {
+      this.newSystemError.set('Serial number is required.');
+      return;
+    }
+    if (serialNumber.length > 150) {
+      this.newSystemError.set('Serial number must not exceed 150 characters.');
+      return;
+    }
+    if (!systemName) {
+      this.newSystemError.set('System name is required.');
+      return;
+    }
+    if (systemName.length > 150) {
+      this.newSystemError.set('System name must not exceed 150 characters.');
+      return;
+    }
+    if (model && model.length > 100) {
+      this.newSystemError.set('Model must not exceed 100 characters.');
+      return;
+    }
+
+    const isDistAdmin = this.isDistributorRole();
+    let branchId: number | null = null;
+    if (branchIdStr) {
+      const parsed = parseInt(branchIdStr, 10);
+      if (isNaN(parsed) || parsed <= 0) {
+        this.newSystemError.set('Branch ID must be a positive number.');
+        return;
+      }
+      branchId = parsed;
+    } else if (isDistAdmin) {
+      this.newSystemError.set('Branch ID is required for distributor administrators.');
+      return;
+    }
+
+    this.isSubmittingSystem.set(true);
+    const currentReq = ++this.managementRequestId;
+
+    this.managementService.registerDevice({
+      deviceCode,
+      serialNumber,
+      systemName,
+      model: model || null,
+      branchId
+    }).subscribe({
+      next: (res) => {
+        if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isAddSystemModalOpen()) {
+          return;
+        }
+        this.isSubmittingSystem.set(false);
+        this.closeAddSystemModal();
+        this.newSystemDeviceCode.set('');
+        this.newSystemSN.set('');
+        this.newSystemName.set('');
+        this.newSystemModel.set('');
+        this.newSystemBranchId.set('');
+        this.showDashboardToast('Device registered successfully.');
+        this.loadSystems(0);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.managementRequestId) return;
+        this.isSubmittingSystem.set(false);
+
+        if (err.status === 401) {
+          this.closeAddSystemModal();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+        } else if (err.status === 403) {
+          this.closeAddSystemModal();
+          if (this.currentRole() === 'DISTRIBUTOR_ADMIN') {
+            this.clearDashboardAndGateState();
+            this.openDistributorGate();
+          } else {
+            this.showDashboardToast('Access denied: You do not have permission to register devices.');
+          }
+        } else {
+          this.newSystemError.set(this.extractErrorMessage(err, 'Failed to register device. Please verify fields and try again.'));
+        }
+      }
+    });
+  }
+
+  // ===== PURCHASE ELIGIBILITY RECORDING =====
+  openPurchaseModal() {
+    if (this.isCustomerRole()) return;
+    this.purchaseError.set('');
+    this.purchaseSuccess.set('');
+    this.isPurchaseModalOpen.set(true);
+  }
+
+  closePurchaseModal() {
+    this.managementRequestId++;
+    this.isPurchaseModalOpen.set(false);
+    this.purchaseError.set('');
+    this.purchaseSuccess.set('');
+  }
+
+  submitRecordPurchase() {
+    if (this.isCustomerRole()) {
+      this.purchaseError.set('Only administrators can record purchases.');
+      return;
+    }
+    if (this.isSubmittingPurchase()) return;
+
+    const deviceIdStr = this.purchaseDeviceId().trim();
+    const customerUserIdStr = this.purchaseCustomerUserId().trim();
+    const purchaseRef = this.purchaseReference().trim();
+
+    this.purchaseError.set('');
+    this.purchaseSuccess.set('');
+
+    const deviceId = parseInt(deviceIdStr, 10);
+    if (!deviceIdStr || isNaN(deviceId) || deviceId <= 0) {
+      this.purchaseError.set('A valid positive numeric Device ID is required.');
+      return;
+    }
+
+    const customerUserId = parseInt(customerUserIdStr, 10);
+    if (!customerUserIdStr || isNaN(customerUserId) || customerUserId <= 0) {
+      this.purchaseError.set('A valid positive numeric Customer User ID is required.');
+      return;
+    }
+
+    if (!purchaseRef) {
+      this.purchaseError.set('Purchase reference is required.');
+      return;
+    }
+    if (purchaseRef.length > 150) {
+      this.purchaseError.set('Purchase reference must not exceed 150 characters.');
+      return;
+    }
+
+    this.isSubmittingPurchase.set(true);
+    const currentReq = ++this.managementRequestId;
+
+    this.managementService.recordDevicePurchase({
+      deviceId,
+      customerUserId,
+      purchaseReference: purchaseRef
+    }).subscribe({
+      next: (res) => {
+        if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isPurchaseModalOpen()) {
+          return;
+        }
+        this.isSubmittingPurchase.set(false);
+        this.closePurchaseModal();
+        this.purchaseDeviceId.set('');
+        this.purchaseCustomerUserId.set('');
+        this.purchaseReference.set('');
+        this.showDashboardToast('Purchase eligibility recorded successfully.');
+        this.loadSystems(this.currentPage());
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.managementRequestId) return;
+        this.isSubmittingPurchase.set(false);
+
+        if (err.status === 401) {
+          this.closePurchaseModal();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+        } else if (err.status === 403) {
+          this.closePurchaseModal();
+          if (this.currentRole() === 'DISTRIBUTOR_ADMIN') {
+            this.clearDashboardAndGateState();
+            this.openDistributorGate();
+          } else {
+            this.showDashboardToast('Access denied: You do not have permission to record purchases.');
+          }
+        } else {
+          this.purchaseError.set(this.extractErrorMessage(err, 'Failed to record purchase. Please verify fields and try again.'));
+        }
+      }
+    });
+  }
+
+  // ===== HYKON ADMIN PROVISIONING =====
+  openCreateDistAdminModal() {
+    if (this.currentRole() !== 'HYKON_ADMIN') return;
+    this.distAdminError.set('');
+    this.distAdminSuccess.set('');
+    this.isCreateDistAdminModalOpen.set(true);
+  }
+
+  closeCreateDistAdminModal() {
+    this.managementRequestId++;
+    this.isCreateDistAdminModalOpen.set(false);
+    this.distAdminPassword.set('');
+    this.distAdminConfirmPassword.set('');
+    this.distAdminError.set('');
+    this.distAdminSuccess.set('');
+  }
+
+  submitCreateDistAdmin() {
+    if (this.currentRole() !== 'HYKON_ADMIN') {
+      this.distAdminError.set('HYKON_ADMIN access is required.');
+      return;
+    }
+    if (this.isSubmittingDistAdmin()) return;
+
+    const name = this.distAdminName().trim();
+    const email = this.distAdminEmail().trim();
+    const password = this.distAdminPassword();
+    const confirmPassword = this.distAdminConfirmPassword();
+
+    this.distAdminError.set('');
+    this.distAdminSuccess.set('');
+
+    if (!name || name.length < 2) {
+      this.distAdminError.set('Name must be at least 2 characters.');
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      this.distAdminError.set('Valid email address is required.');
+      return;
+    }
+    if (!password || password.length < 8) {
+      this.distAdminError.set('Password must be at least 8 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      this.distAdminError.set('Passwords do not match.');
+      return;
+    }
+
+    this.isSubmittingDistAdmin.set(true);
+    const currentReq = ++this.managementRequestId;
+
+    this.managementService.createDistributorAdmin({
+      name,
+      email,
+      password,
+      confirmPassword
+    }).subscribe({
+      next: (res) => {
+        if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isCreateDistAdminModalOpen()) {
+          return;
+        }
+        this.isSubmittingDistAdmin.set(false);
+        const adminId = res.data?.id;
+        if (adminId) {
+          this.lastCreatedAdminId.set(adminId);
+          this.distAdminUserId.set(String(adminId));
+        }
+        this.closeCreateDistAdminModal();
+        this.distAdminName.set('');
+        this.distAdminEmail.set('');
+        this.distAdminPassword.set('');
+        this.distAdminConfirmPassword.set('');
+        this.showDashboardToast(`Distributor administrator #${adminId || ''} created successfully.`);
+        // Auto-open distributor creation pre-filled with admin ID
+        this.openCreateDistributorModal();
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.managementRequestId) return;
+        this.isSubmittingDistAdmin.set(false);
+
+        if (err.status === 401) {
+          this.closeCreateDistAdminModal();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+        } else if (err.status === 403) {
+          this.closeCreateDistAdminModal();
+          if (this.currentRole() === 'DISTRIBUTOR_ADMIN') {
+            this.clearDashboardAndGateState();
+            this.openDistributorGate();
+          } else {
+            this.showDashboardToast('Access denied: HYKON_ADMIN access is required.');
+          }
+        } else {
+          this.distAdminError.set(this.extractErrorMessage(err, 'Failed to create distributor administrator.'));
+        }
+      }
+    });
+  }
+
+  openCreateDistributorModal() {
+    if (this.currentRole() !== 'HYKON_ADMIN') return;
+    if (this.lastCreatedAdminId() && !this.distAdminUserId()) {
+      this.distAdminUserId.set(String(this.lastCreatedAdminId()));
+    }
+    this.distError.set('');
+    this.distSuccess.set('');
+    this.isCreateDistributorModalOpen.set(true);
+  }
+
+  closeCreateDistributorModal() {
+    this.managementRequestId++;
+    this.isCreateDistributorModalOpen.set(false);
+    this.distError.set('');
+    this.distSuccess.set('');
+  }
+
+  submitCreateDistributor() {
+    if (this.currentRole() !== 'HYKON_ADMIN') {
+      this.distError.set('HYKON_ADMIN access is required.');
+      return;
+    }
+    if (this.isSubmittingDistributor()) return;
+
+    const distributorCode = this.distCode().trim();
+    const name = this.distName().trim();
+    const adminUserIdStr = this.distAdminUserId().trim();
+    const branchCode = this.distBranchCode().trim();
+    const branchName = this.distBranchName().trim();
+    const location = this.distLocation().trim();
+
+    this.distError.set('');
+    this.distSuccess.set('');
+
+    const administratorUserId = parseInt(adminUserIdStr, 10);
+    if (!adminUserIdStr || isNaN(administratorUserId) || administratorUserId <= 0) {
+      this.distError.set('A valid positive numeric Administrator User ID is required.');
+      return;
+    }
+    if (!distributorCode) {
+      this.distError.set('Distributor ID is required.');
+      return;
+    }
+    if (distributorCode.length > 100) {
+      this.distError.set('Distributor ID must not exceed 100 characters.');
+      return;
+    }
+    if (!name) {
+      this.distError.set('Distributor name is required.');
+      return;
+    }
+    if (name.length > 150) {
+      this.distError.set('Distributor name must not exceed 150 characters.');
+      return;
+    }
+    if (!branchCode) {
+      this.distError.set('Initial branch code is required.');
+      return;
+    }
+    if (branchCode.length > 100) {
+      this.distError.set('Branch code must not exceed 100 characters.');
+      return;
+    }
+    if (!branchName) {
+      this.distError.set('Initial branch name is required.');
+      return;
+    }
+    if (branchName.length > 150) {
+      this.distError.set('Branch name must not exceed 150 characters.');
+      return;
+    }
+    if (!location) {
+      this.distError.set('Branch location is required.');
+      return;
+    }
+    if (location.length > 150) {
+      this.distError.set('Branch location must not exceed 150 characters.');
+      return;
+    }
+
+    this.isSubmittingDistributor.set(true);
+    const currentReq = ++this.managementRequestId;
+
+    this.managementService.createDistributor({
+      distributorCode,
+      name,
+      administratorUserId,
+      branchCode,
+      branchName,
+      location
+    }).subscribe({
+      next: (res) => {
+        if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isCreateDistributorModalOpen()) {
+          return;
+        }
+        this.isSubmittingDistributor.set(false);
+        this.closeCreateDistributorModal();
+        this.distCode.set('');
+        this.distName.set('');
+        this.distAdminUserId.set('');
+        this.distBranchCode.set('');
+        this.distBranchName.set('');
+        this.distLocation.set('');
+        this.lastCreatedAdminId.set(null);
+        this.showDashboardToast('Distributor and initial branch created successfully.');
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.managementRequestId) return;
+        this.isSubmittingDistributor.set(false);
+
+        if (err.status === 401) {
+          this.closeCreateDistributorModal();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+        } else if (err.status === 403) {
+          this.closeCreateDistributorModal();
+          if (this.currentRole() === 'DISTRIBUTOR_ADMIN') {
+            this.clearDashboardAndGateState();
+            this.openDistributorGate();
+          } else {
+            this.showDashboardToast('Access denied: HYKON_ADMIN access is required.');
+          }
+        } else {
+          const detail = this.extractErrorMessage(err, 'Failed to create distributor.');
+          const adminHint = this.distAdminUserId()
+            ? ` (Note: Administrator account #${this.distAdminUserId()} remains created; you may adjust details and retry.)`
+            : '';
+          this.distError.set(detail + adminHint);
+        }
+      }
+    });
   }
 
   toggleSystemsSidebar() {
@@ -2601,16 +3108,6 @@ export class App implements AfterViewInit, OnDestroy {
     return this.accountRecords().slice(start, start + this.accountPageSize);
   });
 
-  // Create-account modal
-  isCreateAccountModalOpen = signal<boolean>(false);
-  newAccountUsername = signal<string>('');
-  newAccountPhone = signal<string>('');
-  newAccountUserType = signal<AccountUserType>('Operator');
-  newAccountActiveStatus = signal<AccountActiveStatus>('Active');
-  newAccountStatus = signal<AccountStatus>('Enabled');
-  newAccountError = signal<string>('');
-  isSubmittingAccount = signal<boolean>(false);
-
   setAccountTab(tab: 'list' | 'owner') {
     this.accountActiveTab.set(tab);
   }
@@ -2699,53 +3196,6 @@ export class App implements AfterViewInit, OnDestroy {
 
   accountNextPage() {
     this.accountCurrentPage.update(p => Math.min(this.accountTotalPages(), p + 1));
-  }
-
-  openCreateAccountModal() {
-    this.newAccountUsername.set('');
-    this.newAccountPhone.set('');
-    this.newAccountUserType.set('Operator');
-    this.newAccountActiveStatus.set('Active');
-    this.newAccountStatus.set('Enabled');
-    this.newAccountError.set('');
-    this.isCreateAccountModalOpen.set(true);
-  }
-
-  closeCreateAccountModal() {
-    this.isCreateAccountModalOpen.set(false);
-    this.newAccountError.set('');
-  }
-
-  async submitCreateAccount() {
-    const username = this.newAccountUsername().trim();
-    const phone = this.newAccountPhone().trim();
-    this.newAccountError.set('');
-
-    if (!username) {
-      this.newAccountError.set('Username is required.');
-      return;
-    }
-    if (!phone) {
-      this.newAccountError.set('Phone number is required.');
-      return;
-    }
-
-    this.isSubmittingAccount.set(true);
-    try {
-      await this.accountsService.createAccount({
-        username,
-        phone,
-        userType: this.newAccountUserType(),
-        activeStatus: this.newAccountActiveStatus(),
-        accountStatus: this.newAccountStatus()
-      });
-      this.isSubmittingAccount.set(false);
-      this.closeCreateAccountModal();
-      this.showDashboardToast(`Account "${username}" created successfully`);
-    } catch {
-      this.isSubmittingAccount.set(false);
-      this.newAccountError.set('Failed to create account. Please try again.');
-    }
   }
 
   closeAllAccountDropdowns() {

@@ -1988,17 +1988,35 @@
           </div>
 
           <!-- + Create button (Accounts page) -->
-          <button type="button" 
-                  class="btn-add-system" 
-                  *ngIf="activeDashboardNav() === 'accounts'"
-                  (click)="openCreateAccountModal()" 
-                  title="Create new account">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            <span>+ Create</span>
-          </button>
+          <!-- HYKON_ADMIN Provisioning buttons (Accounts page) -->
+          <ng-container *ngIf="activeDashboardNav() === 'accounts' && isHykonAdminRole()">
+            <button type="button" 
+                    class="btn-add-system" 
+                    (click)="openCreateDistAdminModal()" 
+                    title="Create Distributor Admin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span>Provision Admin</span>
+            </button>
+            <button type="button" 
+                    class="btn-add-system" 
+                    (click)="openCreateDistributorModal()" 
+                    title="Create Distributor">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span>Register Distributor</span>
+            </button>
+            <button type="button" 
+                    class="btn-record-purchase" 
+                    (click)="openPurchaseModal()" 
+                    title="Record Device Purchase">
+              Record Purchase
+            </button>
+          </ng-container>
 
           <!-- + Add New button (Device page) -->
           <button type="button" 
@@ -2010,7 +2028,14 @@
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            <span>+ Add New</span>
+            <span>+ Add System</span>
+          </button>
+          <button type="button" 
+                  class="btn-record-purchase" 
+                  *ngIf="activeDashboardNav() === 'systems' && !isCustomerRole()"
+                  (click)="openPurchaseModal()" 
+                  title="Record Device Purchase">
+            Record Purchase
           </button>
 
           <!-- Authenticated User Avatar -->
@@ -2034,291 +2059,46 @@
       <!-- ===== ACCOUNTS PAGE ===== -->
       <ng-container *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('accounts') && activeDashboardNav() === 'accounts'">
 
-        <!-- ACCOUNT TABS -->
-        <nav class="acct-tabs" role="tablist" aria-label="Account sections">
-          <button type="button"
-                  class="acct-tab"
-                  [class.active]="accountActiveTab() === 'list'"
-                  role="tab"
-                  [attr.aria-selected]="accountActiveTab() === 'list'"
-                  (click)="setAccountTab('list')">
-            Account List
-          </button>
-          <button type="button"
-                  class="acct-tab"
-                  [class.active]="accountActiveTab() === 'owner'"
-                  role="tab"
-                  [attr.aria-selected]="accountActiveTab() === 'owner'"
-                  (click)="setAccountTab('owner')">
-            Related owner
-          </button>
-          <div class="acct-tabs-divider"></div>
-        </nav>
-
-        <!-- ACCOUNT LIST TAB -->
-        <section class="acct-panel" *ngIf="accountActiveTab() === 'list'" aria-label="Account list" (click)="closeAllAccountDropdowns()">
-
-          <!-- ROW 1: Segment + Scope + Search -->
-          <div class="acct-controls-row">
-
-            <!-- User / Group segmented control -->
-            <div class="acct-segment">
-              <button type="button"
-                      class="acct-seg-btn"
-                      [class.active]="accountSegment() === 'user'"
-                      (click)="setAccountSegment('user')">User</button>
-              <button type="button"
-                      class="acct-seg-btn"
-                      [class.active]="accountSegment() === 'group'"
-                      (click)="setAccountSegment('group')">Group</button>
-            </div>
-
-            <!-- Scope dropdown -->
-            <div class="acct-scope-dropdown" (click)="$event.stopPropagation()">
-              <button type="button"
-                      class="acct-scope-btn"
-                      (click)="toggleAccountScopeDropdown($event)"
-                      aria-haspopup="listbox"
-                      [attr.aria-expanded]="accountScopeDropdownOpen()">
-                <!-- People icon -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="scope-people-icon">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                <span>{{ accountScopeValue() }}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="scope-chevron">
-                  <path d="M6 9l6 6 6-6"/>
-                </svg>
-              </button>
-              <div class="acct-dropdown-menu" *ngIf="accountScopeDropdownOpen()" role="listbox">
-                <button type="button" class="acct-dropdown-item" [class.selected]="accountScopeValue() === 'All users'" (click)="selectAccountScope('All users', $event)">All users</button>
-              </div>
-            </div>
-
-            <!-- Spacer -->
-            <div class="acct-controls-spacer"></div>
-
-            <!-- Search field -->
-            <div class="acct-search-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acct-search-icon">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input type="text"
-                     class="acct-search-input"
-                     placeholder="Search username / Phone"
-                     [ngModel]="accountSearchQuery()"
-                     (ngModelChange)="onAccountSearchInput($event)"
-                     aria-label="Search by username or phone" />
-            </div>
-
-          </div><!-- /acct-controls-row -->
-
-          <!-- ROW 2: Filters -->
-          <div class="acct-filters-row">
-
-            <!-- User Type filter -->
-            <div class="acct-filter-group" (click)="$event.stopPropagation()">
-              <label class="acct-filter-label">User Type</label>
-              <div class="acct-filter-select-wrap">
-                <button type="button"
-                        class="acct-filter-select"
-                        (click)="toggleAccountUserTypeDropdown($event)"
-                        [class.has-value]="accountUserTypeFilter() !== 'all'">
-                  <span>{{ accountUserTypeFilter() === 'all' ? 'Select' : accountUserTypeFilter() }}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-chev">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </button>
-                <div class="acct-dropdown-menu" *ngIf="accountUserTypeDropdownOpen()" role="listbox">
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountUserTypeFilter() === 'all'" (click)="selectAccountUserType('all', $event)">All</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountUserTypeFilter() === 'Admin'" (click)="selectAccountUserType('Admin', $event)">Admin</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountUserTypeFilter() === 'Operator'" (click)="selectAccountUserType('Operator', $event)">Operator</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountUserTypeFilter() === 'Viewer'" (click)="selectAccountUserType('Viewer', $event)">Viewer</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountUserTypeFilter() === 'Owner'" (click)="selectAccountUserType('Owner', $event)">Owner</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Active Status filter -->
-            <div class="acct-filter-group" (click)="$event.stopPropagation()">
-              <label class="acct-filter-label">Active Status</label>
-              <div class="acct-filter-select-wrap">
-                <button type="button"
-                        class="acct-filter-select"
-                        (click)="toggleAccountActiveStatusDropdown($event)"
-                        [class.has-value]="accountActiveFilter() !== 'all'">
-                  <span>{{ accountActiveFilter() === 'all' ? 'Select' : accountActiveFilter() }}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-chev">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </button>
-                <div class="acct-dropdown-menu" *ngIf="accountActiveStatusDropdownOpen()" role="listbox">
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountActiveFilter() === 'all'" (click)="selectAccountActiveStatus('all', $event)">All</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountActiveFilter() === 'Active'" (click)="selectAccountActiveStatus('Active', $event)">Active</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountActiveFilter() === 'Inactive'" (click)="selectAccountActiveStatus('Inactive', $event)">Inactive</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Account Status filter -->
-            <div class="acct-filter-group" (click)="$event.stopPropagation()">
-              <label class="acct-filter-label">Account Status</label>
-              <div class="acct-filter-select-wrap">
-                <button type="button"
-                        class="acct-filter-select"
-                        (click)="toggleAccountStatusDropdown($event)"
-                        [class.has-value]="accountStatusFilter() !== 'all'">
-                  <span>{{ accountStatusFilter() === 'all' ? 'Select' : accountStatusFilter() }}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-chev">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </button>
-                <div class="acct-dropdown-menu" *ngIf="accountStatusDropdownOpen()" role="listbox">
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountStatusFilter() === 'all'" (click)="selectAccountStatus('all', $event)">All</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountStatusFilter() === 'Enabled'" (click)="selectAccountStatus('Enabled', $event)">Enabled</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountStatusFilter() === 'Disabled'" (click)="selectAccountStatus('Disabled', $event)">Disabled</button>
-                  <button type="button" class="acct-dropdown-item" [class.selected]="accountStatusFilter() === 'Suspended'" (click)="selectAccountStatus('Suspended', $event)">Suspended</button>
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /acct-filters-row -->
-
-          <div class="acct-filters-divider"></div>
-
-          <!-- TABLE -->
-          <div class="acct-table-container">
-            <table class="acct-table" aria-label="Accounts table">
-              <thead>
-                <tr class="acct-thead-row">
-                  <th scope="col" class="acct-th acct-th-username">Username</th>
-                  <th scope="col" class="acct-th acct-th-type">User Type</th>
-                  <th scope="col" class="acct-th acct-th-active">Active Status</th>
-                  <th scope="col" class="acct-th acct-th-status">Account Status</th>
-                  <th scope="col" class="acct-th acct-th-logger">Dataloggers</th>
-                  <th scope="col" class="acct-th acct-th-device">Device quantity</th>
-                  <th scope="col" class="acct-th acct-th-operate">Operate</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Loading state -->
-                <tr *ngIf="isAccountLoading() && accountRecords().length === 0" class="acct-state-row">
-                  <td colspan="7" class="acct-state-cell">
-                    <div class="acct-empty-content">
-                      <svg class="acct-loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10" stroke-opacity="0.2"/>
-                        <path d="M12 2a10 10 0 0 1 10 10" stroke="#258BFF"/>
-                      </svg>
-                      <p class="acct-empty-desc">Loading accounts&hellip;</p>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- True empty state (no accounts exist at all, no active filters) -->
-                <tr *ngIf="!isAccountLoading() && totalAccountsCount() === 0 && !accountHasFilters()" class="acct-state-row">
-                  <td colspan="7" class="acct-state-cell">
-                    <div class="acct-empty-content">
-                      <!-- People outline icon -->
-                      <div class="acct-empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                      </div>
-                      <h3 class="acct-empty-title">No accounts yet</h3>
-                      <p class="acct-empty-desc">Create an account to get started.</p>
-                      <button type="button" class="acct-empty-create-link" (click)="openCreateAccountModal()">
-                        Create account &rarr;
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- Filtered empty state (accounts exist but filters return nothing) -->
-                <tr *ngIf="!isAccountLoading() && accountRecords().length === 0 && (totalAccountsCount() > 0 || accountHasFilters())" class="acct-state-row">
-                  <td colspan="7" class="acct-state-cell">
-                    <div class="acct-empty-content">
-                      <div class="acct-empty-icon acct-empty-icon-muted">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-                          <circle cx="11" cy="11" r="8"/>
-                          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                        </svg>
-                      </div>
-                      <h3 class="acct-empty-title">No matching accounts</h3>
-                      <p class="acct-empty-desc">No accounts match the current filters.</p>
-                      <button type="button" class="acct-filter-reset-btn" (click)="clearAccountFilters()">Reset filters</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- Data rows -->
-                <tr *ngFor="let acct of accountPagedRecords()" class="acct-data-row">
-                  <td class="acct-td acct-td-username">{{ acct.username }}</td>
-                  <td class="acct-td acct-td-type">
-                    <span class="acct-type-badge acct-type-{{ acct.userType.toLowerCase() }}">{{ acct.userType }}</span>
-                  </td>
-                  <td class="acct-td acct-td-active">
-                    <span class="acct-active-badge" [class.active]="acct.activeStatus === 'Active'" [class.inactive]="acct.activeStatus === 'Inactive'">
-                      <span class="acct-status-dot"></span>
-                      {{ acct.activeStatus }}
-                    </span>
-                  </td>
-                  <td class="acct-td acct-td-status">
-                    <span class="acct-account-badge acct-acct-{{ acct.accountStatus.toLowerCase() }}">{{ acct.accountStatus }}</span>
-                  </td>
-                  <td class="acct-td acct-td-logger">{{ acct.dataloggers }}</td>
-                  <td class="acct-td acct-td-device">{{ acct.deviceQuantity }}</td>
-                  <td class="acct-td acct-td-operate">
-                    <button type="button" class="acct-operate-btn" title="Edit account">Edit</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div><!-- /acct-table-container -->
-
-          <!-- TABLE FOOTER -->
-          <div class="acct-table-footer">
-            <span class="acct-count-label">{{ accountRecords().length }} account{{ accountRecords().length !== 1 ? 's' : '' }}</span>
-            <div class="acct-pagination">
-              <button type="button"
-                      class="acct-page-btn"
-                      (click)="accountPrevPage()"
-                      [disabled]="accountCurrentPage() <= 1"
-                      aria-label="Previous page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-              </button>
-              <button type="button"
-                      class="acct-page-btn"
-                      (click)="accountNextPage()"
-                      [disabled]="accountCurrentPage() >= accountTotalPages()"
-                      aria-label="Next page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
+        <section class="acct-provisioning-panel" aria-label="Accounts and Provisioning Management">
+          <div class="acct-unavailable-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="banner-icon">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <div>
+              <h3 class="banner-title">Account Directory Unavailable</h3>
+              <p class="banner-text">The server does not expose an accounts listing endpoint. HYKON administrators can provision new distributor administrators and branches below.</p>
             </div>
           </div>
 
-        </section><!-- /Account List tab -->
-
-        <!-- RELATED OWNER TAB -->
-        <section class="acct-panel acct-panel-owner" *ngIf="accountActiveTab() === 'owner'" aria-label="Related owner">
-          <div class="acct-empty-content">
-            <div class="acct-empty-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+          <div class="provisioning-cards-grid" *ngIf="isHykonAdminRole()">
+            <div class="provisioning-card" (click)="openCreateDistAdminModal()" role="button" tabindex="0">
+              <div class="pcard-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              </div>
+              <h4 class="pcard-title">Provision Distributor Admin</h4>
+              <p class="pcard-desc">Create a new administrator credential for a regional distributor partner.</p>
+              <span class="pcard-badge">HYKON_ADMIN</span>
             </div>
-            <h3 class="acct-empty-title">No related owners</h3>
-            <p class="acct-empty-desc">Owner relationships will appear here once accounts are linked.</p>
+
+            <div class="provisioning-card" (click)="openCreateDistributorModal()" role="button" tabindex="0">
+              <div class="pcard-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <h4 class="pcard-title">Register Distributor Branch</h4>
+              <p class="pcard-desc">Link a distributor code and branch location to an administrator user ID.</p>
+              <span class="pcard-badge">HYKON_ADMIN</span>
+            </div>
+
+            <div class="provisioning-card" (click)="openPurchaseModal()" role="button" tabindex="0">
+              <div class="pcard-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>
+              </div>
+              <h4 class="pcard-title">Record Device Purchase</h4>
+              <p class="pcard-desc">Assign customer ownership eligibility by recording a device purchase reference.</p>
+              <span class="pcard-badge">ADMIN & DISTRIBUTOR</span>
+            </div>
           </div>
         </section>
 
@@ -2566,13 +2346,14 @@
 
   <!-- 5. REGISTER NEW SYSTEM MODAL DIALOG -->
   <div class="system-modal-backdrop" *ngIf="isAddSystemModalOpen()" (click)="closeAddSystemModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="modal-title">
       <div class="modal-card-header">
         <h3 id="modal-title" class="modal-card-title">Register New System</h3>
         <button type="button" class="modal-close-btn" (click)="closeAddSystemModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -2584,14 +2365,15 @@
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span>Device registration is currently unavailable.</span>
+          <span>Ownership is established through purchase eligibility and customer claim.</span>
         </div>
+
         <!-- Error Alert -->
         <div class="modal-error-alert" *ngIf="newSystemError()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <span>{{ newSystemError() }}</span>
         </div>
@@ -2599,163 +2381,263 @@
         <!-- Field: System Name -->
         <div class="modal-field">
           <label class="modal-label" for="systemName">System name</label>
-          <input type="text" 
-                 id="systemName" 
-                 class="modal-input" 
-                 placeholder="e.g., HYBRID_5 or HYKON-SOLAR-01" 
-                 [ngModel]="newSystemName()" 
-                 (ngModelChange)="newSystemName.set($event)" 
-                 name="systemName" 
-                 required />
+          <input type="text" id="systemName" class="modal-input" placeholder="e.g., HYBRID_5 or HYKON-SOLAR-01"
+            [ngModel]="newSystemName()" (ngModelChange)="newSystemName.set($event)" name="systemName" required />
+        </div>
+
+        <!-- Field: Device ID (deviceCode) -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemDeviceCode">Device ID</label>
+          <input type="text" id="systemDeviceCode" class="modal-input" placeholder="e.g., HALO-1200-01"
+            [ngModel]="newSystemDeviceCode()" (ngModelChange)="newSystemDeviceCode.set($event)" name="deviceCode" required />
         </div>
 
         <!-- Field: Serial Number (SN) -->
         <div class="modal-field">
           <label class="modal-label" for="systemSN">Serial number (SN)</label>
-          <input type="text" 
-                 id="systemSN" 
-                 class="modal-input" 
-                 placeholder="e.g., 000000000000000001 (preserves leading zeros)" 
-                 [ngModel]="newSystemSN()" 
-                 (ngModelChange)="newSystemSN.set($event)" 
-                 name="systemSN" 
-                 required />
+          <input type="text" id="systemSN" class="modal-input"
+            placeholder="e.g., 000000000000000001 (preserves leading zeros)" [ngModel]="newSystemSN()"
+            (ngModelChange)="newSystemSN.set($event)" name="systemSN" required />
         </div>
 
-        <!-- Field: System Status -->
+        <!-- Field: Model -->
         <div class="modal-field">
-          <label class="modal-label" for="systemStatus">Initial status</label>
-          <select id="systemStatus" 
-                  class="modal-select" 
-                  [ngModel]="newSystemStatus()" 
-                  (ngModelChange)="newSystemStatus.set($event)" 
-                  name="systemStatus">
-            <option value="online">Online</option>
-            <option value="warning">Warning</option>
-            <option value="offline">Offline</option>
-          </select>
+          <label class="modal-label" for="systemModel">Model (Optional)</label>
+          <input type="text" id="systemModel" class="modal-input" placeholder="e.g., HALO 1200"
+            [ngModel]="newSystemModel()" (ngModelChange)="newSystemModel.set($event)" name="systemModel" />
         </div>
 
-        <!-- Field: Assigned User -->
+        <!-- Field: Branch ID -->
         <div class="modal-field">
-          <label class="modal-label" for="systemUser">Assigned operator / user</label>
-          <input type="text" 
-                 id="systemUser" 
-                 class="modal-input" 
-                 placeholder="e.g., operator@hykon.com" 
-                 [ngModel]="newSystemUser()" 
-                 (ngModelChange)="newSystemUser.set($event)" 
-                 name="systemUser" />
+          <label class="modal-label" for="systemBranchId">
+            Branch ID {{ isDistributorRole() ? '(Required for distributors)' : '(Optional)' }}
+          </label>
+          <input type="number" id="systemBranchId" class="modal-input" placeholder="e.g., 1"
+            [ngModel]="newSystemBranchId()" (ngModelChange)="newSystemBranchId.set($event)" name="systemBranchId" />
         </div>
 
         <!-- Form Actions -->
         <div class="modal-actions">
           <button type="button" class="btn-modal-cancel" (click)="closeAddSystemModal()">Cancel</button>
-          <button type="submit" class="btn-modal-submit" [disabled]="true" title="Device registration is currently unavailable">
-            Register System
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingSystem()">
+            {{ isSubmittingSystem() ? 'Registering...' : 'Register System' }}
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 6. CREATE ACCOUNT MODAL DIALOG -->
-  <div class="system-modal-backdrop" *ngIf="isCreateAccountModalOpen()" (click)="closeCreateAccountModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="create-account-modal-title">
+  <!-- RECORD PURCHASE MODAL DIALOG -->
+  <div class="system-modal-backdrop" *ngIf="isPurchaseModalOpen()" (click)="closePurchaseModal()">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="purchase-modal-title">
       <div class="modal-card-header">
-        <h3 id="create-account-modal-title" class="modal-card-title">Create Account</h3>
-        <button type="button" class="modal-close-btn" (click)="closeCreateAccountModal()" aria-label="Close modal">
+        <h3 id="purchase-modal-title" class="modal-card-title">Record Purchase Eligibility</h3>
+        <button type="button" class="modal-close-btn" (click)="closePurchaseModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
 
-      <form class="modal-form" (ngSubmit)="submitCreateAccount()">
-        <!-- Error Alert -->
-        <div class="modal-error-alert" *ngIf="newAccountError()">
+      <form class="modal-form" (ngSubmit)="submitRecordPurchase()">
+        <div class="modal-notice-banner">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span>{{ newAccountError() }}</span>
+          <span>Record customer purchase eligibility before a customer account can claim the device.</span>
         </div>
 
-        <!-- Field: Username -->
-        <div class="modal-field">
-          <label class="modal-label" for="accountUsername">Username</label>
-          <input type="text" 
-                 id="accountUsername" 
-                 class="modal-input" 
-                 placeholder="e.g., Alex Johnson or alex@hykon.com" 
-                 [ngModel]="newAccountUsername()" 
-                 (ngModelChange)="newAccountUsername.set($event)" 
-                 name="accountUsername" 
-                 required />
+        <!-- Error Alert -->
+        <div class="modal-error-alert" *ngIf="purchaseError()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{{ purchaseError() }}</span>
         </div>
 
-        <!-- Field: Phone Number -->
+        <!-- Field: Device ID -->
         <div class="modal-field">
-          <label class="modal-label" for="accountPhone">Phone Number</label>
-          <input type="text" 
-                 id="accountPhone" 
-                 class="modal-input" 
-                 placeholder="e.g., +1 555-0199 or 9876543210" 
-                 [ngModel]="newAccountPhone()" 
-                 (ngModelChange)="newAccountPhone.set($event)" 
-                 name="accountPhone" 
-                 required />
+          <label class="modal-label" for="purchaseDeviceId">Registered Device ID</label>
+          <input type="number" id="purchaseDeviceId" class="modal-input" placeholder="e.g., 10"
+            [ngModel]="purchaseDeviceId()" (ngModelChange)="purchaseDeviceId.set($event)" name="purchaseDeviceId" required />
         </div>
 
-        <!-- Field: User Type -->
+        <!-- Field: Customer User ID -->
         <div class="modal-field">
-          <label class="modal-label" for="accountUserType">User Type</label>
-          <select id="accountUserType" 
-                  class="modal-select" 
-                  [ngModel]="newAccountUserType()" 
-                  (ngModelChange)="newAccountUserType.set($event)" 
-                  name="accountUserType">
-            <option value="Admin">Admin</option>
-            <option value="Operator">Operator</option>
-            <option value="Viewer">Viewer</option>
-            <option value="Owner">Owner</option>
-          </select>
+          <label class="modal-label" for="purchaseCustomerId">Customer Account ID</label>
+          <input type="number" id="purchaseCustomerId" class="modal-input" placeholder="e.g., 42"
+            [ngModel]="purchaseCustomerUserId()" (ngModelChange)="purchaseCustomerUserId.set($event)" name="purchaseCustomerId" required />
         </div>
 
-        <!-- Field: Active Status -->
+        <!-- Field: Purchase Reference -->
         <div class="modal-field">
-          <label class="modal-label" for="accountActiveStatus">Active Status</label>
-          <select id="accountActiveStatus" 
-                  class="modal-select" 
-                  [ngModel]="newAccountActiveStatus()" 
-                  (ngModelChange)="newAccountActiveStatus.set($event)" 
-                  name="accountActiveStatus">
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
-
-        <!-- Field: Account Status -->
-        <div class="modal-field">
-          <label class="modal-label" for="accountStatus">Account Status</label>
-          <select id="accountStatus" 
-                  class="modal-select" 
-                  [ngModel]="newAccountStatus()" 
-                  (ngModelChange)="newAccountStatus.set($event)" 
-                  name="accountStatus">
-            <option value="Enabled">Enabled</option>
-            <option value="Disabled">Disabled</option>
-            <option value="Suspended">Suspended</option>
-          </select>
+          <label class="modal-label" for="purchaseReference">Purchase Reference</label>
+          <input type="text" id="purchaseReference" class="modal-input" placeholder="e.g., INV-2026-00891"
+            [ngModel]="purchaseReference()" (ngModelChange)="purchaseReference.set($event)" name="purchaseReference" required />
         </div>
 
         <!-- Form Actions -->
         <div class="modal-actions">
-          <button type="button" class="btn-modal-cancel" (click)="closeCreateAccountModal()">Cancel</button>
-          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingAccount()">
-            {{ isSubmittingAccount() ? 'Creating...' : 'Create Account' }}
+          <button type="button" class="btn-modal-cancel" (click)="closePurchaseModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingPurchase()">
+            {{ isSubmittingPurchase() ? 'Recording...' : 'Record Purchase' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CREATE DISTRIBUTOR ADMIN MODAL DIALOG -->
+  <div class="system-modal-backdrop" *ngIf="isCreateDistAdminModalOpen()" (click)="closeCreateDistAdminModal()">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="dist-admin-modal-title">
+      <div class="modal-card-header">
+        <h3 id="dist-admin-modal-title" class="modal-card-title">Create Distributor Administrator</h3>
+        <button type="button" class="modal-close-btn" (click)="closeCreateDistAdminModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="submitCreateDistAdmin()">
+        <!-- Error Alert -->
+        <div class="modal-error-alert" *ngIf="distAdminError()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{{ distAdminError() }}</span>
+        </div>
+
+        <!-- Field: Name -->
+        <div class="modal-field">
+          <label class="modal-label" for="distAdminName">Full Name</label>
+          <input type="text" id="distAdminName" class="modal-input" placeholder="e.g., Alex Johnson"
+            [ngModel]="distAdminName()" (ngModelChange)="distAdminName.set($event)" name="distAdminName" required />
+        </div>
+
+        <!-- Field: Email -->
+        <div class="modal-field">
+          <label class="modal-label" for="distAdminEmail">Email Address</label>
+          <input type="email" id="distAdminEmail" class="modal-input" placeholder="e.g., admin@distributor.com"
+            [ngModel]="distAdminEmail()" (ngModelChange)="distAdminEmail.set($event)" name="distAdminEmail" required />
+        </div>
+
+        <!-- Field: Password -->
+        <div class="modal-field">
+          <label class="modal-label" for="distAdminPassword">Password</label>
+          <input type="password" id="distAdminPassword" class="modal-input" placeholder="At least 8 characters"
+            [ngModel]="distAdminPassword()" (ngModelChange)="distAdminPassword.set($event)" name="distAdminPassword" required />
+        </div>
+
+        <!-- Field: Confirm Password -->
+        <div class="modal-field">
+          <label class="modal-label" for="distAdminConfirmPassword">Confirm Password</label>
+          <input type="password" id="distAdminConfirmPassword" class="modal-input" placeholder="Confirm password"
+            [ngModel]="distAdminConfirmPassword()" (ngModelChange)="distAdminConfirmPassword.set($event)" name="distAdminConfirmPassword" required />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeCreateDistAdminModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingDistAdmin()">
+            {{ isSubmittingDistAdmin() ? 'Creating...' : 'Create Administrator' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CREATE DISTRIBUTOR MODAL DIALOG -->
+  <div class="system-modal-backdrop" *ngIf="isCreateDistributorModalOpen()" (click)="closeCreateDistributorModal()">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="dist-modal-title">
+      <div class="modal-card-header">
+        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization & Branch</h3>
+        <button type="button" class="modal-close-btn" (click)="closeCreateDistributorModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="submitCreateDistributor()">
+        <div class="modal-notice-banner" *ngIf="lastCreatedAdminId()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <span>Administrator account #{{ lastCreatedAdminId() }} linked. You may adjust details and submit.</span>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="modal-error-alert" *ngIf="distError()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{{ distError() }}</span>
+        </div>
+
+        <!-- Field: Distributor Code -->
+        <div class="modal-field">
+          <label class="modal-label" for="distCode">Distributor ID</label>
+          <input type="text" id="distCode" class="modal-input" placeholder="e.g., DIST-SOUTH-01"
+            [ngModel]="distCode()" (ngModelChange)="distCode.set($event)" name="distCode" required />
+        </div>
+
+        <!-- Field: Distributor Name -->
+        <div class="modal-field">
+          <label class="modal-label" for="distName">Distributor Name</label>
+          <input type="text" id="distName" class="modal-input" placeholder="e.g., Hykon South Distribution"
+            [ngModel]="distName()" (ngModelChange)="distName.set($event)" name="distName" required />
+        </div>
+
+        <!-- Field: Administrator User ID -->
+        <div class="modal-field">
+          <label class="modal-label" for="distAdminUserId">Administrator Account ID</label>
+          <input type="number" id="distAdminUserId" class="modal-input" placeholder="e.g., numeric ID of the administrator"
+            [ngModel]="distAdminUserId()" (ngModelChange)="distAdminUserId.set($event)" name="distAdminUserId" required />
+        </div>
+
+        <!-- Field: Initial Branch Code -->
+        <div class="modal-field">
+          <label class="modal-label" for="distBranchCode">Initial Branch Code</label>
+          <input type="text" id="distBranchCode" class="modal-input" placeholder="e.g., BR-KOCHI-01"
+            [ngModel]="distBranchCode()" (ngModelChange)="distBranchCode.set($event)" name="distBranchCode" required />
+        </div>
+
+        <!-- Field: Initial Branch Name -->
+        <div class="modal-field">
+          <label class="modal-label" for="distBranchName">Initial Branch Name</label>
+          <input type="text" id="distBranchName" class="modal-input" placeholder="e.g., Kochi Main Branch"
+            [ngModel]="distBranchName()" (ngModelChange)="distBranchName.set($event)" name="distBranchName" required />
+        </div>
+
+        <!-- Field: Location -->
+        <div class="modal-field">
+          <label class="modal-label" for="distLocation">Location</label>
+          <input type="text" id="distLocation" class="modal-input" placeholder="e.g., Kakkanad, Kochi, Kerala"
+            [ngModel]="distLocation()" (ngModelChange)="distLocation.set($event)" name="distLocation" required />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeCreateDistributorModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingDistributor()">
+            {{ isSubmittingDistributor() ? 'Creating...' : 'Create Distributor' }}
           </button>
         </div>
       </form>
