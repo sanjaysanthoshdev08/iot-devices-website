@@ -647,4 +647,376 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.authErrorMessage()).toBe('');
     });
   });
+
+  // Step 9 Part 3: Systems List & Device Details Backend Integration
+  describe('Step 9 Part 3: Systems List & Device Details Backend Integration', () => {
+    const mockPageData = {
+      content: [
+        {
+          id: 101,
+          deviceCode: 'DEV-101',
+          serialNumber: '0000000101',
+          systemName: 'Hykon Inverter 1',
+          model: 'HY-5000',
+          branchId: 2,
+          distributorId: 5,
+          ownerUserId: 42,
+          status: 'ACTIVE',
+          createdAt: '2026-03-15T10:00:00Z'
+        },
+        {
+          id: 102,
+          deviceCode: 'DEV-102',
+          serialNumber: '0000000102',
+          systemName: null,
+          model: null,
+          branchId: null,
+          distributorId: null,
+          ownerUserId: null,
+          status: 'ACTIVE',
+          createdAt: null
+        }
+      ],
+      totalElements: 25,
+      totalPages: 3,
+      size: 10,
+      number: 0,
+      first: true,
+      last: false,
+      empty: false
+    };
+
+    beforeEach(() => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({
+        id: 1,
+        name: 'Admin Charlie',
+        email: 'charlie@hykon.com',
+        role: 'HYKON_ADMIN',
+        status: 'ACTIVE'
+      });
+      fixture.detectChanges();
+    });
+
+    it('maps real paginated response fields and calculates metrics correctly', () => {
+      mockDeviceAccessService.listDevices.mockReturnValue(of({
+        success: true,
+        message: 'OK',
+        data: mockPageData
+      }));
+
+      app.loadSystems(0);
+      fixture.detectChanges();
+
+      const devices = app.systemRecordsService.devices();
+      expect(devices.length).toBe(2);
+      expect(devices[0].id).toBe(101);
+      expect(devices[0].serialNumber).toBe('0000000101');
+      expect(devices[0].systemName).toBe('Hykon Inverter 1');
+      expect(devices[0].ownerUserId).toBe(42);
+
+      // Null fallback: systemName null falls back to deviceCode
+      expect(devices[1].systemName).toBeNull();
+      expect(devices[1].deviceCode).toBe('DEV-102');
+      expect(devices[1].ownerUserId).toBeNull();
+
+      // Total count from backend
+      expect(app.totalSystemsCount()).toBe(25);
+      expect(app.totalPages()).toBe(3);
+      expect(app.isFirstPage()).toBe(true);
+      expect(app.isLastPage()).toBe(false);
+    });
+
+    it('ACTIVE status is treated as lifecycle status and telemetry is shown as unavailable', () => {
+      mockDeviceAccessService.listDevices.mockReturnValue(of({
+        success: true,
+        message: 'OK',
+        data: mockPageData
+      }));
+
+      app.loadSystems(0);
+      fixture.detectChanges();
+
+      const devices = app.systemRecordsService.devices();
+      // Status is ACTIVE
+      expect(devices[0].status).toBe('ACTIVE');
+
+      // Telemetry filters/metrics show unavailable counts ("—")
+      const element = fixture.nativeElement as HTMLElement;
+      const countElements = element.querySelectorAll('.metric-card-count');
+      // Metric cards: All (25), Online (—), Warning (—), Offline (—)
+      expect(app.totalSystemsCount()).toBe(25);
+    });
+
+    it('calculates sequential row numbering across pages correctly', () => {
+      mockDeviceAccessService.listDevices.mockReturnValue(of({
+        success: true,
+        message: 'OK',
+        data: {
+          ...mockPageData,
+          number: 1, // page index 1 (second page)
+          first: false,
+          last: false
+        }
+      }));
+
+      app.loadSystems(1);
+      fixture.detectChanges();
+
+      expect(app.currentPage()).toBe(1);
+      expect(app.pageSize()).toBe(10);
+      // Row numbering formula: currentPage * pageSize + index + 1
+      const row1Number = app.currentPage() * app.pageSize() + 0 + 1;
+      const row2Number = app.currentPage() * app.pageSize() + 1 + 1;
+      expect(row1Number).toBe(11);
+      expect(row2Number).toBe(12);
+    });
+
+    it('displays distinct loading, empty, and error states without confusing empty with error', () => {
+      // 1. Loading state
+      const pendingSubject = new Subject<any>();
+      mockDeviceAccessService.listDevices.mockReturnValue(pendingSubject.asObservable());
+
+      app.loadSystems(0);
+      expect(app.systemRecordsService.isLoading()).toBe(true);
+
+      // 2. Error state
+      pendingSubject.error(new HttpErrorResponse({ status: 500, statusText: 'Server Error' }));
+      expect(app.systemRecordsService.isLoading()).toBe(false);
+      expect(app.systemError()).toBe('Failed to load systems: Server Error');
+      expect(app.systemRecordsService.devices().length).toBe(0);
+
+      // 3. Successful empty state
+      mockDeviceAccessService.listDevices.mockReturnValue(of({
+        success: true,
+        message: 'OK',
+        data: {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: 10,
+          number: 0,
+          first: true,
+          last: true,
+          empty: true
+        }
+      }));
+
+      app.loadSystems(0);
+      expect(app.systemRecordsService.isLoading()).toBe(false);
+      expect(app.systemError()).toBe('');
+      expect(app.systemRecordsService.devices().length).toBe(0);
+      expect(app.totalSystemsCount()).toBe(0);
+    });
+
+    it('does not fall back to localStorage on API failure', () => {
+      // Set fake items in localStorage
+      localStorage.setItem(
+        'hykon_registered_systems_v1',
+        JSON.stringify([{ id: 999, name: 'Fake System', sn: '999999', status: 'online' }])
+      );
+
+      mockDeviceAccessService.listDevices.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 500, error: { message: 'Database connection failed' } }))
+      );
+
+      app.loadSystems(0);
+
+      // Records must be empty, not populated from localStorage
+      expect(app.systemRecordsService.devices()).toEqual([]);
+      expect(app.systemError()).toContain('Database connection failed');
+
+      localStorage.removeItem('hykon_registered_systems_v1');
+    });
+
+    it('loads fresh device details and handles 404 cleanly', () => {
+      const mockDetail: any = {
+        id: 101,
+        deviceCode: 'DEV-101',
+        serialNumber: '0000000101',
+        systemName: 'Solar Array Alpha',
+        model: 'HY-5000',
+        branchId: 2,
+        distributorId: 5,
+        ownerUserId: 12,
+        status: 'ACTIVE',
+        createdAt: '2026-03-15T10:00:00Z'
+      };
+
+      mockDeviceAccessService.getDevice.mockReturnValue(of({
+        success: true,
+        message: 'Device found',
+        data: mockDetail
+      }));
+
+      app.openDeviceDetails(101);
+
+      expect(mockDeviceAccessService.getDevice).toHaveBeenCalledWith(101);
+      expect(app.isDeviceDetailModalOpen()).toBe(true);
+      expect(app.selectedDevice()).toEqual(mockDetail);
+      expect(app.detailError()).toBeNull();
+
+      // Test 404 handling
+      mockDeviceAccessService.getDevice.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }))
+      );
+
+      app.openDeviceDetails(999);
+
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.detailError()).toBe('Device not found or unavailable');
+      expect(app.isDetailLoading()).toBe(false);
+
+      // Close modal clears state
+      app.closeDeviceDetailsModal();
+      expect(app.isDeviceDetailModalOpen()).toBe(false);
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.detailError()).toBeNull();
+    });
+
+    it('403 error on listDevices clears records and returns through verification gate', () => {
+      app.isDashboardOpen.set(true);
+      app.isDashboardAuthorized.set(true);
+      mockDeviceAccessService.listDevices.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'Forbidden' } }))
+      );
+
+      app.loadSystems(0);
+
+      expect(app.systemRecordsService.devices().length).toBe(0);
+      expect(app.isDashboardOpen()).toBe(false);
+      expect(app.isDashboardAuthorized()).toBe(false);
+      expect(app.isDeviceAuthModalOpen()).toBe(true);
+    });
+
+    it('ignores late list and detail responses after logout or session reset', () => {
+      const listSubject = new Subject<any>();
+      const detailSubject = new Subject<any>();
+
+      mockDeviceAccessService.listDevices.mockReturnValue(listSubject.asObservable());
+      mockDeviceAccessService.getDevice.mockReturnValue(detailSubject.asObservable());
+
+      app.loadSystems(0);
+      app.openDeviceDetails(101);
+
+      expect(app.systemRecordsService.isLoading()).toBe(true);
+      expect(app.isDetailLoading()).toBe(true);
+
+      // Session reset / logout occurs
+      mockAuthService.clearSession();
+      fixture.detectChanges();
+
+      // Late responses arrive
+      listSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData
+      });
+      listSubject.complete();
+
+      detailSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData.content[0]
+      });
+      detailSubject.complete();
+
+      // Responses must be completely ignored
+      expect(app.systemRecordsService.devices().length).toBe(0);
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.isDashboardOpen()).toBe(false);
+    });
+
+    it('same-account new login invalidates pending list and detail requests', () => {
+      app.isDashboardOpen.set(true);
+      app.isDashboardAuthorized.set(true);
+
+      const listSubject = new Subject<any>();
+      const detailSubject = new Subject<any>();
+
+      mockDeviceAccessService.listDevices.mockReturnValue(listSubject.asObservable());
+      mockDeviceAccessService.getDevice.mockReturnValue(detailSubject.asObservable());
+
+      app.loadSystems(0);
+      app.openDeviceDetails(101);
+
+      expect(app.systemRecordsService.isLoading()).toBe(true);
+      expect(app.isDetailLoading()).toBe(true);
+
+      // Same-account new login occurs
+      mockAuthService.login.mockReturnValue(of({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: { id: 1, name: 'Admin Charlie', email: 'charlie@hykon.com', role: 'HYKON_ADMIN', status: 'ACTIVE' },
+          token: 'token-2'
+        }
+      }));
+
+      app.loginEmail.set('charlie@hykon.com');
+      app.loginPassword.set('newSecret123');
+      app.onLoginSubmit();
+
+      // Late responses from previous session arrive
+      listSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData
+      });
+      listSubject.complete();
+
+      detailSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData.content[0]
+      });
+      detailSubject.complete();
+
+      // Old responses must be ignored
+      expect(app.systemRecordsService.devices().length).toBe(0);
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.isDeviceDetailModalOpen()).toBe(false);
+    });
+
+    it('leaving protected views invalidates pending list and detail requests', () => {
+      app.isDashboardOpen.set(true);
+      app.isDashboardAuthorized.set(true);
+
+      const listSubject = new Subject<any>();
+      const detailSubject = new Subject<any>();
+
+      mockDeviceAccessService.listDevices.mockReturnValue(listSubject.asObservable());
+      mockDeviceAccessService.getDevice.mockReturnValue(detailSubject.asObservable());
+
+      app.loadSystems(0);
+      app.openDeviceDetails(101);
+
+      expect(app.systemRecordsService.isLoading()).toBe(true);
+      expect(app.isDetailLoading()).toBe(true);
+
+      // User leaves protected view
+      app.closeDashboard();
+
+      expect(app.isDashboardOpen()).toBe(false);
+      expect(app.isDeviceDetailModalOpen()).toBe(false);
+
+      // Late responses arrive
+      listSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData
+      });
+      listSubject.complete();
+
+      detailSubject.next({
+        success: true,
+        message: 'OK',
+        data: mockPageData.content[0]
+      });
+      detailSubject.complete();
+
+      expect(app.systemRecordsService.devices().length).toBe(0);
+      expect(app.selectedDevice()).toBeNull();
+    });
+  });
 });

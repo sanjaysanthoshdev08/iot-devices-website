@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
-import { DeviceAccessService } from './services/device-access.service';
-import { SystemRecordsService, SystemRecord, SystemStatus } from './services/system-records.service';
+import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
+import { SystemRecordsService, SystemStatus } from './services/system-records.service';
 import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus, CreateAccountRequest } from './services/accounts.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
@@ -476,9 +476,25 @@ export class App implements AfterViewInit, OnDestroy {
 
   clearDashboardAndGateState() {
     this.navigationRequestId++;
+    this.systemsRequestId++;
+    this.detailRequestId++;
     this.isDashboardAuthorized.set(false);
     this.isDashboardOpen.set(false);
     this.isDeviceAuthModalOpen.set(false);
+    this.isDeviceDetailModalOpen.set(false);
+    this.isAddSystemModalOpen.set(false);
+    this.isCreateAccountModalOpen.set(false);
+    this.selectedDevice.set(null);
+    this.detailError.set(null);
+    this.isDetailLoading.set(false);
+    this.systemRecordsService.clear();
+    this.tableSearchQuery.set('');
+    this.headerSearchQuery.set('');
+    this.deviceDropdownOpen.set(false);
+    this.connectionDropdownOpen.set(false);
+    this.dataSourceDropdownOpen.set(false);
+    this.isStatusDropdownOpen.set(false);
+    this.isSystemsSidebarOpen.set(false);
     this.authDeviceId.set('');
     this.authSerialNumber.set('');
     this.distributorCode.set('');
@@ -667,6 +683,9 @@ export class App implements AfterViewInit, OnDestroy {
     this.isDashboardOpen.set(true);
     this.activeDashboardNav.set(targetTab);
     this.updateDashboardScale();
+    if (targetTab === 'systems') {
+      this.loadSystems(0);
+    }
     if (isPlatformBrowser(this.platformId)) {
       const targetPath = targetTab === 'systems' ? '/systems' : '/dashboard';
       if (this.normalizePath(window.location.pathname) !== targetPath) {
@@ -689,8 +708,15 @@ export class App implements AfterViewInit, OnDestroy {
 
   closeDashboard() {
     this.navigationRequestId++;
+    this.systemsRequestId++;
+    this.detailRequestId++;
     this.isAuthVerifying.set(false);
     this.isDashboardOpen.set(false);
+    this.isDeviceDetailModalOpen.set(false);
+    this.selectedDevice.set(null);
+    this.detailError.set(null);
+    this.isDetailLoading.set(false);
+    this.systemRecordsService.clear();
     this.deviceDropdownOpen.set(false);
     this.connectionDropdownOpen.set(false);
     this.dataSourceDropdownOpen.set(false);
@@ -726,6 +752,9 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
     this.activeDashboardNav.set(tab);
+    if (tab === 'systems') {
+      this.loadSystems(0);
+    }
     if (isPlatformBrowser(this.platformId)) {
       if (tab === 'systems') {
         if (this.normalizePath(window.location.pathname) !== '/systems') {
@@ -765,6 +794,22 @@ export class App implements AfterViewInit, OnDestroy {
   readonly systemStatusFilter = this.systemRecordsService.statusFilter;
   readonly systemSearchQuery = this.systemRecordsService.searchQuery;
   readonly isSystemLoading = this.systemRecordsService.isLoading;
+  readonly systemError = this.systemRecordsService.errorMessage;
+
+  readonly currentPage = this.systemRecordsService.currentPage;
+  readonly pageSize = this.systemRecordsService.pageSize;
+  readonly totalPages = this.systemRecordsService.totalPages;
+  readonly isFirstPage = this.systemRecordsService.isFirst;
+  readonly isLastPage = this.systemRecordsService.isLast;
+
+  systemsRequestId = 0;
+
+  // Device details modal state & cancellation token
+  isDeviceDetailModalOpen = signal<boolean>(false);
+  isDetailLoading = signal<boolean>(false);
+  detailError = signal<string | null>(null);
+  selectedDevice = signal<DeviceResponse | null>(null);
+  detailRequestId = 0;
 
   isStatusDropdownOpen = signal<boolean>(false);
   isSystemsSidebarOpen = signal<boolean>(false);
@@ -811,13 +856,136 @@ export class App implements AfterViewInit, OnDestroy {
     this.isStatusDropdownOpen.set(false);
   }
 
+  loadSystems(page: number = 0) {
+    if (!this.isAuthenticated() || !this.isDashboardAuthorized()) {
+      return;
+    }
+
+    const currentReq = ++this.systemsRequestId;
+    this.systemRecordsService.loadSystems(page, this.pageSize()).subscribe({
+      next: (res) => {
+        if (currentReq !== this.systemsRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized()) {
+          return;
+        }
+
+        if (res.data) {
+          this.systemRecordsService.setPageData(res.data);
+        } else {
+          this.systemRecordsService.setError('No response data received from server.');
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.systemsRequestId) return;
+
+        if (err.status === 401) {
+          this.systemRecordsService.clear();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'home' }, '', '/');
+          }
+        } else if (err.status === 403) {
+          this.systemRecordsService.clear();
+          this.clearDashboardAndGateState();
+          const role = this.currentRole();
+          if (role === 'DISTRIBUTOR_ADMIN') {
+            this.openDistributorGate();
+          } else {
+            this.openDeviceGate();
+          }
+          if (isPlatformBrowser(this.platformId)) {
+            window.history.replaceState({ page: 'device-login' }, '', '/device-login');
+          }
+        } else {
+          const detail = err.error?.message || (err.statusText && err.statusText !== 'OK' ? err.statusText : null);
+          const msg = detail ? `Failed to load systems: ${detail}` : 'Unable to load systems from server. Please try again.';
+          this.systemRecordsService.setError(msg);
+        }
+      }
+    });
+  }
+
+  goToPreviousPage() {
+    if (!this.isFirstPage() && this.currentPage() > 0) {
+      this.loadSystems(this.currentPage() - 1);
+    }
+  }
+
+  goToNextPage() {
+    if (!this.isLastPage() && this.currentPage() < this.totalPages() - 1) {
+      this.loadSystems(this.currentPage() + 1);
+    }
+  }
+
+  retryLoadSystems() {
+    this.loadSystems(this.currentPage());
+  }
+
+  getPageEndCount(): number {
+    const total = this.totalSystemsCount();
+    const currentEnd = (this.currentPage() + 1) * this.pageSize();
+    return Math.min(currentEnd, typeof total === 'number' ? total : 0);
+  }
+
+  openDeviceDetails(id: number) {
+    const currentReq = ++this.detailRequestId;
+    this.isDetailLoading.set(true);
+    this.detailError.set(null);
+    this.selectedDevice.set(null);
+    this.isDeviceDetailModalOpen.set(true);
+
+    this.deviceAccessService.getDevice(id).subscribe({
+      next: (res) => {
+        if (currentReq !== this.detailRequestId || !this.isAuthenticated() || !this.isDeviceDetailModalOpen()) {
+          return;
+        }
+
+        this.isDetailLoading.set(false);
+        this.detailError.set(null);
+        this.selectedDevice.set(res.data);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (currentReq !== this.detailRequestId) return;
+        this.isDetailLoading.set(false);
+        this.selectedDevice.set(null);
+
+        if (err.status === 404) {
+          this.detailError.set('Device not found or unavailable');
+        } else if (err.status === 401) {
+          this.closeDeviceDetailsModal();
+          this.clearDashboardAndGateState();
+          this.openLoginModal(false);
+        } else if (err.status === 403) {
+          this.closeDeviceDetailsModal();
+          this.clearDashboardAndGateState();
+          if (this.currentRole() === 'USER') {
+            this.openDeviceGate();
+          } else {
+            this.openDistributorGate();
+          }
+        } else {
+          this.detailError.set('Unable to load device details. Please try again.');
+        }
+      }
+    });
+  }
+
+  closeDeviceDetailsModal() {
+    this.detailRequestId++;
+    this.isDeviceDetailModalOpen.set(false);
+    this.selectedDevice.set(null);
+    this.detailError.set(null);
+    this.isDetailLoading.set(false);
+  }
+
   openAddSystemModal() {
+    if (this.isCustomerRole()) return;
     this.newSystemName.set('');
     this.newSystemSN.set('');
     this.newSystemStatus.set('online');
     const user = this.currentUser();
     this.newSystemUser.set(user?.email || user?.name || '');
-    this.newSystemError.set('');
+    this.newSystemError.set('Device registration is currently unavailable.');
     this.isAddSystemModalOpen.set(true);
   }
 
@@ -826,42 +994,8 @@ export class App implements AfterViewInit, OnDestroy {
     this.newSystemError.set('');
   }
 
-  async submitAddSystem() {
-    const name = this.newSystemName().trim();
-    const sn = this.newSystemSN().trim();
-    const status = this.newSystemStatus();
-    const user = this.newSystemUser().trim() || 'System Operator';
-
-    this.newSystemError.set('');
-
-    if (!name) {
-      this.newSystemError.set('Please enter a system name.');
-      return;
-    }
-    if (!sn) {
-      this.newSystemError.set('Please enter a serial number (SN).');
-      return;
-    }
-    if (sn.length < 3) {
-      this.newSystemError.set('Serial number must be at least 3 characters.');
-      return;
-    }
-
-    this.isSubmittingSystem.set(true);
-    try {
-      await this.systemRecordsService.addSystem({
-        name,
-        serialNumber: sn,
-        status,
-        user
-      });
-      this.isSubmittingSystem.set(false);
-      this.closeAddSystemModal();
-      this.showDashboardToast(`System "${name}" registered successfully`);
-    } catch {
-      this.isSubmittingSystem.set(false);
-      this.newSystemError.set('Failed to register system. Please try again.');
-    }
+  submitAddSystem() {
+    this.newSystemError.set('Device registration is currently unavailable.');
   }
 
   toggleSystemsSidebar() {
@@ -1130,7 +1264,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.confirmPasswordError.set('');
   }
 
-  
+
   onLoginSubmit(event?: Event) {
     if (event) {
       event.preventDefault();
@@ -1177,8 +1311,8 @@ export class App implements AfterViewInit, OnDestroy {
         password: this.loginPassword(),
         confirmPassword: this.loginConfirmPassword()
       }).subscribe({
-        
-        
+
+
         next: (response) => {
           this.isSubmitting.set(false);
 
@@ -2001,7 +2135,7 @@ export class App implements AfterViewInit, OnDestroy {
 
     // 2. Initialize WebGL for fluid strand line wave dynamics
     const gl = canvas.getContext('webgl', { antialias: true, alpha: false, depth: false }) ||
-               canvas.getContext('experimental-webgl');
+      canvas.getContext('experimental-webgl');
 
     if (gl) {
       this.infinityGl = gl as WebGLRenderingContext;
@@ -2191,11 +2325,11 @@ export class App implements AfterViewInit, OnDestroy {
     // Full-screen quad buffer
     const quadVerts = new Float32Array([
       -1, -1,
-       1, -1,
-      -1,  1,
-      -1,  1,
-       1, -1,
-       1,  1
+      1, -1,
+      -1, 1,
+      -1, 1,
+      1, -1,
+      1, 1
     ]);
     this.infinityQuadBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.infinityQuadBuffer);
@@ -2424,15 +2558,15 @@ export class App implements AfterViewInit, OnDestroy {
   // ===== ACCOUNTS PAGE STATE & METHODS =====
 
   // Exposed service signals
-  readonly accountRecords       = this.accountsService.filteredAccounts;
-  readonly accountGroups        = this.accountsService.groups;
-  readonly totalAccountsCount   = this.accountsService.totalCount;
-  readonly isAccountLoading     = this.accountsService.isLoading;
-  readonly accountHasFilters    = this.accountsService.hasActiveFilters;
-  readonly accountSearchQuery   = this.accountsService.searchQuery;
+  readonly accountRecords = this.accountsService.filteredAccounts;
+  readonly accountGroups = this.accountsService.groups;
+  readonly totalAccountsCount = this.accountsService.totalCount;
+  readonly isAccountLoading = this.accountsService.isLoading;
+  readonly accountHasFilters = this.accountsService.hasActiveFilters;
+  readonly accountSearchQuery = this.accountsService.searchQuery;
   readonly accountUserTypeFilter = this.accountsService.userTypeFilter;
-  readonly accountActiveFilter  = this.accountsService.activeFilter;
-  readonly accountStatusFilter  = this.accountsService.statusFilter;
+  readonly accountActiveFilter = this.accountsService.activeFilter;
+  readonly accountStatusFilter = this.accountsService.statusFilter;
 
   // Tab: 'list' | 'owner'
   accountActiveTab = signal<'list' | 'owner'>('list');
@@ -2469,13 +2603,13 @@ export class App implements AfterViewInit, OnDestroy {
 
   // Create-account modal
   isCreateAccountModalOpen = signal<boolean>(false);
-  newAccountUsername     = signal<string>('');
-  newAccountPhone        = signal<string>('');
-  newAccountUserType     = signal<AccountUserType>('Operator');
+  newAccountUsername = signal<string>('');
+  newAccountPhone = signal<string>('');
+  newAccountUserType = signal<AccountUserType>('Operator');
   newAccountActiveStatus = signal<AccountActiveStatus>('Active');
-  newAccountStatus       = signal<AccountStatus>('Enabled');
-  newAccountError        = signal<string>('');
-  isSubmittingAccount    = signal<boolean>(false);
+  newAccountStatus = signal<AccountStatus>('Enabled');
+  newAccountError = signal<string>('');
+  isSubmittingAccount = signal<boolean>(false);
 
   setAccountTab(tab: 'list' | 'owner') {
     this.accountActiveTab.set(tab);
@@ -2584,7 +2718,7 @@ export class App implements AfterViewInit, OnDestroy {
 
   async submitCreateAccount() {
     const username = this.newAccountUsername().trim();
-    const phone    = this.newAccountPhone().trim();
+    const phone = this.newAccountPhone().trim();
     this.newAccountError.set('');
 
     if (!username) {
@@ -2601,8 +2735,8 @@ export class App implements AfterViewInit, OnDestroy {
       await this.accountsService.createAccount({
         username,
         phone,
-        userType:      this.newAccountUserType(),
-        activeStatus:  this.newAccountActiveStatus(),
+        userType: this.newAccountUserType(),
+        activeStatus: this.newAccountActiveStatus(),
         accountStatus: this.newAccountStatus()
       });
       this.isSubmittingAccount.set(false);

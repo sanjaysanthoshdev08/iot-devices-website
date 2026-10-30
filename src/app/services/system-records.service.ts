@@ -1,61 +1,53 @@
-import { Injectable, computed, signal, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, of, tap } from 'rxjs';
+import { Injectable, computed, signal, inject } from '@angular/core';
+import { DeviceAccessService, DeviceResponse, DevicePageResponse } from './device-access.service';
+import { Observable } from 'rxjs';
+import { ApiResponse } from './auth.service';
 
 export type SystemStatus = 'online' | 'warning' | 'offline';
-
-export interface SystemRecord {
-  id: string;
-  name: string;
-  serialNumber: string; // Stored as a string so leading zeros are strictly preserved
-  status: SystemStatus;
-  user: string;
-  createdAt: string;
-  location?: string;
-  model?: string;
-}
-
-const STORAGE_KEY = 'hykon_registered_systems_v1';
-const API_SYSTEMS_URL = 'http://localhost:8080/api/v1/systems';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SystemRecordsService {
-  private platformId = inject(PLATFORM_ID);
-  private http = inject(HttpClient);
+  private readonly deviceAccessService = inject(DeviceAccessService);
 
-  // Core system records state - strictly initialized as empty
-  readonly systems = signal<SystemRecord[]>([]);
+  // Core system records state - strictly initialized as empty (no eager loading, no localStorage)
+  readonly devices = signal<DeviceResponse[]>([]);
+  readonly currentPage = signal<number>(0);
+  readonly pageSize = signal<number>(10);
+  readonly totalElements = signal<number>(0);
+  readonly totalPages = signal<number>(0);
+  readonly isFirst = signal<boolean>(true);
+  readonly isLast = signal<boolean>(true);
+
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
 
-  // Filtering & Search state
+  // Filtering & Local Search state ("Search this page")
   readonly statusFilter = signal<'all' | SystemStatus>('all');
   readonly searchQuery = signal<string>('');
 
-  // Summary Metrics (computed from total accessible dataset, unaffected by table filters)
-  readonly totalCount = computed(() => this.systems().length);
-  readonly onlineCount = computed(() => this.systems().filter(s => s.status === 'online').length);
-  readonly warningCount = computed(() => this.systems().filter(s => s.status === 'warning').length);
-  readonly offlineCount = computed(() => this.systems().filter(s => s.status === 'offline').length);
+  // Summary Metrics
+  // "All" reflects backend totalElements count.
+  // Real-time telemetry (Online/Warning/Offline) is unavailable until live telemetry streaming exists;
+  // displayed as "—", not fabricated zero or fake active counts.
+  readonly totalCount = computed(() => this.totalElements());
+  readonly onlineCount = computed(() => '—');
+  readonly warningCount = computed(() => '—');
+  readonly offlineCount = computed(() => '—');
 
-  // Filtered dataset for the table view (combines search and status filter)
+  // Filtered dataset for the table view on the current page
   readonly filteredSystems = computed(() => {
-    let list = this.systems();
-    const filter = this.statusFilter();
+    let list = this.devices();
     const query = this.searchQuery().trim().toLowerCase();
-
-    if (filter !== 'all') {
-      list = list.filter(item => item.status === filter);
-    }
 
     if (query) {
       list = list.filter(item => 
-        item.name.toLowerCase().includes(query) || 
-        item.serialNumber.toLowerCase().includes(query) ||
-        item.user.toLowerCase().includes(query)
+        (item.systemName && item.systemName.toLowerCase().includes(query)) ||
+        (item.deviceCode && item.deviceCode.toLowerCase().includes(query)) ||
+        (item.serialNumber && item.serialNumber.toLowerCase().includes(query)) ||
+        (item.model && item.model.toLowerCase().includes(query)) ||
+        (item.ownerUserId !== null && String(item.ownerUserId).includes(query))
       );
     }
 
@@ -63,83 +55,59 @@ export class SystemRecordsService {
   });
 
   constructor() {
-    this.loadSystems();
+    // Eager constructor loading removed as per Step 9 Part 3:
+    // Protected records load only after backend-authorized dashboard entry.
   }
 
   /**
-   * Load systems from backend endpoint, with isolated local fallback
+   * Request device page from DeviceAccessService (GET /api/v1/devices?page={page}&size={size})
    */
-  loadSystems() {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    // Check localStorage cache for registered devices
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.systems.set(parsed);
-        }
-      }
-    } catch {
-      // Storage parsing failed, keep dataset empty
-    }
-
-    // Try syncing with backend API if available
+  loadSystems(page: number = 0, size: number = 10): Observable<ApiResponse<DevicePageResponse>> {
     this.isLoading.set(true);
-    this.http.get<SystemRecord[]>(API_SYSTEMS_URL).pipe(
-      catchError(() => of(null)) // Backend not running, gracefully retain current local state
-    ).subscribe({
-      next: (data) => {
-        if (data && Array.isArray(data)) {
-          this.systems.set(data);
-          this.saveToStorage(data);
-        }
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      }
-    });
+    this.errorMessage.set('');
+    return this.deviceAccessService.listDevices(page, size);
   }
 
   /**
-   * Register a new system device
+   * Apply verified backend page response to in-memory state
    */
-  addSystem(record: Omit<SystemRecord, 'id' | 'createdAt'>): Promise<SystemRecord> {
-    return new Promise((resolve) => {
-      const newRecord: SystemRecord = {
-        ...record,
-        id: 'SYS-' + Date.now().toString(36).toUpperCase(),
-        serialNumber: String(record.serialNumber).trim(), // preserve leading zeros as string
-        createdAt: new Date().toISOString()
-      };
-
-      const updated = [newRecord, ...this.systems()];
-      this.systems.set(updated);
-      this.saveToStorage(updated);
-
-      // Attempt backend post in background
-      this.http.post<SystemRecord>(API_SYSTEMS_URL, newRecord).pipe(
-        catchError(() => of(newRecord))
-      ).subscribe();
-
-      resolve(newRecord);
-    });
+  setPageData(pageData: DevicePageResponse) {
+    this.devices.set(pageData.content || []);
+    this.currentPage.set(pageData.number);
+    this.pageSize.set(pageData.size);
+    this.totalElements.set(pageData.totalElements);
+    this.totalPages.set(pageData.totalPages);
+    this.isFirst.set(pageData.first);
+    this.isLast.set(pageData.last);
+    this.isLoading.set(false);
+    this.errorMessage.set('');
   }
 
   /**
-   * Delete or unregister a system
+   * Set error state on failure (never falls back to localStorage or mock records)
    */
-  deleteSystem(id: string) {
-    const updated = this.systems().filter(s => s.id !== id);
-    this.systems.set(updated);
-    this.saveToStorage(updated);
+  setError(message: string) {
+    this.devices.set([]);
+    this.errorMessage.set(message);
+    this.isLoading.set(false);
   }
 
   /**
-   * Update search and filter controls
+   * Clear all records and pagination state on logout/new login/auth clear
    */
+  clear() {
+    this.devices.set([]);
+    this.currentPage.set(0);
+    this.totalElements.set(0);
+    this.totalPages.set(0);
+    this.isFirst.set(true);
+    this.isLast.set(true);
+    this.isLoading.set(false);
+    this.errorMessage.set('');
+    this.searchQuery.set('');
+    this.statusFilter.set('all');
+  }
+
   setStatusFilter(status: 'all' | SystemStatus) {
     this.statusFilter.set(status);
   }
@@ -151,15 +119,5 @@ export class SystemRecordsService {
   clearFilters() {
     this.statusFilter.set('all');
     this.searchQuery.set('');
-  }
-
-  private saveToStorage(list: SystemRecord[]) {
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      } catch {
-        // Storage quota exceeded or disabled
-      }
-    }
   }
 }
