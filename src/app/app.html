@@ -2754,12 +2754,12 @@
   </div>
 
   <!-- 7. DEVICE DETAILS MODAL DIALOG -->
-  <div class="system-modal-backdrop" *ngIf="isDeviceDetailModalOpen()" (click)="closeDeviceDetailsModal()">
-    <div class="system-modal-card device-detail-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+  <div class="device-monitor-workspace" *ngIf="isAuthenticated() && isDashboardAuthorized() && isDeviceDetailModalOpen()">
+    <div class="device-monitor-page" (click)="$event.stopPropagation()" role="region"
       aria-labelledby="device-detail-title">
       <div class="modal-card-header">
-        <h3 id="device-detail-title" class="modal-card-title">Device Details</h3>
-        <button type="button" class="modal-close-btn" (click)="closeDeviceDetailsModal()" aria-label="Close modal">
+        <h3 id="device-detail-title" class="modal-card-title">Device Monitoring</h3>
+        <button type="button" class="modal-close-btn" (click)="closeDeviceDetailsModal()" aria-label="Back to Systems">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -2786,7 +2786,118 @@
 
         <!-- Populated State -->
         <div class="device-detail-content" *ngIf="!isDetailLoading() && !detailError() && selectedDevice() as dev">
-          <div class="detail-grid">
+                    <!-- Device monitoring: real telemetry will be connected later -->
+          <section class="monitor-summary" aria-label="Selected device">
+            <div>
+              <p class="monitor-eyebrow">DEVICE MONITORING</p>
+              <h2>{{ dev.systemName || dev.deviceCode }}</h2>
+              <p>{{ dev.deviceCode }} · SN: {{ dev.serialNumber }}</p>
+            </div>
+            <div class="monitor-connection">
+              <span>Telemetry not connected</span>
+              <small>Last reading: —</small>
+            </div>
+          </section>
+
+          <div class="monitor-unavailable" role="status">
+            Device registration is available. Live measurements have not been connected yet.
+          </div>
+
+          <div class="monitor-layout">
+            <section class="monitor-flow-panel" aria-labelledby="energy-flow-title">
+              <div class="monitor-panel-heading">
+                <h3 id="energy-flow-title">Energy flow</h3>
+                <span>Awaiting readings</span>
+              </div>
+
+              <div class="monitor-flow">
+                <svg class="monitor-flow-lines" viewBox="0 0 600 440"
+                     preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M300 210 H470 Q500 210 500 180 V100" />
+                  <path d="M300 240 H130 Q100 240 100 270 V340" />
+                  <path d="M300 240 H470 Q500 240 500 270 V340" />
+                </svg>
+
+                <div class="monitor-node monitor-grid">
+                  <span class="monitor-node-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48">
+                      <path d="M24 5L12 43M24 5l12 38M9 17h30M6 27h36M16 43h16M18 12h12M17 34h14M17 17l14 10M31 17L17 27"/>
+                    </svg>
+                  </span>
+                  <strong>Grid</strong>
+                  <span class="monitor-node-value">— <small>W</small></span>
+                  <small>Input power</small>
+                </div>
+
+                <div class="monitor-node monitor-inverter">
+                  <span class="monitor-node-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48">
+                      <rect x="12" y="5" width="24" height="38" rx="4"/>
+                      <path d="M18 13h12M18 18h12M26 24l-6 8h6l-4 7"/>
+                    </svg>
+                  </span>
+                  <strong>Inverter / UPS</strong>
+                  <small>{{ dev.model || 'Model not specified' }}</small>
+                </div>
+
+                <div class="monitor-node monitor-battery">
+                  <span class="monitor-node-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48">
+                      <rect x="9" y="10" width="30" height="32" rx="4"/>
+                      <path d="M18 10V6h12v4M26 16l-8 12h8l-4 9"/>
+                    </svg>
+                  </span>
+                  <strong>Battery</strong>
+                  <span class="monitor-node-value">— <small>%</small></span>
+                  <small>State of charge</small>
+                </div>
+
+                <div class="monitor-node monitor-load">
+                  <span class="monitor-node-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48">
+                      <path d="M5 23L24 7l19 16M10 20v22h28V20M20 42V28h8v14"/>
+                    </svg>
+                  </span>
+                  <strong>Load</strong>
+                  <span class="monitor-node-value">— <small>W</small></span>
+                  <small>Output power</small>
+                </div>
+              </div>
+            </section>
+
+            <aside class="monitor-readings" aria-labelledby="readings-title">
+              <h3 id="readings-title">Measurements</h3>
+              <section class="monitor-reading-group">
+                <h4>Battery</h4>
+                <dl>
+                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
+                  <div><dt>Current</dt><dd>— <small>A</small></dd></div>
+                  <div><dt>State of charge</dt><dd>— <small>%</small></dd></div>
+                </dl>
+              </section>
+              <section class="monitor-reading-group">
+                <h4>Grid</h4>
+                <dl>
+                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
+                  <div><dt>Frequency</dt><dd>— <small>Hz</small></dd></div>
+                  <div><dt>Input power</dt><dd>— <small>W</small></dd></div>
+                </dl>
+              </section>
+              <section class="monitor-reading-group">
+                <h4>Load</h4>
+                <dl>
+                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
+                  <div><dt>Current</dt><dd>— <small>A</small></dd></div>
+                  <div><dt>Output power</dt><dd>— <small>W</small></dd></div>
+                  <div><dt>Load</dt><dd>— <small>%</small></dd></div>
+                </dl>
+              </section>
+              <p class="monitor-reading-note">Values appear when device telemetry is connected.</p>
+            </aside>
+          </div>
+
+          <h3 class="monitor-details-title">Device information and access</h3>
+<div class="detail-grid">
             <div class="detail-row">
               <span class="detail-label">System name</span>
               <span class="detail-value highlight">{{ dev.systemName || dev.deviceCode || '—' }}</span>
@@ -2881,7 +2992,7 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn-modal-cancel" (click)="closeDeviceDetailsModal()">Close</button>
+        <button type="button" class="btn-modal-cancel" (click)="closeDeviceDetailsModal()">Back to Systems</button>
       </div>
     </div>
   </div>

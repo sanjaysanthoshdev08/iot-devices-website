@@ -121,6 +121,170 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     }
   );
 
+  describe('Step 12: Device monitoring page', () => {
+    const device = {
+      id: 101,
+      deviceCode: 'halo1200-000101',
+      serialNumber: '2610000101',
+      systemName: 'Monitoring Test',
+      model: 'HALO1200',
+      branchId: 1,
+      distributorId: 1,
+      ownerUserId: 16,
+      status: 'ACTIVE',
+      createdAt: '2026-10-31T07:00:00Z',
+      customerEmails: ['owner@example.com']
+    };
+
+    function enterSystems(role: AuthUser['role']) {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({
+        id: 16,
+        name: 'Monitoring Tester',
+        email: 'owner@example.com',
+        role,
+        status: 'ACTIVE'
+      });
+      fixture.detectChanges();
+
+      app.isDashboardAuthorized.set(true);
+      app.isDashboardOpen.set(true);
+      app.activeDashboardNav.set('systems');
+      fixture.detectChanges();
+    }
+
+    function openMonitoring() {
+      mockDeviceAccessService.getDevice.mockReturnValue(of({
+        success: true, message: 'OK', data: device
+      }));
+      app.openDeviceDetails(device.id);
+      fixture.detectChanges();
+
+      return fixture.nativeElement.querySelector(
+        '.device-monitor-workspace'
+      ) as HTMLElement;
+    }
+
+    it.each([
+      'USER', 'DISTRIBUTOR_ADMIN', 'HYKON_ADMIN'
+    ] as const)('renders scoped monitoring for %s', role => {
+      enterSystems(role);
+      const page = openMonitoring();
+
+      expect(mockDeviceAccessService.getDevice)
+        .toHaveBeenCalledWith(device.id);
+      expect(page).not.toBeNull();
+      expect(page.textContent).toContain(device.deviceCode);
+      expect(page.textContent).toContain(device.serialNumber);
+
+      const flow = page.querySelector('.monitor-flow')!;
+      expect(flow.textContent).toContain('Battery');
+      expect(flow.textContent).toContain('Grid');
+      expect(flow.textContent).toContain('Load');
+      expect(flow.textContent).toContain('Inverter / UPS');
+      expect(flow.textContent).not.toMatch(/\bPV\b|\bSolar\b/i);
+
+      expect(page.querySelector('.device-customer-mgmt') !== null)
+        .toBe(role !== 'USER');
+    });
+
+    it('shows unavailable measurements without treating ACTIVE as online', () => {
+      enterSystems('USER');
+      const page = openMonitoring();
+
+      expect(page.querySelector('.monitor-connection')?.textContent)
+        .toContain('Telemetry not connected');
+      expect(page.querySelector('.monitor-connection')?.textContent)
+        .toContain('Last reading: —');
+
+      const readings = Array.from(
+        page.querySelectorAll('.monitor-reading-group dd')
+      );
+      expect(readings).toHaveLength(10);
+      for (const reading of readings) {
+        expect(reading.textContent).toContain('—');
+        expect(reading.textContent).not.toMatch(/\d/);
+      }
+
+      expect(page.querySelector('.monitor-connection')?.textContent)
+        .not.toMatch(/\bonline\b/i);
+    });
+
+    it('hides monitoring when dashboard authorization is absent', () => {
+      enterSystems('USER');
+      openMonitoring();
+
+      app.isDashboardAuthorized.set(false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(
+        '.device-monitor-workspace'
+      )).toBeNull();
+    });
+
+    it('Back to Systems closes monitoring and preserves the Systems view', () => {
+      enterSystems('USER');
+      const page = openMonitoring();
+      const back = Array.from(page.querySelectorAll('button'))
+        .find(button => button.textContent?.trim() === 'Back to Systems');
+
+      expect(back).toBeDefined();
+      back!.click();
+      fixture.detectChanges();
+
+      expect(app.isDeviceDetailModalOpen()).toBe(false);
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.isDashboardOpen()).toBe(true);
+      expect(app.activeDashboardNav()).toBe('systems');
+      expect(fixture.nativeElement.querySelector(
+        '.device-monitor-workspace'
+      )).toBeNull();
+    });
+
+    it('does not reopen monitoring after Back when details arrive late', () => {
+      enterSystems('USER');
+      const pending = new Subject<any>();
+      mockDeviceAccessService.getDevice.mockReturnValue(
+        pending.asObservable()
+      );
+
+      app.openDeviceDetails(device.id);
+      fixture.detectChanges();
+      expect(app.isDetailLoading()).toBe(true);
+
+      app.closeDeviceDetailsModal();
+      pending.next({ success: true, message: 'OK', data: device });
+      pending.complete();
+      fixture.detectChanges();
+
+      expect(app.selectedDevice()).toBeNull();
+      expect(app.isDeviceDetailModalOpen()).toBe(false);
+      expect(fixture.nativeElement.querySelector(
+        '.device-monitor-workspace'
+      )).toBeNull();
+    });
+
+    it('shows a 404 error without retaining previous device readings', () => {
+      enterSystems('USER');
+      openMonitoring();
+
+      mockDeviceAccessService.getDevice.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 404 }))
+      );
+      app.openDeviceDetails(999);
+      fixture.detectChanges();
+
+      const page = fixture.nativeElement.querySelector(
+        '.device-monitor-workspace'
+      ) as HTMLElement;
+
+      expect(page.textContent).toContain('Device not found or unavailable');
+      expect(app.selectedDevice()).toBeNull();
+      expect(page.querySelector('.monitor-flow')).toBeNull();
+      expect(page.querySelector('.monitor-readings')).toBeNull();
+    });
+  });
+
   // 1. Role-aware entry
   describe('1. Role-aware entry destinations', () => {
     it('should open login modal when unauthenticated user clicks feature box', () => {
