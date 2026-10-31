@@ -23,15 +23,25 @@ export class SystemRecordsService {
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
 
+  // Overview real-count loading state (Issue 4)
+  readonly isOverviewLoaded = signal<boolean>(false);
+  readonly isOverviewLoading = signal<boolean>(false);
+  readonly isOverviewError = signal<string>('');
+
   // Filtering & Local Search state ("Search this page")
   readonly statusFilter = signal<'all' | SystemStatus>('all');
   readonly searchQuery = signal<string>('');
 
   // Summary Metrics
-  // "All" reflects backend totalElements count.
+  // "All" reflects backend totalElements count when loaded, and "—" while loading.
   // Real-time telemetry (Online/Warning/Offline) is unavailable until live telemetry streaming exists;
   // displayed as "—", not fabricated zero or fake active counts.
-  readonly totalCount = computed(() => this.totalElements());
+  readonly totalCount = computed(() => {
+    if (this.isOverviewLoading()) {
+      return '—';
+    }
+    return this.totalElements();
+  });
   readonly onlineCount = computed(() => '—');
   readonly warningCount = computed(() => '—');
   readonly offlineCount = computed(() => '—');
@@ -81,6 +91,21 @@ export class SystemRecordsService {
     this.isLast.set(pageData.last);
     this.isLoading.set(false);
     this.errorMessage.set('');
+    this.isOverviewLoaded.set(true);
+    this.isOverviewLoading.set(false);
+    this.isOverviewError.set('');
+  }
+
+  setOverviewCount(total: number) {
+    this.totalElements.set(total);
+    this.isOverviewLoaded.set(true);
+    this.isOverviewLoading.set(false);
+    this.isOverviewError.set('');
+  }
+
+  setOverviewError(err: string) {
+    this.isOverviewLoading.set(false);
+    this.isOverviewError.set(err);
   }
 
   /**
@@ -104,6 +129,9 @@ export class SystemRecordsService {
     this.isLast.set(true);
     this.isLoading.set(false);
     this.errorMessage.set('');
+    this.isOverviewLoaded.set(false);
+    this.isOverviewLoading.set(false);
+    this.isOverviewError.set('');
     this.searchQuery.set('');
     this.statusFilter.set('all');
   }

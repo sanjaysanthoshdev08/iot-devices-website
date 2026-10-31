@@ -98,6 +98,9 @@ class DeviceRegistrationApiTests {
     private com.hykon.iot_backend.service.SessionAccessPolicyService accessPolicy;
 
     @MockitoBean
+    private com.hykon.iot_backend.service.DeviceCustomerAccessService customerAccessService;
+
+    @MockitoBean
     private JwtService jwtService;
 
     @MockitoBean

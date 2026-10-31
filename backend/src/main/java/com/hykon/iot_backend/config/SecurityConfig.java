@@ -132,7 +132,13 @@ public class SecurityConfig {
                 // All remaining endpoints require authentication.
                 .requestMatchers(
                     HttpMethod.POST,
-                    "/api/v1/management/devices"
+                    "/api/v1/management/devices",
+                    "/api/v1/management/devices/**"
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/v1/management/devices/**"
                 ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
 
                 .requestMatchers(

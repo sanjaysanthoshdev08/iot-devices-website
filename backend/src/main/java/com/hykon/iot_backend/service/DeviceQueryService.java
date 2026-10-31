@@ -2,13 +2,16 @@ package com.hykon.iot_backend.service;
 
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.entity.Device;
+import com.hykon.iot_backend.entity.DeviceCustomerAccess;
 import com.hykon.iot_backend.entity.Distributor;
 import com.hykon.iot_backend.entity.RoleName;
 import com.hykon.iot_backend.entity.User;
+import com.hykon.iot_backend.repository.DeviceCustomerAccessRepository;
 import com.hykon.iot_backend.repository.DeviceRepository;
 import com.hykon.iot_backend.repository.DistributorRepository;
 import com.hykon.iot_backend.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 public class DeviceQueryService {
@@ -25,15 +30,19 @@ public class DeviceQueryService {
     private final UserRepository userRepository;
     private final DeviceRepository deviceRepository;
     private final DistributorRepository distributorRepository;
+    private final DeviceCustomerAccessRepository customerAccessRepository;
 
+    @Autowired
     public DeviceQueryService(
             UserRepository userRepository,
             DeviceRepository deviceRepository,
-            DistributorRepository distributorRepository
+            DistributorRepository distributorRepository,
+            DeviceCustomerAccessRepository customerAccessRepository
     ) {
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.distributorRepository = distributorRepository;
+        this.customerAccessRepository = customerAccessRepository;
     }
 
     public Page<DeviceResponse> list(
@@ -75,7 +84,7 @@ public class DeviceQueryService {
             default -> throw forbidden();
         }
 
-        return devices.map(DeviceResponse::from);
+        return devices.map(this::mapToResponse);
     }
 
     public DeviceResponse get(
@@ -114,7 +123,18 @@ public class DeviceQueryService {
             default -> throw forbidden();
         }
 
-        return DeviceResponse.from(device);
+        return mapToResponse(device);
+    }
+
+    private DeviceResponse mapToResponse(Device device) {
+        List<String> customerEmails = List.of();
+        List<DeviceCustomerAccess> accesses = customerAccessRepository.findByDeviceIdWithCustomer(device.getId());
+        if (!accesses.isEmpty()) {
+            customerEmails = accesses.stream().map(a -> a.getCustomer().getEmail()).toList();
+        } else if (device.getOwner() != null && device.getOwner().getEmail() != null) {
+            customerEmails = List.of(device.getOwner().getEmail());
+        }
+        return DeviceResponse.from(device, customerEmails);
     }
 
     private User requireActiveAccount(String email) {

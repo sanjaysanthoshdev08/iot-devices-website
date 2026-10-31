@@ -34,12 +34,15 @@ class DeviceQueryServiceTest {
     @Mock
     private DistributorRepository distributorRepository;
 
+    @Mock
+    private DeviceCustomerAccessRepository customerAccessRepository;
+
     private DeviceQueryService service;
 
     @BeforeEach
     void setUp() {
         service = new DeviceQueryService(
-                userRepository, deviceRepository, distributorRepository
+                userRepository, deviceRepository, distributorRepository, customerAccessRepository
         );
     }
 

@@ -16,9 +16,11 @@ export interface ClaimDeviceRequest {
 // Mirrors backend DistributorAccessRequest.java
 
 export interface DistributorAccessRequest {
-  distributorCode: string;
-  branchCode: string;
+  distributorName: string;
+  branchName: string;
   location: string;
+  distributorCode?: string;
+  branchCode?: string;
 }
 
 // ─── Response DTOs ────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ export interface DeviceResponse {
   ownerUserId: number | null;
   status: string;
   createdAt: string;
+  customerEmails?: string[];
 }
 
 // Mirrors backend DistributorAccessResponse.java

@@ -286,4 +286,61 @@ class DistributorAccessServiceTest {
 
         verifyNoInteractions(distributorRepository, branchRepository);
     }
+
+    @Test
+    void distributorNameBranchNameLocationVerificationSucceeds() {
+        User account = allowAccount();
+
+        Distributor distributor = new Distributor();
+        ReflectionTestUtils.setField(distributor, "id", 1L);
+        distributor.setDistributorCode("DIST-1");
+        distributor.setName("Sanjay");
+        distributor.setAdministrator(account);
+        distributor.setStatus("ACTIVE");
+        when(distributorRepository.findByAdministrator_Id(22L)).thenReturn(Optional.of(distributor));
+
+        DistributorBranch branch = new DistributorBranch();
+        ReflectionTestUtils.setField(branch, "id", 5L);
+        branch.setDistributor(distributor);
+        branch.setBranchCode("BR-KIN");
+        branch.setName("Hykon Kinfra");
+        branch.setLocation("Ernakulam");
+        branch.setStatus("ACTIVE");
+
+        when(branchRepository.findByDistributorAndNameAndLocation(1L, "Hykon Kinfra", "Ernakulam"))
+                .thenReturn(java.util.List.of(branch));
+
+        DistributorAccessRequest request = new DistributorAccessRequest("  sanjay  ", " Hykon Kinfra ", " Ernakulam ");
+        DistributorAccessResponse response = service.verify(request, EMAIL);
+
+        assertEquals("Sanjay", response.distributorName());
+        assertEquals("Hykon Kinfra", response.branchName());
+        assertEquals("Ernakulam", response.location());
+    }
+
+    @Test
+    void ambiguousBranchMatchIsSafelyRejected() {
+        User account = allowAccount();
+
+        Distributor distributor = new Distributor();
+        ReflectionTestUtils.setField(distributor, "id", 1L);
+        distributor.setName("Sanjay");
+        distributor.setAdministrator(account);
+        distributor.setStatus("ACTIVE");
+        when(distributorRepository.findByAdministrator_Id(22L)).thenReturn(Optional.of(distributor));
+
+        DistributorBranch b1 = new DistributorBranch();
+        b1.setDistributor(distributor);
+        b1.setStatus("ACTIVE");
+
+        DistributorBranch b2 = new DistributorBranch();
+        b2.setDistributor(distributor);
+        b2.setStatus("ACTIVE");
+
+        when(branchRepository.findByDistributorAndNameAndLocation(1L, "Branch", "Location"))
+                .thenReturn(java.util.List.of(b1, b2));
+
+        DistributorAccessRequest request = new DistributorAccessRequest("Sanjay", "Branch", "Location");
+        assertVerificationFailed(request);
+    }
 }

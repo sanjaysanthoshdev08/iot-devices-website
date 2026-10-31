@@ -6,9 +6,11 @@ import com.hykon.iot_backend.entity.DistributorBranch;
 import com.hykon.iot_backend.entity.RoleName;
 import com.hykon.iot_backend.entity.SessionAccessGrant;
 import com.hykon.iot_backend.entity.User;
+import com.hykon.iot_backend.repository.DeviceCustomerAccessRepository;
 import com.hykon.iot_backend.repository.SessionAccessGrantRepository;
 import com.hykon.iot_backend.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -24,15 +26,19 @@ public class SessionAccessPolicyService {
     private final UserRepository userRepository;
     private final LoginSessionService sessionService;
     private final SessionAccessGrantRepository grantRepository;
+    private final DeviceCustomerAccessRepository customerAccessRepository;
 
+    @Autowired
     public SessionAccessPolicyService(
             UserRepository userRepository,
             LoginSessionService sessionService,
-            SessionAccessGrantRepository grantRepository
+            SessionAccessGrantRepository grantRepository,
+            DeviceCustomerAccessRepository customerAccessRepository
     ) {
         this.userRepository = userRepository;
         this.sessionService = sessionService;
         this.grantRepository = grantRepository;
+        this.customerAccessRepository = customerAccessRepository;
     }
 
     public void requireVerified(Authentication authentication) {
@@ -90,9 +96,14 @@ public class SessionAccessPolicyService {
 
         if (grant.getDeviceVerifiedAt() == null
                 || device == null
-                || !active(device.getStatus())
-                || device.getOwner() == null
-                || !userId.equals(device.getOwner().getId())) {
+                || !active(device.getStatus())) {
+            return false;
+        }
+
+        boolean isAuthorized = (device.getOwner() != null && userId.equals(device.getOwner().getId()))
+                || customerAccessRepository.existsByDeviceIdAndCustomerId(device.getId(), userId);
+
+        if (!isAuthorized) {
             return false;
         }
 

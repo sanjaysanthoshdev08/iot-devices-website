@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface DeviceRepository extends JpaRepository<Device, Long> {
@@ -30,14 +31,88 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             @Param("serialNumber") String serialNumber
     );
 
+    @Query("""
+            SELECT d
+            FROM Device d
+            WHERE d.id = :deviceId
+              AND (
+                d.owner.id = :ownerUserId
+                OR EXISTS (
+                  SELECT 1 FROM DeviceCustomerAccess dca
+                  WHERE dca.device.id = d.id AND dca.customer.id = :ownerUserId
+                )
+              )
+            """)
     Optional<Device> findByIdAndOwner_Id(
-            Long deviceId,
-            Long ownerUserId
+            @Param("deviceId") Long deviceId,
+            @Param("ownerUserId") Long ownerUserId
     );
 
+    @Query(
+            value = """
+                    SELECT d
+                    FROM Device d
+                    WHERE d.owner.id = :ownerUserId
+                       OR EXISTS (
+                         SELECT 1 FROM DeviceCustomerAccess dca
+                         WHERE dca.device.id = d.id AND dca.customer.id = :ownerUserId
+                       )
+                    """,
+            countQuery = """
+                    SELECT COUNT(d)
+                    FROM Device d
+                    WHERE d.owner.id = :ownerUserId
+                       OR EXISTS (
+                         SELECT 1 FROM DeviceCustomerAccess dca
+                         WHERE dca.device.id = d.id AND dca.customer.id = :ownerUserId
+                       )
+                    """
+    )
     Page<Device> findByOwner_Id(
-            Long ownerUserId,
+            @Param("ownerUserId") Long ownerUserId,
             Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    SELECT d
+                    FROM Device d
+                    WHERE d.owner.id = :userId
+                       OR EXISTS (
+                         SELECT 1 FROM DeviceCustomerAccess dca
+                         WHERE dca.device.id = d.id AND dca.customer.id = :userId
+                       )
+                    """,
+            countQuery = """
+                    SELECT COUNT(d)
+                    FROM Device d
+                    WHERE d.owner.id = :userId
+                       OR EXISTS (
+                         SELECT 1 FROM DeviceCustomerAccess dca
+                         WHERE dca.device.id = d.id AND dca.customer.id = :userId
+                       )
+                    """
+    )
+    Page<Device> findAuthorizedDevicesForUser(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT d
+            FROM Device d
+            WHERE d.id = :deviceId
+              AND (
+                d.owner.id = :userId
+                OR EXISTS (
+                  SELECT 1 FROM DeviceCustomerAccess dca
+                  WHERE dca.device.id = d.id AND dca.customer.id = :userId
+                )
+              )
+            """)
+    Optional<Device> findAuthorizedDeviceByIdAndUser(
+            @Param("deviceId") Long deviceId,
+            @Param("userId") Long userId
     );
 
     Optional<Device> findByIdAndBranch_Distributor_Administrator_Id(
@@ -49,6 +124,10 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             Long administratorUserId,
             Pageable pageable
     );
+
+    List<Device> findByBranch_IdIn(List<Long> branchIds);
+
+    Page<Device> findByBranch_Id(Long branchId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

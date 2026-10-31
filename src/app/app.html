@@ -1291,7 +1291,8 @@
               [class.input-error]="!!nameError()"
               [value]="loginName()"
               (input)="loginName.set($any($event.target).value); nameError.set('')" 
-              placeholder="Enter your name" />
+              placeholder="Enter your name"
+              autocomplete="name" />
             <span class="field-error-text" *ngIf="nameError()">{{ nameError() }}</span>
           </div>
 
@@ -1304,7 +1305,8 @@
               [class.input-error]="!!emailError()"
               [value]="loginEmail()"
               (input)="loginEmail.set($any($event.target).value); emailError.set('')" 
-              placeholder="Enter your email" />
+              placeholder="Enter your email"
+              autocomplete="email" />
             <span class="field-error-text" *ngIf="emailError()">{{ emailError() }}</span>
           </div>
 
@@ -1317,7 +1319,8 @@
               [class.input-error]="!!passwordError()"
               [value]="loginPassword()"
               (input)="loginPassword.set($any($event.target).value); passwordError.set('')" 
-              placeholder="Enter your password" />
+              placeholder="Enter your password"
+              [autocomplete]="isSignUpMode() ? 'new-password' : 'current-password'" />
             <span class="field-error-text" *ngIf="passwordError()">{{ passwordError() }}</span>
             
             <div class="forget-password-row" *ngIf="!isSignUpMode()">
@@ -1334,7 +1337,8 @@
               [class.input-error]="!!confirmPasswordError()"
               [value]="loginConfirmPassword()"
               (input)="loginConfirmPassword.set($any($event.target).value); confirmPasswordError.set('')" 
-              placeholder="Confirm your password" />
+              placeholder="Confirm your password"
+              autocomplete="new-password" />
             <span class="field-error-text" *ngIf="confirmPasswordError()">{{ confirmPasswordError() }}</span>
           </div>
 
@@ -1488,10 +1492,10 @@
         </div>
       </form>
 
-      <!-- DISTRIBUTOR_ADMIN Form: distributorCode, branchCode, location -->
+      <!-- DISTRIBUTOR_ADMIN Form: distributorName, branchName, location -->
       <form class="dac-form" *ngIf="isDistributorRole()" (ngSubmit)="verifyDistributorCredentials()">
-        <!-- Field 1: Distributor Code -->
-        <div class="dac-field" [class.has-value]="distributorCode()">
+        <!-- Field 1: Distributor Name -->
+        <div class="dac-field" [class.has-value]="distributorName() || distributorCode()">
           <div class="dac-field-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -1499,19 +1503,19 @@
             </svg>
           </div>
           <div class="dac-field-content">
-            <span class="dac-field-label">Distributor Code</span>
+            <span class="dac-field-label">Distributor Name</span>
             <input type="text"
                    class="dac-field-input"
-                   name="distributorCode"
-                   [ngModel]="distributorCode()"
-                   (ngModelChange)="distributorCode.set($event)"
-                   placeholder="Enter distributor code"
+                   name="distributorName"
+                   [ngModel]="distributorName() || distributorCode()"
+                   (ngModelChange)="distributorName.set($event); distributorCode.set($event)"
+                   placeholder="Enter distributor name"
                    autocomplete="off" />
           </div>
         </div>
 
-        <!-- Field 2: Branch Code -->
-        <div class="dac-field" [class.has-value]="branchCode()">
+        <!-- Field 2: Branch Name -->
+        <div class="dac-field" [class.has-value]="branchName() || branchCode()">
           <div class="dac-field-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -1519,13 +1523,13 @@
             </svg>
           </div>
           <div class="dac-field-content">
-            <span class="dac-field-label">Branch Code</span>
+            <span class="dac-field-label">Branch Name</span>
             <input type="text"
                    class="dac-field-input"
-                   name="branchCode"
-                   [ngModel]="branchCode()"
-                   (ngModelChange)="branchCode.set($event)"
-                   placeholder="Enter branch code"
+                   name="branchName"
+                   [ngModel]="branchName() || branchCode()"
+                   (ngModelChange)="branchName.set($event); branchCode.set($event)"
+                   placeholder="Enter branch name"
                    autocomplete="off" />
           </div>
         </div>
@@ -1702,8 +1706,17 @@
           <div class="dash-fleet-summary">
             <span class="fleet-summary-label">Fleet summary</span>
             <h2 class="fleet-summary-heading">
-              {{ totalSystemsCount() }} registered device{{ totalSystemsCount() !== 1 ? 's' : '' }}.<br>
-              Live monitoring not yet available.
+              <ng-container *ngIf="systemRecordsService.isOverviewLoading()">
+                Loading registered devices...
+              </ng-container>
+              <ng-container *ngIf="!systemRecordsService.isOverviewLoading() && !systemRecordsService.isOverviewError()">
+                {{ totalSystemsCount() }} registered device{{ totalSystemsCount() !== 1 ? 's' : '' }}.<br>
+                Live monitoring not yet available.
+              </ng-container>
+              <ng-container *ngIf="systemRecordsService.isOverviewError()">
+                Unable to load device count.
+                <button type="button" class="btn-retry-inline" (click)="retryLoadOverviewDevices()" style="margin-left:8px;padding:2px 8px;font-size:12px;cursor:pointer;">Retry</button>
+              </ng-container>
             </h2>
           </div>
 
@@ -1717,7 +1730,9 @@
             <!-- Card 1: Total Systems (Top Left) -->
             <div class="dash-card dash-card-totals">
               <span class="card-meta-lbl">Total systems</span>
-              <div class="card-hero-num">{{ totalSystemsCount() }}</div>
+              <div class="card-hero-num">
+                {{ totalSystemsCount() }}
+              </div>
               
               <!-- Pulse Wave & Equalizer Visualizer -->
               <div class="card-visual-wave">
@@ -2052,15 +2067,99 @@
       <ng-container *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('accounts') && activeDashboardNav() === 'accounts'">
 
         <section class="acct-provisioning-panel" aria-label="Accounts and Provisioning Management">
-          <div class="acct-unavailable-banner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="banner-icon">
+          <!-- Distributor Directory Header (Issue 5) -->
+          <div class="directory-section-header" style="margin-bottom: 1.5rem;" *ngIf="isHykonAdminRole()">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h2 style="font-size:1.25rem; font-weight:600; color:#fff; margin:0 0 4px 0;">Distributor Directory</h2>
+                <p style="font-size:0.875rem; color:#8ba2c4; margin:0;">Complete distributor organizational hierarchy, branches, registered devices, and authorized customer accounts.</p>
+              </div>
+              <button type="button" class="btn-refresh-directory" (click)="loadDistributorDirectory()" [disabled]="isDirectoryLoading()" style="padding:6px 14px; background:rgba(37,139,255,0.15); border:1px solid rgba(37,139,255,0.4); border-radius:6px; color:#58a6ff; cursor:pointer;">
+                {{ isDirectoryLoading() ? 'Refreshing...' : 'Refresh Directory' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Directory Loading State -->
+          <div *ngIf="isHykonAdminRole() && isDirectoryLoading()" class="acct-loading-banner" style="padding:2rem; text-align:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#8ba2c4; margin-bottom:1.5rem;">
+            Loading distributor hierarchy...
+          </div>
+
+          <!-- Directory Error State -->
+          <div *ngIf="isHykonAdminRole() && directoryError()" class="modal-error-alert" style="margin-bottom:1.5rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;flex-shrink:0;">
               <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div>
-              <h3 class="banner-title">Account Directory Unavailable</h3>
-              <p class="banner-text">The server does not expose an accounts listing endpoint. HYKON administrators can provision new distributor administrators and branches below.</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+              <span>{{ directoryError() }}</span>
+              <button type="button" (click)="loadDistributorDirectory()" style="padding:4px 10px; background:#e05252; border:none; border-radius:4px; color:#fff; cursor:pointer; font-size:12px;">Retry</button>
+            </div>
+          </div>
+
+          <!-- Directory Empty State -->
+          <div *ngIf="isHykonAdminRole() && !isDirectoryLoading() && !directoryError() && distributorDirectory().length === 0" class="acct-empty-banner" style="padding:2rem; text-align:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#8ba2c4; margin-bottom:1.5rem;">
+            No distributors registered in the system yet. Use the provisioning actions below to create the first distributor and administrator.
+          </div>
+
+          <!-- Directory Hierarchy List -->
+          <div *ngIf="isHykonAdminRole() && !isDirectoryLoading() && distributorDirectory().length > 0" class="directory-list" style="display:flex; flex-direction:column; gap:1.25rem; margin-bottom:2rem;">
+            <div *ngFor="let dist of distributorDirectory()" class="distributor-card" style="background:#0f172a; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1.25rem;">
+              
+              <!-- Distributor Header -->
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:0.75rem; margin-bottom:1rem;">
+                <div>
+                  <h3 style="font-size:1.15rem; font-weight:600; color:#fff; margin:0 0 4px 0;">{{ dist.name }}</h3>
+                  <div style="font-size:0.8rem; color:#8ba2c4; display:flex; gap:12px;">
+                    <span>Code: <code style="color:#58a6ff;">{{ dist.distributorCode }}</code></span>
+                    <span>Status: <span [style.color]="dist.status === 'ACTIVE' ? '#22c55e' : '#eab308'">{{ dist.status }}</span></span>
+                  </div>
+                </div>
+                <div *ngIf="dist.administrator" style="text-align:right; font-size:0.8rem; color:#cbd5e1;">
+                  <span style="color:#8ba2c4;">Administrator:</span> {{ dist.administrator.name }}
+                  <div style="color:#58a6ff;">{{ dist.administrator.email }}</div>
+                </div>
+              </div>
+
+              <!-- Branches Section -->
+              <div class="branches-container" style="display:flex; flex-direction:column; gap:0.75rem;">
+                <div *ngFor="let branch of dist.branches" class="branch-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:1rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <div>
+                      <strong style="color:#e2e8f0; font-size:0.95rem;">{{ branch.name }}</strong>
+                      <span style="font-size:0.8rem; color:#8ba2c4; margin-left:8px;">({{ branch.location }})</span>
+                    </div>
+                    <span style="font-size:0.75rem; color:#8ba2c4;">Branch Code: <code style="color:#93c5fd;">{{ branch.branchCode }}</code></span>
+                  </div>
+
+                  <!-- Devices under Branch -->
+                  <div *ngIf="branch.devices && branch.devices.length > 0" class="branch-devices-list" style="margin-top:0.75rem;">
+                    <div style="font-size:0.8rem; font-weight:600; color:#94a3b8; margin-bottom:0.4rem;">Registered Devices ({{ branch.devices.length }}):</div>
+                    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                      <div *ngFor="let dev of branch.devices" style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:5px; border-left:3px solid #258bff;">
+                        <div>
+                          <strong style="color:#f8fafc;">{{ dev.deviceCode }}</strong>
+                          <span style="color:#64748b; margin-left:8px;">SN: {{ dev.serialNumber }}</span>
+                          <span *ngIf="dev.model" style="color:#8ba2c4; margin-left:8px;">Model: {{ dev.model }}</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:#cbd5e1;">
+                          <span style="color:#64748b;">Customers: </span>
+                          <span *ngIf="dev.authorizedCustomers && dev.authorizedCustomers.length > 0">
+                            <span *ngFor="let c of dev.authorizedCustomers; let last = last">
+                              <span [style.color]="c.isPrimaryOwner ? '#38bdf8' : '#e2e8f0'">{{ c.email }}{{ c.isPrimaryOwner ? ' (Owner)' : '' }}</span>{{ last ? '' : ', ' }}
+                            </span>
+                          </span>
+                          <span *ngIf="!dev.authorizedCustomers || dev.authorizedCustomers.length === 0" style="color:#64748b;">Unassigned</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="!branch.devices || branch.devices.length === 0" style="font-size:0.8rem; color:#64748b; margin-top:0.5rem;">
+                    No devices registered under this branch yet.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2327,8 +2426,7 @@
                 </td>
                 <!-- 5. User display info -->
                 <td class="cell-user">
-                  <span class="user-text">{{ record.ownerUserId !== null ? 'User #' + record.ownerUserId : 'Unassigned'
-                    }}</span>
+                  <span class="user-text">{{ record.customerEmails && record.customerEmails.length > 0 ? record.customerEmails.join(', ') : (record.ownerUserId !== null ? 'User #' + record.ownerUserId : 'Unassigned') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -2397,16 +2495,18 @@
         <!-- Field: Device ID (deviceCode) -->
         <div class="modal-field">
           <label class="modal-label" for="systemDeviceCode">Device ID</label>
-          <input type="text" id="systemDeviceCode" class="modal-input" placeholder="e.g., HALO-1200-01"
+          <input type="text" id="systemDeviceCode" class="modal-input" placeholder="e.g., halo1200-000001"
             [ngModel]="newSystemDeviceCode()" (ngModelChange)="newSystemDeviceCode.set($event)" name="deviceCode" required />
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: &lt;model&gt;-&lt;6-digit device number&gt; (suffix must match Serial)</span>
         </div>
 
         <!-- Field: Serial Number (SN) -->
         <div class="modal-field">
           <label class="modal-label" for="systemSN">Serial number (SN)</label>
           <input type="text" id="systemSN" class="modal-input"
-            placeholder="e.g., 000000000000000001 (preserves leading zeros)" [ngModel]="newSystemSN()"
+            placeholder="e.g., 2610000001 (YYMM + 6 digits)" [ngModel]="newSystemSN()"
             (ngModelChange)="newSystemSN.set($event)" name="systemSN" required />
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: YYMM + 6-digit device number (month 01–12, number 000001–100000)</span>
         </div>
 
         <!-- Field: Model -->
@@ -2718,6 +2818,17 @@
               <span class="detail-value">{{ dev.ownerUserId !== null ? 'User #' + dev.ownerUserId : 'Unassigned' }}</span>
             </div>
             <div class="detail-row">
+              <span class="detail-label">Authorized Customers</span>
+              <span class="detail-value">
+                <span *ngIf="dev.customerEmails && dev.customerEmails.length > 0">
+                  {{ dev.customerEmails.join(', ') }} ({{ dev.customerEmails.length }}/3)
+                </span>
+                <span *ngIf="!dev.customerEmails || dev.customerEmails.length === 0">
+                  {{ dev.ownerUserId !== null ? 'User #' + dev.ownerUserId : 'Unassigned' }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row">
               <span class="detail-label">Branch ID</span>
               <span class="detail-value">{{ dev.branchId !== null ? dev.branchId : '—' }}</span>
             </div>
@@ -2728,6 +2839,42 @@
             <div class="detail-row">
               <span class="detail-label">Registration date</span>
               <span class="detail-value">{{ dev.createdAt || '—' }}</span>
+            </div>
+          </div>
+
+          <!-- Admin Customer Management Section (Issue 2) -->
+          <div *ngIf="isHykonAdminRole() || isDistributorRole()" class="device-customer-mgmt" style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
+            <div style="font-size:0.85rem; font-weight:600; color:#cbd5e1; margin-bottom:0.5rem;">
+              Manage Authorized Customer Accounts (Max 3)
+            </div>
+
+            <div class="modal-error-alert" *ngIf="customerActionError()" style="margin-bottom:0.75rem;">
+              <span>{{ customerActionError() }}</span>
+            </div>
+            <div class="modal-notice-banner" *ngIf="customerActionSuccess()" style="margin-bottom:0.75rem; color:#22c55e;">
+              <span>{{ customerActionSuccess() }}</span>
+            </div>
+
+            <!-- List of Customers with Remove Buttons -->
+            <div *ngIf="dev.customerEmails && dev.customerEmails.length > 0" style="display:flex; flex-direction:column; gap:6px; margin-bottom:0.75rem;">
+              <div *ngFor="let email of dev.customerEmails; let idx = index" style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:4px; font-size:0.8rem;">
+                <span style="color:#e2e8f0;">{{ email }} <span *ngIf="idx === 0" style="color:#38bdf8; font-size:0.75rem;">(Primary Owner)</span></span>
+                <!-- Primary owner cannot be removed per business rule -->
+                <button type="button" *ngIf="idx > 0" (click)="removeCustomerFromSelectedDevice(email)" [disabled]="isCustomerActionSubmitting()" style="padding:2px 8px; font-size:0.75rem; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:4px; color:#f87171; cursor:pointer;">
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <!-- Add Customer Form if under limit of 3 -->
+            <div *ngIf="!dev.customerEmails || dev.customerEmails.length < 3" style="display:flex; gap:8px;">
+              <input type="email" placeholder="Customer email (e.g. user@example.com)" [ngModel]="newCustomerEmail()" (ngModelChange)="newCustomerEmail.set($event)" class="modal-input" style="flex:1; font-size:0.8rem; padding:6px 10px;" />
+              <button type="button" (click)="authorizeCustomerForSelectedDevice()" [disabled]="isCustomerActionSubmitting()" class="btn-modal-submit" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap;">
+                {{ isCustomerActionSubmitting() ? 'Authorizing...' : 'Authorize' }}
+              </button>
+            </div>
+            <div *ngIf="dev.customerEmails && dev.customerEmails.length >= 3" style="font-size:0.75rem; color:#8ba2c4; font-style:italic;">
+              Device has reached the maximum of 3 authorized customer accounts.
             </div>
           </div>
         </div>

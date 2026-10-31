@@ -33,12 +33,15 @@ class DeviceClaimServiceTest {
     @Mock
     private DevicePurchaseRepository purchaseRepository;
 
+    @Mock
+    private DeviceCustomerAccessRepository customerAccessRepository;
+
     private DeviceClaimService service;
 
     @BeforeEach
     void setUp() {
         service = new DeviceClaimService(
-                userRepository, deviceRepository, purchaseRepository
+                userRepository, deviceRepository, purchaseRepository, customerAccessRepository
         );
     }
 
@@ -245,6 +248,22 @@ class DeviceClaimServiceTest {
     void unknownDeviceReturnsGenericVerificationFailure() {
         allowCustomer();
         assertVerificationFailure(request());
+        verifyNoInteractions(purchaseRepository);
+    }
+
+    @Test
+    void authorizedSecondaryCustomerCanVerifyWithoutPurchaseRecord() {
+        allowCustomer();
+        Device device = prepareDevice();
+        User existingOwner = account(10L, RoleName.USER, "ACTIVE");
+        device.setOwner(existingOwner);
+
+        when(customerAccessRepository.existsByDeviceIdAndCustomerId(device.getId(), 30L))
+                .thenReturn(true);
+
+        DeviceResponse response = service.claim(request(), "customer@example.com");
+        assertNotNull(response);
+        assertEquals(device.getDeviceCode(), response.deviceCode());
         verifyNoInteractions(purchaseRepository);
     }
 }

@@ -30,6 +30,9 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     recordDevicePurchase: any;
     createDistributorAdmin: any;
     createDistributor: any;
+    getDistributorDirectory: any;
+    authorizeDeviceCustomer: any;
+    removeDeviceCustomer: any;
   };
 
   beforeEach(async () => {
@@ -55,7 +58,10 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       registerDevice: vi.fn(),
       recordDevicePurchase: vi.fn(),
       createDistributorAdmin: vi.fn(),
-      createDistributor: vi.fn()
+      createDistributor: vi.fn(),
+      getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
+      authorizeDeviceCustomer: vi.fn(),
+      removeDeviceCustomer: vi.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -1057,8 +1063,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.openAddSystemModal();
         expect(app.isAddSystemModalOpen()).toBe(true);
 
-        app.newSystemDeviceCode.set('HALO-1200-01');
-        app.newSystemSN.set('SN-HYK-1200-01');
+        app.newSystemDeviceCode.set('halo1200-000001');
+        app.newSystemSN.set('2610000001');
         app.newSystemName.set('Residential Backup 1200');
         app.newSystemModel.set('HALO 1200');
         app.newSystemBranchId.set('');
@@ -1083,8 +1089,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
-          deviceCode: 'HALO-1200-01',
-          serialNumber: 'SN-HYK-1200-01',
+          deviceCode: 'halo1200-000001',
+          serialNumber: '2610000001',
           systemName: 'Residential Backup 1200',
           model: 'HALO 1200',
           branchId: null
@@ -1106,8 +1112,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.isDashboardAuthorized.set(true);
 
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-1200-02');
-        app.newSystemSN.set('SN-HYK-1200-02');
+        app.newSystemDeviceCode.set('halo1200-000002');
+        app.newSystemSN.set('2610000002');
         app.newSystemName.set('Distributor Unit 1');
         app.newSystemBranchId.set(''); // Empty branch ID
 
@@ -1124,8 +1130,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
-          deviceCode: 'HALO-1200-02',
-          serialNumber: 'SN-HYK-1200-02',
+          deviceCode: 'halo1200-000002',
+          serialNumber: '2610000002',
           systemName: 'Distributor Unit 1',
           model: null,
           branchId: 5
@@ -1153,8 +1159,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       it('displays backend 400 validation and 409 conflict errors without closing modal', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-1200-DUPE');
-        app.newSystemSN.set('SN-DUPE-01');
+        app.newSystemDeviceCode.set('halo1200-000099');
+        app.newSystemSN.set('2610000099');
         app.newSystemName.set('Duplicate Unit');
 
         // 409 Conflict
@@ -1196,8 +1202,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       it('prevents duplicate submissions while registration request is pending', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-1200-01');
-        app.newSystemSN.set('SN-1200-01');
+        app.newSystemDeviceCode.set('halo1200-000001');
+        app.newSystemSN.set('2610000001');
         app.newSystemName.set('Unit 1');
 
         const pendingSubject = new Subject<any>();
@@ -1455,8 +1461,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     describe('Stale Response & Authentication Recovery', () => {
       it('ignores late registration response after logout', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-100');
-        app.newSystemSN.set('SN-100');
+        app.newSystemDeviceCode.set('halo1200-000100');
+        app.newSystemSN.set('2610000100');
         app.newSystemName.set('Unit 100');
 
         const pendingSubject = new Subject<any>();
@@ -1480,8 +1486,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       it('401 error during registration triggers login recovery', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-100');
-        app.newSystemSN.set('SN-100');
+        app.newSystemDeviceCode.set('halo1200-000100');
+        app.newSystemSN.set('2610000100');
         app.newSystemName.set('Unit 100');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -1507,8 +1513,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.isDashboardAuthorized.set(true);
 
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-200');
-        app.newSystemSN.set('SN-200');
+        app.newSystemDeviceCode.set('halo1200-000200');
+        app.newSystemSN.set('2610000200');
         app.newSystemName.set('Unit 200');
         app.newSystemBranchId.set('1');
 
@@ -1527,8 +1533,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       it('403 error for HYKON_ADMIN displays toast and never opens customer or distributor verification gate', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-300');
-        app.newSystemSN.set('SN-300');
+        app.newSystemDeviceCode.set('halo1200-000300');
+        app.newSystemSN.set('2610000300');
         app.newSystemName.set('Unit 300');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -1545,8 +1551,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       it('uncertain network failure (status 0) shows message asking user to check result before submitting and does not retry', () => {
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('HALO-400');
-        app.newSystemSN.set('SN-400');
+        app.newSystemDeviceCode.set('halo1200-000400');
+        app.newSystemSN.set('2610000400');
         app.newSystemName.set('Unit 400');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -2144,6 +2150,345 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.activeDashboardDevice()).toBe('No device selected');
       expect(app.activeDashboardConnection()).toBe('Not connected');
       expect(app.activeDashboardDataSource()).toBe('Not available');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Six Issues Implementation & Regression Suite
+  // ─────────────────────────────────────────────────────────────────────────────
+  describe('Six Issues Implementation & Regression Suite', () => {
+
+    // ── Issue 1: Serial & Device ID Format Validation ─────────────────────────
+    describe('Issue 1: Serial & Device ID Format Validation', () => {
+      beforeEach(() => {
+        mockAuthService.isAuthenticated.set(true);
+        mockAuthService.currentUser.set({
+          id: 1, name: 'Admin Charlie', email: 'charlie@hykon.com', role: 'HYKON_ADMIN', status: 'ACTIVE'
+        });
+        fixture.detectChanges();
+        app.openAddSystemModal();
+      });
+
+      it('rejects serial numbers that do not match YYMM + 6-digit device number format', () => {
+        app.newSystemDeviceCode.set('halo1200-000001');
+        app.newSystemSN.set('INVALID-SN');
+        app.newSystemName.set('Unit 1');
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+        expect(app.newSystemError()).toContain('Serial number must be in format YYMM + six-digit device number');
+      });
+
+      it('rejects serial numbers with invalid month (e.g. 13 or 00)', () => {
+        app.newSystemDeviceCode.set('halo1200-000001');
+        app.newSystemSN.set('2613000001'); // Month 13
+        app.newSystemName.set('Unit 1');
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+        expect(app.newSystemError()).toContain('Serial number must be in format YYMM + six-digit device number');
+      });
+
+      it('rejects suffix mismatch between Device ID and serial number', () => {
+        app.newSystemDeviceCode.set('halo1200-000002'); // Suffix 000002
+        app.newSystemSN.set('2610000001'); // Suffix 000001
+        app.newSystemName.set('Unit 1');
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+        expect(app.newSystemError()).toContain('must match serial number suffix');
+      });
+
+      it('accepts valid credentials with matching suffixes and model prefix', () => {
+        app.newSystemDeviceCode.set('halo1200-000050');
+        app.newSystemSN.set('2610000050');
+        app.newSystemName.set('Solar Unit 50');
+        app.newSystemModel.set('HALO 1200');
+
+        mockManagementService.registerDevice.mockReturnValue(of({
+          success: true,
+          message: 'Device registered successfully',
+          data: { id: 50, deviceCode: 'halo1200-000050', serialNumber: '2610000050', systemName: 'Solar Unit 50', status: 'ACTIVE' }
+        }));
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
+          deviceCode: 'halo1200-000050',
+          serialNumber: '2610000050',
+          systemName: 'Solar Unit 50',
+          model: 'HALO 1200',
+          branchId: null
+        });
+        expect(app.isAddSystemModalOpen()).toBe(false);
+      });
+    });
+
+    // ── Issue 2: Multi-Customer Access & Email Display ────────────────────────
+    describe('Issue 2: Multi-Customer Access & Email Display', () => {
+      beforeEach(() => {
+        mockAuthService.isAuthenticated.set(true);
+        mockAuthService.currentUser.set({
+          id: 1, name: 'Admin Charlie', email: 'charlie@hykon.com', role: 'HYKON_ADMIN', status: 'ACTIVE'
+        });
+        fixture.detectChanges();
+      });
+
+      it('admin can authorize additional customer for selected device', () => {
+        const deviceData: any = {
+          id: 10,
+          deviceCode: 'halo1200-000010',
+          serialNumber: '2610000010',
+          systemName: 'Halo System',
+          customerEmails: ['owner@test.com']
+        };
+        app.selectedDevice.set(deviceData);
+        app.newCustomerEmail.set('second@test.com');
+
+        mockManagementService.authorizeDeviceCustomer.mockReturnValue(of({
+          success: true,
+          data: { ...deviceData, customerEmails: ['owner@test.com', 'second@test.com'] }
+        }));
+
+        app.authorizeCustomerForSelectedDevice();
+
+        expect(mockManagementService.authorizeDeviceCustomer).toHaveBeenCalledWith(10, 'second@test.com');
+        expect(app.selectedDevice()?.customerEmails).toEqual(['owner@test.com', 'second@test.com']);
+        expect(app.customerActionSuccess()).toContain('authorized successfully');
+        expect(app.newCustomerEmail()).toBe('');
+      });
+
+      it('blocks authorizing more than 3 customers on client side', () => {
+        const deviceData: any = {
+          id: 10,
+          deviceCode: 'halo1200-000010',
+          serialNumber: '2610000010',
+          systemName: 'Halo System',
+          customerEmails: ['owner@test.com', 'c2@test.com', 'c3@test.com']
+        };
+        app.selectedDevice.set(deviceData);
+        app.newCustomerEmail.set('c4@test.com');
+
+        app.authorizeCustomerForSelectedDevice();
+
+        expect(mockManagementService.authorizeDeviceCustomer).not.toHaveBeenCalled();
+        expect(app.customerActionError()).toContain('Maximum of 3 authorized customers reached');
+      });
+
+      it('admin can remove customer from selected device', () => {
+        const deviceData: any = {
+          id: 10,
+          deviceCode: 'halo1200-000010',
+          serialNumber: '2610000010',
+          systemName: 'Halo System',
+          customerEmails: ['owner@test.com', 'second@test.com']
+        };
+        app.selectedDevice.set(deviceData);
+
+        mockManagementService.removeDeviceCustomer.mockReturnValue(of({
+          success: true,
+          data: { ...deviceData, customerEmails: ['owner@test.com'] }
+        }));
+
+        app.removeCustomerFromSelectedDevice('second@test.com');
+
+        expect(mockManagementService.removeDeviceCustomer).toHaveBeenCalledWith(10, 'second@test.com');
+        expect(app.selectedDevice()?.customerEmails).toEqual(['owner@test.com']);
+        expect(app.customerActionSuccess()).toContain('removed successfully');
+      });
+    });
+
+    // ── Issue 3: Distributor Name / Branch Name / Location Gate ───────────────
+    describe('Issue 3: Distributor Name / Branch Name / Location Gate', () => {
+      beforeEach(() => {
+        mockAuthService.isAuthenticated.set(true);
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Bob Dist', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+        fixture.detectChanges();
+        app.isDeviceAuthModalOpen.set(true);
+      });
+
+      it('sends distributorName, branchName, and location on verification', () => {
+        app.distributorName.set('  Hykon South  ');
+        app.branchName.set('  Kochi Branch  ');
+        app.distributorLocation.set('  Ernakulam  ');
+
+        mockDeviceAccessService.verifyDistributor.mockReturnValue(of({
+          success: true,
+          message: 'Verified',
+          data: { distributorId: 1, distributorName: 'Hykon South', branchName: 'Kochi Branch', location: 'Ernakulam' }
+        }));
+
+        app.verifyDistributorCredentials();
+
+        expect(mockDeviceAccessService.verifyDistributor).toHaveBeenCalledWith(
+          expect.objectContaining({
+            distributorName: 'Hykon South',
+            branchName: 'Kochi Branch',
+            location: 'Ernakulam'
+          })
+        );
+        expect(app.isDashboardOpen()).toBe(true);
+      });
+
+      it('rejects verification if distributor name or branch name is blank', () => {
+        app.distributorName.set('');
+        app.branchName.set('Branch');
+        app.distributorLocation.set('Kochi');
+
+        app.verifyDistributorCredentials();
+
+        expect(mockDeviceAccessService.verifyDistributor).not.toHaveBeenCalled();
+        expect(app.authErrorMessage()).toContain('Please enter Distributor Name');
+      });
+    });
+
+    // ── Issue 4: Overview Count on First Entry & Stale Responses ──────────────
+    describe('Issue 4: Overview Count on First Entry & Stale Responses', () => {
+      beforeEach(() => {
+        mockAuthService.isAuthenticated.set(true);
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Bob Dist', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+        fixture.detectChanges();
+      });
+
+      it('displays "—" while loading overview count on first entry', () => {
+        app.systemRecordsService.isOverviewLoading.set(true);
+        expect(app.totalSystemsCount()).toBe('—');
+      });
+
+      it('loadOverviewDevices updates totalElements immediately', () => {
+        mockDeviceAccessService.listDevices.mockReturnValue(of({
+          success: true,
+          message: 'OK',
+          data: { content: [], totalElements: 15, totalPages: 2, size: 10, number: 0, first: true, last: false }
+        }));
+
+        app.loadOverviewDevices();
+
+        expect(app.systemRecordsService.isOverviewLoaded()).toBe(true);
+        expect(app.systemRecordsService.isOverviewLoading()).toBe(false);
+        expect(app.totalSystemsCount()).toBe(15);
+      });
+
+      it('ignores stale overview count response if user logs out while request is pending', () => {
+        const pending$ = new Subject<any>();
+        mockDeviceAccessService.listDevices.mockReturnValue(pending$.asObservable());
+
+        app.loadOverviewDevices();
+        expect(app.systemRecordsService.isOverviewLoading()).toBe(true);
+
+        // User logs out while request is in-flight
+        app.onLogout();
+        mockAuthService.clearSession();
+        fixture.detectChanges();
+
+        // Late response arrives
+        pending$.next({
+          success: true,
+          data: { content: [], totalElements: 99 }
+        });
+        pending$.complete();
+
+        // Count should have been reset on logout to 0, not overwritten by late response
+        expect(app.isDashboardOpen()).toBe(false);
+      });
+    });
+
+    // ── Issue 5: Real Distributor Directory for HYKON_ADMIN ───────────────────
+    describe('Issue 5: Real Distributor Directory Hierarchy', () => {
+      beforeEach(() => {
+        mockAuthService.isAuthenticated.set(true);
+        mockAuthService.currentUser.set({
+          id: 1, name: 'Admin Charlie', email: 'charlie@hykon.com', role: 'HYKON_ADMIN', status: 'ACTIVE'
+        });
+        fixture.detectChanges();
+      });
+
+      it('loads real distributor hierarchy on Accounts tab for HYKON_ADMIN', () => {
+        const mockDirectory = [
+          {
+            id: 1,
+            distributorCode: 'DIST-1',
+            name: 'Hykon West',
+            status: 'ACTIVE',
+            administrator: { id: 10, name: 'Bob', email: 'bob@dist.com', status: 'ACTIVE' },
+            branches: [
+              {
+                id: 100,
+                branchCode: 'BR-1',
+                name: 'Main Branch',
+                location: 'Kochi',
+                status: 'ACTIVE',
+                devices: [
+                  { id: 50, deviceCode: 'halo1200-000050', serialNumber: '2610000050', systemName: 'Halo 1200', customerEmails: ['client@test.com'] }
+                ]
+              }
+            ]
+          }
+        ];
+
+        mockManagementService.getDistributorDirectory.mockReturnValue(of({
+          success: true,
+          message: 'OK',
+          data: mockDirectory
+        }));
+
+        app.loadDistributorDirectory();
+
+        expect(mockManagementService.getDistributorDirectory).toHaveBeenCalled();
+        expect(app.distributorDirectory().length).toBe(1);
+        expect(app.distributorDirectory()[0].name).toBe('Hykon West');
+        expect(app.distributorDirectory()[0].branches[0].devices[0].customerEmails).toEqual(['client@test.com']);
+      });
+
+      it('non-HYKON_ADMIN cannot load distributor directory', () => {
+        mockAuthService.currentUser.set({
+          id: 2, name: 'Dist Bob', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+        });
+
+        app.loadDistributorDirectory();
+
+        expect(mockManagementService.getDistributorDirectory).not.toHaveBeenCalled();
+      });
+    });
+
+    // ── Issue 6: Clear Login Form on Logout ───────────────────────────────────
+    describe('Issue 6: Clear Login Form on Logout', () => {
+      it('clears login email, password, and error signals on logout', () => {
+        app.loginEmail.set('user@test.com');
+        app.loginPassword.set('SecretPass123!');
+        app.authError.set('Invalid credentials');
+        app.emailError.set('Bad email');
+
+        app.onLogout();
+        mockAuthService.clearSession();
+
+        expect(app.loginEmail()).toBe('');
+        expect(app.loginPassword()).toBe('');
+        expect(app.authError()).toBe('');
+        expect(app.emailError()).toBe('');
+      });
+
+      it('clearDashboardAndGateState wipes login form and resets modals', () => {
+        app.loginEmail.set('stale@test.com');
+        app.loginPassword.set('stalePassword');
+        app.distributorName.set('Stale Name');
+        app.newCustomerEmail.set('stale@cust.com');
+
+        app.clearDashboardAndGateState();
+
+        expect(app.loginEmail()).toBe('');
+        expect(app.loginPassword()).toBe('');
+        expect(app.distributorName()).toBe('');
+        expect(app.newCustomerEmail()).toBe('');
+        expect(app.isDashboardOpen()).toBe(false);
+      });
     });
   });
 });

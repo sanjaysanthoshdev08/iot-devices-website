@@ -93,13 +93,18 @@ public class DeviceRegistrationService {
             }
         }
 
-        String deviceCode = requiredText(
+        String rawDeviceCode = requiredText(
                 request.getDeviceCode(), "Device ID"
-        ).toUpperCase(Locale.ROOT);
+        );
 
-        String serialNumber = requiredText(
+        String rawSerialNumber = requiredText(
                 request.getSerialNumber(), "Serial number"
-        ).toUpperCase(Locale.ROOT);
+        );
+
+        validateDeviceCredentialsFormat(rawDeviceCode, rawSerialNumber);
+
+        String deviceCode = rawDeviceCode.trim();
+        String serialNumber = rawSerialNumber.trim();
 
         String systemName = requiredText(
                 request.getSystemName(), "System name"
@@ -137,6 +142,65 @@ public class DeviceRegistrationService {
         catch (DataIntegrityViolationException exception) {
             throw new DuplicateResourceException(
                     "Device details conflict with an existing database record"
+            );
+        }
+    }
+
+    public static void validateDeviceCredentialsFormat(String deviceCode, String serialNumber) {
+        if (deviceCode == null || deviceCode.isBlank()) {
+            throw new IllegalArgumentException("Device ID is required");
+        }
+        if (serialNumber == null || serialNumber.isBlank()) {
+            throw new IllegalArgumentException("Serial number is required");
+        }
+
+        String dCode = deviceCode.trim();
+        String sNum = serialNumber.trim();
+
+        // 1. Validate serial number: YY + MM + 6-digit device number (exactly 10 digits)
+        if (!sNum.matches("^\\d{10}$")) {
+            throw new IllegalArgumentException(
+                    "Serial number must be 10 digits in format YYMM + 6-digit device number (e.g. 2610000001)"
+            );
+        }
+        int month = Integer.parseInt(sNum.substring(2, 4));
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException(
+                    "Serial number month must be between 01 and 12"
+            );
+        }
+        String serialSuffix = sNum.substring(4, 10);
+        int serialDeviceNumber = Integer.parseInt(serialSuffix);
+        if (serialDeviceNumber < 1 || serialDeviceNumber > 100000) {
+            throw new IllegalArgumentException(
+                    "Device number must be between 000001 and 100000"
+            );
+        }
+
+        // 2. Validate Device ID: <model>-<6-digit device number>
+        int lastHyphen = dCode.lastIndexOf('-');
+        if (lastHyphen <= 0 || lastHyphen == dCode.length() - 1) {
+            throw new IllegalArgumentException(
+                    "Device ID must follow format <model>-<6-digit device number> (e.g. halo1200-000001)"
+            );
+        }
+        String deviceCodeSuffix = dCode.substring(lastHyphen + 1);
+        if (!deviceCodeSuffix.matches("^\\d{6}$")) {
+            throw new IllegalArgumentException(
+                    "Device ID suffix must be exactly 6 digits (e.g. halo1200-000001)"
+            );
+        }
+        int deviceCodeNum = Integer.parseInt(deviceCodeSuffix);
+        if (deviceCodeNum < 1 || deviceCodeNum > 100000) {
+            throw new IllegalArgumentException(
+                    "Device ID number must be between 000001 and 100000"
+            );
+        }
+
+        // 3. Ensure numeric suffix matches between Device ID and serial number
+        if (!deviceCodeSuffix.equals(serialSuffix)) {
+            throw new IllegalArgumentException(
+                    "Device ID numeric suffix (" + deviceCodeSuffix + ") and serial number suffix (" + serialSuffix + ") must match"
             );
         }
     }

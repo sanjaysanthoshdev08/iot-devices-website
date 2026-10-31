@@ -51,39 +51,78 @@ public class DistributorAccessService {
             throw forbidden();
         }
 
-        if (request == null
-                || isBlank(request.getDistributorCode())
-                || isBlank(request.getBranchCode())
-                || isBlank(request.getLocation())) {
+        if (request == null || isBlank(request.getLocation())) {
             throw verificationFailed();
+        }
+
+        // Check for blank code in code mode
+        if (isBlank(request.getDistributorCode()) || isBlank(request.getBranchCode())) {
+            // But if name mode is present and valid, allow it
+            if (isBlank(request.getDistributorName()) || isBlank(request.getBranchName())) {
+                throw verificationFailed();
+            }
         }
 
         Distributor distributor = distributorRepository
                 .findByAdministrator_Id(administrator.getId())
                 .orElseThrow(this::verificationFailed);
 
-        if (!"ACTIVE".equalsIgnoreCase(distributor.getStatus())
-                || !matches(
-                        distributor.getDistributorCode(),
-                        request.getDistributorCode()
-                )) {
+        if (!"ACTIVE".equalsIgnoreCase(distributor.getStatus())) {
             throw verificationFailed();
         }
 
-        DistributorBranch branch = branchRepository
-                .findByDistributorAndCode(
-                        distributor.getId(),
-                        request.getBranchCode().trim()
-                )
-                .orElseThrow(this::verificationFailed);
+        DistributorBranch branch;
+
+        boolean isNameMode = !isBlank(request.getDistributorName()) && !isBlank(request.getBranchName());
+
+        if (isNameMode) {
+            if (!matches(distributor.getName(), request.getDistributorName())) {
+                throw verificationFailed();
+            }
+
+            java.util.List<DistributorBranch> matchingBranches = branchRepository
+                    .findByDistributorAndNameAndLocation(
+                            distributor.getId(),
+                            request.getBranchName().trim(),
+                            request.getLocation().trim()
+                    );
+
+            if (matchingBranches.isEmpty()) {
+                throw verificationFailed();
+            }
+
+            // Reject ambiguous matches safely
+            if (matchingBranches.size() > 1) {
+                throw verificationFailed();
+            }
+
+            branch = matchingBranches.get(0);
+        } else {
+            if (!matches(
+                    distributor.getDistributorCode(),
+                    request.getDistributorCode()
+            )) {
+                throw verificationFailed();
+            }
+
+            branch = branchRepository
+                    .findByDistributorAndCode(
+                            distributor.getId(),
+                            request.getBranchCode().trim()
+                    )
+                    .orElseThrow(this::verificationFailed);
+
+            if (!matches(branch.getLocation(), request.getLocation())) {
+                throw verificationFailed();
+            }
+        }
 
         if (!"ACTIVE".equalsIgnoreCase(branch.getStatus())
                 || branch.getDistributor() == null
                 || distributor.getId() == null
                 || !distributor.getId().equals(
                         branch.getDistributor().getId()
-                )
-                || !matches(branch.getLocation(), request.getLocation())) {
+                )) {
             throw verificationFailed();
         }
 

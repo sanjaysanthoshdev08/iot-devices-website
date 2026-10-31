@@ -38,6 +38,9 @@ class SessionAccessPolicyServiceTest {
     @Mock
     private SessionAccessGrantRepository grantRepository;
 
+    @Mock
+    private DeviceCustomerAccessRepository customerAccessRepository;
+
     @InjectMocks
     private SessionAccessPolicyService service;
 

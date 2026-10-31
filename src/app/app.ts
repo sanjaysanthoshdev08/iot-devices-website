@@ -5,7 +5,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
-import { ManagementService } from './services/management.service';
+import { ManagementService, DirectoryDistributor } from './services/management.service';
 import { SystemRecordsService, SystemStatus } from './services/system-records.service';
 import { AccountsService, AccountRecord, AccountGroup, AccountUserType, AccountActiveStatus, AccountStatus } from './services/accounts.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -147,11 +147,23 @@ export class App implements AfterViewInit, OnDestroy {
   authSerialNumber = signal<string>('');
   distributorCode = signal<string>('');
   branchCode = signal<string>('');
+  distributorName = signal<string>('');
+  branchName = signal<string>('');
   distributorLocation = signal<string>('');
   authErrorMessage = signal<string>('');
   authSuccessMessage = signal<string>('');
   isAuthVerifying = signal<boolean>(false);
   selectedFeatureBox = signal<string>('');
+
+  // ===== CUSTOMER ACCESS & DIRECTORY SIGNALS (Issues 2 & 5) =====
+  newCustomerEmail = signal<string>('');
+  customerActionError = signal<string>('');
+  customerActionSuccess = signal<string>('');
+  isCustomerActionSubmitting = signal<boolean>(false);
+
+  distributorDirectory = signal<DirectoryDistributor[]>([]);
+  isDirectoryLoading = signal<boolean>(false);
+  directoryError = signal<string>('');
 
   // ===== DASHBOARD MODAL / PAGE STATE =====
   isDashboardOpen = signal<boolean>(false);
@@ -404,35 +416,35 @@ export class App implements AfterViewInit, OnDestroy {
   verifyDistributorCredentials() {
     if (this.isAuthVerifying()) return;
 
-    const distCode = this.distributorCode().trim();
-    const bCode = this.branchCode().trim();
+    const distName = (this.distributorName() || this.distributorCode()).trim();
+    const bName = (this.branchName() || this.branchCode()).trim();
     const loc = this.distributorLocation().trim();
 
     this.authErrorMessage.set('');
     this.authSuccessMessage.set('');
 
-    if (!distCode && !bCode && !loc) {
-      this.authErrorMessage.set('Please enter Distributor Code, Branch Code, and Location.');
+    if (!distName && !bName && !loc) {
+      this.authErrorMessage.set('Please enter Distributor Name, Branch Name, and Location.');
       return;
     }
-    if (!distCode) {
-      this.authErrorMessage.set('Please enter Distributor Code.');
+    if (!distName) {
+      this.authErrorMessage.set('Please enter Distributor Name.');
       return;
     }
-    if (!bCode) {
-      this.authErrorMessage.set('Please enter Branch Code.');
+    if (!bName) {
+      this.authErrorMessage.set('Please enter Branch Name.');
       return;
     }
     if (!loc) {
       this.authErrorMessage.set('Please enter Location.');
       return;
     }
-    if (distCode.length > 100) {
-      this.authErrorMessage.set('Distributor code must not exceed 100 characters.');
+    if (distName.length > 150) {
+      this.authErrorMessage.set('Distributor name must not exceed 150 characters.');
       return;
     }
-    if (bCode.length > 100) {
-      this.authErrorMessage.set('Branch code must not exceed 100 characters.');
+    if (bName.length > 150) {
+      this.authErrorMessage.set('Branch name must not exceed 150 characters.');
       return;
     }
     if (loc.length > 150) {
@@ -444,9 +456,11 @@ export class App implements AfterViewInit, OnDestroy {
     this.isAuthVerifying.set(true);
 
     this.deviceAccessService.verifyDistributor({
-      distributorCode: distCode,
-      branchCode: bCode,
-      location: loc
+      distributorName: distName,
+      branchName: bName,
+      location: loc,
+      distributorCode: distName,
+      branchCode: bName
     }).subscribe({
       next: () => {
         if (currentReq !== this.navigationRequestId || !this.isAuthenticated() || !this.isDeviceAuthModalOpen()) {
@@ -455,9 +469,11 @@ export class App implements AfterViewInit, OnDestroy {
 
         this.isAuthVerifying.set(false);
         this.isDashboardAuthorized.set(true);
-
-        // verifyDistributor returns void success; totalElements populated on first Systems load.
         this.isDeviceAuthModalOpen.set(false);
+
+        // Issue 4: Immediately load real device count without requiring a visit to Systems
+        this.loadOverviewDevices();
+
         this.renderDashboard('overview');
       },
       error: (err: HttpErrorResponse) => {
@@ -468,9 +484,99 @@ export class App implements AfterViewInit, OnDestroy {
           this.authErrorMessage.set('Too many verification attempts. Temporary lockout in effect. Please try again later.');
         } else {
           const body = err?.error;
-          const msg = body?.message || body?.errors?.distributorCode || body?.errors?.branchCode || body?.errors?.location || 'Distributor verification failed. Please check credentials and try again.';
+          const msg = body?.message || body?.errors?.distributorName || body?.errors?.branchName || body?.errors?.location || body?.errors?.distributorCode || body?.errors?.branchCode || 'Distributor verification failed. Please check credentials and try again.';
           this.authErrorMessage.set(msg);
         }
+      }
+    });
+  }
+
+  loadOverviewDevices() {
+    this.systemRecordsService.isOverviewLoading.set(true);
+    this.systemRecordsService.isOverviewError.set('');
+    this.deviceAccessService.listDevices(0, 1).subscribe({
+      next: (res) => {
+        const total = res.data?.totalElements ?? 0;
+        this.systemRecordsService.setOverviewCount(total);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.systemRecordsService.setOverviewError(this.extractErrorMessage(err, 'Unable to load registered device count.'));
+      }
+    });
+  }
+
+  retryLoadOverviewDevices() {
+    this.loadOverviewDevices();
+  }
+
+  loadDistributorDirectory() {
+    if (this.currentRole() !== 'HYKON_ADMIN') return;
+    this.isDirectoryLoading.set(true);
+    this.directoryError.set('');
+    this.managementService.getDistributorDirectory().subscribe({
+      next: (res) => {
+        this.isDirectoryLoading.set(false);
+        this.distributorDirectory.set(res.data || []);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isDirectoryLoading.set(false);
+        this.directoryError.set(this.extractErrorMessage(err, 'Failed to load distributor directory.'));
+      }
+    });
+  }
+
+  authorizeCustomerForSelectedDevice() {
+    const dev = this.selectedDevice();
+    if (!dev) return;
+    const email = this.newCustomerEmail().trim().toLowerCase();
+    this.customerActionError.set('');
+    this.customerActionSuccess.set('');
+
+    if (!email) {
+      this.customerActionError.set('Please enter a customer email address.');
+      return;
+    }
+    if (!email.includes('@')) {
+      this.customerActionError.set('Please enter a valid email address.');
+      return;
+    }
+    if (dev.customerEmails && dev.customerEmails.length >= 3) {
+      this.customerActionError.set('Maximum of 3 authorized customers reached for this device.');
+      return;
+    }
+
+    this.isCustomerActionSubmitting.set(true);
+    this.managementService.authorizeDeviceCustomer(dev.id, email).subscribe({
+      next: (res) => {
+        this.isCustomerActionSubmitting.set(false);
+        this.newCustomerEmail.set('');
+        this.customerActionSuccess.set(`Customer ${email} authorized successfully.`);
+        this.selectedDevice.set(res.data);
+        this.loadSystems(this.currentPage());
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isCustomerActionSubmitting.set(false);
+        this.customerActionError.set(this.extractErrorMessage(err, 'Failed to authorize customer.'));
+      }
+    });
+  }
+
+  removeCustomerFromSelectedDevice(customerUserId: number | string) {
+    const dev = this.selectedDevice();
+    if (!dev) return;
+    this.customerActionError.set('');
+    this.customerActionSuccess.set('');
+    this.isCustomerActionSubmitting.set(true);
+    this.managementService.removeDeviceCustomer(dev.id, customerUserId).subscribe({
+      next: (res) => {
+        this.isCustomerActionSubmitting.set(false);
+        this.customerActionSuccess.set('Customer access removed successfully.');
+        this.selectedDevice.set(res.data);
+        this.loadSystems(this.currentPage());
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isCustomerActionSubmitting.set(false);
+        this.customerActionError.set(this.extractErrorMessage(err, 'Failed to remove customer access.'));
       }
     });
   }
@@ -507,11 +613,32 @@ export class App implements AfterViewInit, OnDestroy {
     this.authSerialNumber.set('');
     this.distributorCode.set('');
     this.branchCode.set('');
+    this.distributorName.set('');
+    this.branchName.set('');
     this.distributorLocation.set('');
     this.authErrorMessage.set('');
     this.authSuccessMessage.set('');
     this.isAuthVerifying.set(false);
     this.dashboardRetryAction.set(null);
+
+    // Issue 6: Clear login/signup form state and validation errors
+    this.loginEmail.set('');
+    this.loginPassword.set('');
+    this.loginName.set('');
+    this.loginConfirmPassword.set('');
+    this.authError.set('');
+    this.authSuccess.set('');
+    this.emailError.set('');
+    this.passwordError.set('');
+    this.nameError.set('');
+    this.confirmPasswordError.set('');
+
+    // Customer action & directory state
+    this.newCustomerEmail.set('');
+    this.customerActionError.set('');
+    this.customerActionSuccess.set('');
+    this.directoryError.set('');
+    this.distributorDirectory.set([]);
 
     // Clear sensitive registration/provisioning form states
     this.distAdminPassword.set('');
@@ -706,6 +833,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.updateDashboardScale();
     if (targetTab === 'systems') {
       this.loadSystems(0);
+    } else if (targetTab === 'accounts' && this.currentRole() === 'HYKON_ADMIN') {
+      this.loadDistributorDirectory();
+    } else if (targetTab === 'overview' && !this.systemRecordsService.isOverviewLoaded()) {
+      this.loadOverviewDevices();
     }
     if (isPlatformBrowser(this.platformId)) {
       const targetPath = targetTab === 'systems' ? '/systems' : '/dashboard';
@@ -782,6 +913,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.activeDashboardNav.set(tab);
     if (tab === 'systems') {
       this.loadSystems(0);
+    } else if (tab === 'accounts' && this.currentRole() === 'HYKON_ADMIN') {
+      this.loadDistributorDirectory();
+    } else if (tab === 'overview' && !this.systemRecordsService.isOverviewLoaded()) {
+      this.loadOverviewDevices();
     }
     if (isPlatformBrowser(this.platformId)) {
       if (tab === 'systems') {
@@ -1110,6 +1245,31 @@ export class App implements AfterViewInit, OnDestroy {
     }
     if (serialNumber.length > 150) {
       this.newSystemError.set('Serial number must not exceed 150 characters.');
+      return;
+    }
+
+    // Issue 1: Serial number (YYMM + 6-digit device number) and Device ID (<model>-<6-digit>) validation
+    const serialRegex = /^(\d{2})(0[1-9]|1[0-2])(\d{6})$/;
+    const serialMatch = serialNumber.match(serialRegex);
+    if (!serialMatch) {
+      this.newSystemError.set('Serial number must be in format YYMM + six-digit device number (month 01-12, device 000001-100000, e.g. 2610000001).');
+      return;
+    }
+    const serialDevNum = parseInt(serialMatch[3], 10);
+    if (serialDevNum < 1 || serialDevNum > 100000) {
+      this.newSystemError.set('Serial number device number must be between 000001 and 100000.');
+      return;
+    }
+
+    const deviceIdRegex = /^[a-zA-Z0-9]+-(\d{6})$/;
+    const deviceIdMatch = deviceCode.match(deviceIdRegex);
+    if (!deviceIdMatch) {
+      this.newSystemError.set('Device ID must be in format <model>-<six-digit device number> (e.g. halo1200-000001).');
+      return;
+    }
+
+    if (deviceIdMatch[1] !== serialMatch[3]) {
+      this.newSystemError.set(`Device ID number suffix (${deviceIdMatch[1]}) must match serial number suffix (${serialMatch[3]}).`);
       return;
     }
     if (!systemName) {

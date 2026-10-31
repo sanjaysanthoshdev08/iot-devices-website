@@ -3,15 +3,18 @@ package com.hykon.iot_backend.service;
 import com.hykon.iot_backend.dto.ClaimDeviceRequest;
 import com.hykon.iot_backend.dto.DeviceResponse;
 import com.hykon.iot_backend.entity.*;
+import com.hykon.iot_backend.repository.DeviceCustomerAccessRepository;
 import com.hykon.iot_backend.repository.DevicePurchaseRepository;
 import com.hykon.iot_backend.repository.DeviceRepository;
 import com.hykon.iot_backend.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class DeviceClaimService {
@@ -19,15 +22,19 @@ public class DeviceClaimService {
     private final UserRepository userRepository;
     private final DeviceRepository deviceRepository;
     private final DevicePurchaseRepository purchaseRepository;
+    private final DeviceCustomerAccessRepository customerAccessRepository;
 
+    @Autowired
     public DeviceClaimService(
             UserRepository userRepository,
             DeviceRepository deviceRepository,
-            DevicePurchaseRepository purchaseRepository
+            DevicePurchaseRepository purchaseRepository,
+            DeviceCustomerAccessRepository customerAccessRepository
     ) {
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.purchaseRepository = purchaseRepository;
+        this.customerAccessRepository = customerAccessRepository;
     }
 
     @Transactional
@@ -79,11 +86,18 @@ public class DeviceClaimService {
             throw verificationFailed();
         }
 
-        if (device.getOwner() != null
-                && !customer.getId().equals(device.getOwner().getId())) {
+        // 1. Check if customer is already authorized in access table (idempotent repeated verification)
+        if (customerAccessRepository.existsByDeviceIdAndCustomerId(device.getId(), customer.getId())) {
+            List<String> emails = getCustomerEmails(device.getId(), customer);
+            return DeviceResponse.from(device, emails);
+        }
+
+        // If device is already owned by another customer, reject immediately before querying purchase
+        if (device.getOwner() != null && !customer.getId().equals(device.getOwner().getId())) {
             throw verificationFailed();
         }
 
+        // 2. Check recorded purchase for primary owner claim
         DevicePurchase purchase = purchaseRepository.findByDeviceIdForUpdate(
                 device.getId()
         ).orElseThrow(this::verificationFailed);
@@ -94,12 +108,22 @@ public class DeviceClaimService {
         }
 
         if (device.getOwner() != null) {
+            if (!customer.getId().equals(device.getOwner().getId())) {
+                throw verificationFailed();
+            }
+
             if (!"CLAIMED".equals(purchase.getStatus())
                     || purchase.getClaimedAt() == null) {
                 throw verificationFailed();
             }
 
-            return DeviceResponse.from(device);
+            if (customerAccessRepository != null && !customerAccessRepository.existsByDeviceIdAndCustomerId(device.getId(), customer.getId())) {
+                DeviceCustomerAccess access = new DeviceCustomerAccess(device, customer, true, customer);
+                customerAccessRepository.saveAndFlush(access);
+            }
+
+            List<String> emails = getCustomerEmails(device.getId(), customer);
+            return DeviceResponse.from(device, emails);
         }
 
         if (!"ELIGIBLE".equals(purchase.getStatus())
@@ -114,7 +138,23 @@ public class DeviceClaimService {
         Device savedDevice = deviceRepository.saveAndFlush(device);
         purchaseRepository.saveAndFlush(purchase);
 
-        return DeviceResponse.from(savedDevice);
+        if (customerAccessRepository != null) {
+            DeviceCustomerAccess access = new DeviceCustomerAccess(savedDevice, customer, true, customer);
+            customerAccessRepository.saveAndFlush(access);
+        }
+
+        List<String> emails = getCustomerEmails(savedDevice.getId(), customer);
+        return DeviceResponse.from(savedDevice, emails);
+    }
+
+    private List<String> getCustomerEmails(Long deviceId, User defaultCustomer) {
+        List<DeviceCustomerAccess> accesses = customerAccessRepository.findByDeviceIdWithCustomer(deviceId);
+        if (!accesses.isEmpty()) {
+            return accesses.stream().map(a -> a.getCustomer().getEmail()).toList();
+        }
+        return defaultCustomer != null && defaultCustomer.getEmail() != null
+                ? List.of(defaultCustomer.getEmail())
+                : List.of();
     }
 
     private IllegalArgumentException verificationFailed() {

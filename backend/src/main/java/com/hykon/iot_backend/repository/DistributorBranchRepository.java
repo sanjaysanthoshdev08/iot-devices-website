@@ -13,6 +13,10 @@ public interface DistributorBranchRepository
 
     List<DistributorBranch> findByDistributor_Id(Long distributorId);
 
+    org.springframework.data.domain.Page<DistributorBranch> findByDistributor_Id(Long distributorId, org.springframework.data.domain.Pageable pageable);
+
+    List<DistributorBranch> findByDistributor_IdIn(List<Long> distributorIds);
+
     Optional<DistributorBranch> findByIdAndDistributor_Id(
             Long branchId,
             Long distributorId
@@ -27,5 +31,18 @@ public interface DistributorBranchRepository
     Optional<DistributorBranch> findByDistributorAndCode(
             @Param("distributorId") Long distributorId,
             @Param("branchCode") String branchCode
+    );
+
+    @Query("""
+            SELECT b
+            FROM DistributorBranch b
+            WHERE b.distributor.id = :distributorId
+              AND LOWER(TRIM(b.name)) = LOWER(TRIM(:branchName))
+              AND LOWER(TRIM(b.location)) = LOWER(TRIM(:location))
+            """)
+    List<DistributorBranch> findByDistributorAndNameAndLocation(
+            @Param("distributorId") Long distributorId,
+            @Param("branchName") String branchName,
+            @Param("location") String location
     );
 }

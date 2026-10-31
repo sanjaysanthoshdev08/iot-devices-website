@@ -7822,6 +7822,22 @@
   padding: 24px;
 }
 
+/* Narrowly-scoped fix: provisioning-card action-card icon SVGs */
+.pcard-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #38bdf8;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 .acct-unavailable-banner {
   display: flex;
   align-items: flex-start;
