@@ -2,10 +2,14 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
+  EMPTY,
   Observable,
   catchError,
+  defer,
   finalize,
-  tap,
+  mergeMap,
+  of,
+  shareReplay,
   throwError,
 } from 'rxjs';
 
@@ -87,20 +91,20 @@ const STORAGE_KEY = 'hykon_auth_session';
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-
-  // Authentication state
   private readonly accessTokenState = signal<string | null>(null);
   private refreshTokenValue: string | null = null;
-
-  // Public, read-only authentication state for Angular components.
   private readonly currentUserState = signal<AuthUser | null>(null);
 
-  readonly currentUser = this.currentUserState.asReadonly();
+  // Changes only at login/logout/session termination, not token rotation.
+  private sessionVersion = 0;
+  private refreshInProgress$: Observable<
+    ApiResponse<RefreshTokenResponse>
+  > | null = null;
 
+  readonly currentUser = this.currentUserState.asReadonly();
   readonly isAuthenticated = computed(
     () => this.accessTokenState() !== null
   );
-
   readonly userRole = computed(
     () => this.currentUserState()?.role ?? null
   );
@@ -109,97 +113,122 @@ export class AuthService {
     this.restoreSessionFromStorage();
   }
 
-  // Read the current access token when making protected API requests.
   getAccessToken(): string | null {
     return this.accessTokenState();
   }
 
-  // Existing Signup API — behavior preserved.
+  getSessionVersion(): number {
+    return this.sessionVersion;
+  }
+
+  isCurrentSession(version: number): boolean {
+    return version === this.sessionVersion;
+  }
+
   register(
     request: RegisterRequest
   ): Observable<ApiResponse<RegisterResponse>> {
     return this.http.post<ApiResponse<RegisterResponse>>(
-      `${API_BASE_URL}/register`,
-      request
+      `${API_BASE_URL}/register`, request
     );
   }
 
-  // Existing Login API, now also initializes authentication state.
-  login(
-    request: LoginRequest
-  ): Observable<ApiResponse<LoginResponse>> {
-    return this.http
-      .post<ApiResponse<LoginResponse>>(
-        `${API_BASE_URL}/login`,
-        request
-      )
-      .pipe(
-        tap((response) => {
+  login(request: LoginRequest): Observable<ApiResponse<LoginResponse>> {
+    return defer(() => {
+      // Invalidate older login/refresh requests, including the same account.
+      this.clearSession();
+      const version = this.sessionVersion;
+
+      return this.http.post<ApiResponse<LoginResponse>>(
+        `${API_BASE_URL}/login`, request
+      ).pipe(
+        mergeMap(response => {
+          if (!this.isCurrentSession(version)) return EMPTY;
           this.setSession(response.data);
+          return of(response);
         })
       );
+    });
   }
 
-  // Exchange the current refresh token for rotated tokens.
   refreshSession(): Observable<ApiResponse<RefreshTokenResponse>> {
-    const refreshToken = this.refreshTokenValue;
+    return defer(() => {
+      if (this.refreshInProgress$) {
+        return this.refreshInProgress$;
+      }
 
-    if (!refreshToken) {
-      this.clearSession();
+      const refreshToken = this.refreshTokenValue;
+      if (!refreshToken) {
+        this.clearSession();
+        return throwError(
+          () => new Error('Please log in again.')
+        );
+      }
 
-      return throwError(
-        () => new Error('No refresh token is available. Please log in again.')
-      );
-    }
+      const version = this.sessionVersion;
+      let sharedRequest$: Observable<ApiResponse<RefreshTokenResponse>>;
 
-    return this.http
-      .post<ApiResponse<RefreshTokenResponse>>(
-        `${API_BASE_URL}/refresh`,
-        { refreshToken }
-      )
-      .pipe(
-        tap((response) => {
-          // Store the newly issued tokens after successful rotation.
+      sharedRequest$ = this.http.post<ApiResponse<RefreshTokenResponse>>(
+        `${API_BASE_URL}/refresh`, { refreshToken }
+      ).pipe(
+        mergeMap(response => {
+          if (!this.isCurrentSession(version)) return EMPTY;
+
+          if (!response.data?.accessToken ||
+              !response.data?.refreshToken) {
+            return throwError(
+              () => new Error('Invalid refresh response.')
+            );
+          }
+
           this.accessTokenState.set(response.data.accessToken);
           this.refreshTokenValue = response.data.refreshToken;
           this.persistSession();
+          return of(response);
         }),
         catchError((error: unknown) => {
-          // A failed refresh requires the user to authenticate again.
+          // An old refresh failure must not clear a newer login.
+          if (!this.isCurrentSession(version)) return EMPTY;
           this.clearSession();
           return throwError(() => error);
-        })
+        }),
+        finalize(() => {
+          if (this.refreshInProgress$ === sharedRequest$) {
+            this.refreshInProgress$ = null;
+          }
+        }),
+        shareReplay({ bufferSize: 1, refCount: false })
       );
+
+      this.refreshInProgress$ = sharedRequest$;
+      return sharedRequest$;
+    });
   }
 
-  // Invalidate the refresh token through the existing backend logout API.
   logout(): Observable<ApiResponse<LogoutResponse>> {
-    const refreshToken = this.refreshTokenValue;
+    return defer(() => {
+      const refreshToken = this.refreshTokenValue;
 
-    if (!refreshToken) {
+      // Close local access immediately, even if the server is unavailable.
       this.clearSession();
 
-      return throwError(
-        () => new Error('No active refresh token is available.')
-      );
-    }
+      if (!refreshToken) {
+        return throwError(
+          () => new Error('No active refresh token is available.')
+        );
+      }
 
-    return this.http
-      .post<ApiResponse<LogoutResponse>>(
-        `${API_BASE_URL}/logout`,
-        { refreshToken }
-      )
-      .pipe(
-        // Clear local authentication whether logout succeeds or fails.
-        finalize(() => this.clearSession())
+      // Public endpoint: token is supplied in the body.
+      // A late logout response never clears a newer login.
+      return this.http.post<ApiResponse<LogoutResponse>>(
+        `${API_BASE_URL}/logout`, { refreshToken }
       );
+    });
   }
 
-  // Start a new authenticated session after successful Login.
   private setSession(response: LoginResponse): void {
     this.accessTokenState.set(response.accessToken);
     this.refreshTokenValue = response.refreshToken;
-
     this.currentUserState.set({
       id: response.id,
       name: response.name,
@@ -207,20 +236,18 @@ export class AuthService {
       role: response.role,
       status: response.status,
     });
-
     this.persistSession();
   }
 
-  // Persist session to browser storage for persistence across reloads.
   private persistSession(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
     try {
+      if (typeof window === 'undefined') return;
+
       const accessToken = this.accessTokenState();
       const user = this.currentUserState();
-      if (accessToken && user) {
-        localStorage.setItem(
+
+      if (accessToken && this.refreshTokenValue && user) {
+        window.localStorage.setItem(
           STORAGE_KEY,
           JSON.stringify({
             accessToken,
@@ -230,44 +257,65 @@ export class AuthService {
         );
       }
     } catch {
-      // Storage unavailable or disabled
+      // Storage may be unavailable; the in-memory session still works.
     }
   }
 
-  // Restore session from browser storage if present.
   private restoreSessionFromStorage(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.accessToken && parsed?.user) {
-          this.accessTokenState.set(parsed.accessToken);
-          this.refreshTokenValue = parsed.refreshToken ?? null;
-          this.currentUserState.set(parsed.user);
-        }
+      if (typeof window === 'undefined') return;
+
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      const user = parsed?.user;
+      const valid =
+        typeof parsed?.accessToken === 'string' &&
+        parsed.accessToken.trim().length > 0 &&
+        typeof parsed?.refreshToken === 'string' &&
+        parsed.refreshToken.trim().length > 0 &&
+        Number.isSafeInteger(user?.id) &&
+        user.id > 0 &&
+        typeof user?.name === 'string' &&
+        typeof user?.email === 'string' &&
+        ['USER', 'DISTRIBUTOR_ADMIN', 'HYKON_ADMIN'].includes(user?.role) &&
+        user?.status === 'ACTIVE';
+
+      if (!valid) {
+        this.clearSession();
+        return;
+      }
+
+      // Restored values are only a local hint.
+      // Protected backend requests still validate the real session.
+      this.accessTokenState.set(parsed.accessToken);
+      this.refreshTokenValue = parsed.refreshToken;
+      this.currentUserState.set({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      });
+    } catch {
+      this.clearSession();
+    }
+  }
+
+  private clearStorage(): void {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      this.clearStorage();
+      // Storage may be unavailable.
     }
   }
 
-  // Remove storage entry.
-  private clearStorage(): void {
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Storage unavailable
-    }
-  }
-
-  // Remove all authentication information.
   clearSession(): void {
+    this.sessionVersion++;
+    this.refreshInProgress$ = null;
     this.accessTokenState.set(null);
     this.refreshTokenValue = null;
     this.currentUserState.set(null);
