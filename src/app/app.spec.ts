@@ -79,6 +79,48 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     app = fixture.componentInstance;
   });
 
+  it.each(['success', 'failure'])(
+    'late logout response must not affect a newer login: %s',
+    outcome => {
+      const pendingLogout = new Subject<any>();
+      mockAuthService.logout.mockReturnValue(pendingLogout.asObservable());
+
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({
+        id: 16, name: 'First', email: 'first@example.com',
+        role: 'USER', status: 'ACTIVE'
+      });
+
+      const redirect = vi.spyOn(app, 'redirectToHome')
+        .mockImplementation(() => {});
+
+      app.onLogout();
+      expect(redirect).toHaveBeenCalledTimes(1);
+
+      // A new login completes before the old logout request returns.
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({
+        id: 19, name: 'Second', email: 'second@example.com',
+        role: 'USER', status: 'ACTIVE'
+      });
+      mockAuthService.clearSession.mockClear();
+
+      if (outcome === 'success') {
+        pendingLogout.next({ success: true, data: null });
+        pendingLogout.complete();
+      } else {
+        pendingLogout.error(new HttpErrorResponse({
+          status: 500, statusText: 'Server Error'
+        }));
+      }
+
+      expect(mockAuthService.clearSession).not.toHaveBeenCalled();
+      expect(mockAuthService.isAuthenticated()).toBe(true);
+      expect(mockAuthService.currentUser()?.id).toBe(19);
+      expect(redirect).toHaveBeenCalledTimes(1);
+    }
+  );
+
   // 1. Role-aware entry
   describe('1. Role-aware entry destinations', () => {
     it('should open login modal when unauthenticated user clicks feature box', () => {

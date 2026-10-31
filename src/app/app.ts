@@ -1828,13 +1828,12 @@ export class App implements AfterViewInit, OnDestroy {
   onLogout() {
     this.closeProfileDropdown();
     this.clearDashboardAndGateState();
+    this.redirectToHome();
+
     this.authService.logout().subscribe({
-      next: () => {
-        this.redirectToHome();
-      },
       error: () => {
-        this.authService.clearSession();
-        this.redirectToHome();
+        // AuthService already cleared the local session.
+        // A late response must not change a newer login or navigation.
       }
     });
   }
