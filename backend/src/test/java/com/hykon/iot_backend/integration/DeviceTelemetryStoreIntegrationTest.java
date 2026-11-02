@@ -79,6 +79,143 @@ class DeviceTelemetryStoreIntegrationTest {
         }
     }
 
+    private com.hykon.iot_backend.repository.DeviceTelemetryReadStore reads() {
+        return new com.hykon.iot_backend.repository.DeviceTelemetryReadStore(jdbc);
+    }
+
+    private TelemetryRequest sampleFor(
+            UUID sampleBoot, long sequence, long uptime
+    ) {
+        var base = sample(false);
+        return new TelemetryRequest(
+                base.schemaVersion(), base.deviceCode(), sampleBoot,
+                sequence, base.measuredAt(), uptime,
+                base.simulated(), base.operatingMode(),
+                base.battery(), base.grid(), base.load());
+    }
+
+    @Test
+    void latestReadUsesActiveBootAndHighestSequence() {
+        store.insertBoot(1L, boot, received);
+        insert(1L, sampleFor(boot, 1L, 5000L));
+
+        var second = sampleFor(boot, 2L, 10000L);
+        long secondId = store.insertSample(
+                1L, second, TelemetryPayloadHasher.hash(second),
+                received.minusSeconds(1));
+
+        assertEquals(secondId, reads().findLatest(1L).orElseThrow().readingId());
+
+        UUID replacement = UUID.randomUUID();
+        store.insertBoot(1L, replacement, received.plusSeconds(5));
+        store.retireOtherBoots(1L, replacement, received.plusSeconds(5));
+        long replacementId = insert(1L, sampleFor(replacement, 1L, 5000L));
+
+        var latest = reads().findLatest(1L).orElseThrow();
+        assertEquals(replacementId, latest.readingId());
+        assertEquals(replacement, latest.bootId());
+        assertEquals(1L, latest.sequence());
+        assertEquals(1L, latest.deviceId());
+        assertEquals(1, latest.schemaVersion());
+        assertTrue(latest.simulated());
+        assertEquals(TelemetryRequest.OperatingMode.LINE, latest.operatingMode());
+    }
+
+    @Test
+    void historyPagesCountOnlyRequestedDeviceAndIncludeRetiredBoots() {
+        store.insertBoot(1L, boot, received);
+        long oldFirst = insert(1L, sampleFor(boot, 1L, 5000L));
+        long oldSecond = insert(1L, sampleFor(boot, 2L, 10000L));
+
+        UUID replacement = UUID.randomUUID();
+        store.insertBoot(1L, replacement, received.plusSeconds(5));
+        store.retireOtherBoots(1L, replacement, received.plusSeconds(5));
+        long newFirst = insert(1L, sampleFor(replacement, 1L, 5000L));
+        long newSecond = insert(1L, sampleFor(replacement, 2L, 10000L));
+
+        store.insertBoot(2L, boot, received);
+        insert(2L, sampleFor(boot, 1L, 5000L));
+
+        var firstPage = reads().history(1L, 0, 2);
+        var secondPage = reads().history(1L, 1, 2);
+        var beyondEnd = reads().history(1L, 2, 2);
+
+        assertEquals(4L, firstPage.getTotalElements());
+        assertEquals(2, firstPage.getTotalPages());
+        assertEquals(java.util.List.of(newSecond, newFirst),
+                firstPage.getContent().stream()
+                        .map(value -> value.readingId()).toList());
+        assertEquals(4L, secondPage.getTotalElements());
+        assertEquals(java.util.List.of(oldSecond, oldFirst),
+                secondPage.getContent().stream()
+                        .map(value -> value.readingId()).toList());
+        assertTrue(beyondEnd.isEmpty());
+        assertEquals(4L, beyondEnd.getTotalElements());
+        assertEquals(1L, reads().history(2L, 0, 2).getTotalElements());
+    }
+
+    @Test
+    void readMappingPreservesNullsSignedMeasurementsAndOverload() {
+        store.insertBoot(1L, boot, received);
+        insert(1L, sample(false));
+
+        var supported = reads().findLatest(1L).orElseThrow();
+        assertEquals(0, new BigDecimal("-2")
+                .compareTo(supported.battery().currentA()));
+        assertEquals(0, new BigDecimal("-100")
+                .compareTo(supported.grid().inputPowerW()));
+        assertEquals(0, new BigDecimal("130")
+                .compareTo(supported.load().loadPercent()));
+        assertEquals(Boolean.TRUE, supported.grid().present());
+        assertEquals(received.minusSeconds(1), supported.measuredAt());
+        assertEquals(received, supported.receivedAt());
+
+        store.insertBoot(2L, boot, received);
+        insert(2L, sample(true));
+
+        var unsupported = reads().findLatest(2L).orElseThrow();
+        assertNull(unsupported.measuredAt());
+        assertEquals(new TelemetryRequest.Battery(null, null, null),
+                unsupported.battery());
+        assertEquals(new TelemetryRequest.Grid(null, null, null, null),
+                unsupported.grid());
+        assertEquals(new TelemetryRequest.Load(null, null, null, null),
+                unsupported.load());
+    }
+
+    @Test
+    void emptyReadsAndInvalidPaginationHaveExplicitResults() {
+        assertTrue(reads().findLatest(1L).isEmpty());
+
+        var empty = reads().history(1L, 0, 20);
+        assertTrue(empty.isEmpty());
+        assertEquals(0L, empty.getTotalElements());
+        assertEquals(0, empty.getTotalPages());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> reads().findLatest(0L));
+        assertThrows(IllegalArgumentException.class,
+                () -> reads().history(1L, -1, 20));
+        assertThrows(IllegalArgumentException.class,
+                () -> reads().history(1L, 0, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> reads().history(1L, 0, 101));
+    }
+
+    @Test
+    void latestReadDoesNotSilentlyHideMultipleActiveBoots() {
+        store.insertBoot(1L, boot, received);
+        insert(1L, sampleFor(boot, 1L, 5000L));
+
+        UUID unexpected = UUID.randomUUID();
+        store.insertBoot(1L, unexpected, received);
+        insert(1L, sampleFor(unexpected, 1L, 5000L));
+
+        assertThrows(
+                org.springframework.dao.IncorrectResultSizeDataAccessException.class,
+                () -> reads().findLatest(1L));
+    }
+
     private TelemetryRequest sample(boolean unsupported) {
         return new TelemetryRequest(
                 1, "HALO1200-1", boot, 1L,
