@@ -54,5 +54,6 @@ target/
 !.env.example
 backend/.env
 backend/.env.*
-!backend/.env.examplebuild-maven/
+!backend/.env.example
+build-maven/
 backend/build-maven/
