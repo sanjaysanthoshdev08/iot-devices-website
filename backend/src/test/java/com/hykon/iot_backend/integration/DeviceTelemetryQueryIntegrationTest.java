@@ -172,7 +172,7 @@ class DeviceTelemetryQueryIntegrationTest {
         purchase.setClaimedAt(LocalDateTime.now());
         purchases.saveAndFlush(purchase);
 
-        return new Fixture(admin, owner, device, login(admin));
+        return new Fixture(admin, owner, device, login(admin), distributorAdmin, distributor, branch);
     }
 
     private void seedReadings(Fixture fixture) {
@@ -356,10 +356,107 @@ class DeviceTelemetryQueryIntegrationTest {
         }
     }
 
+    private TestingAuthenticationToken verifiedDistributor(Fixture fixture) {
+        var authentication = login(fixture.distributorAdmin());
+
+        var request = new DistributorAccessRequest(
+                fixture.distributor().getName(),
+                fixture.branch().getName(),
+                fixture.branch().getLocation());
+        request.setDistributorCode(
+                fixture.distributor().getDistributorCode());
+        request.setBranchCode(fixture.branch().getBranchCode());
+
+        coordinator.verifyDistributor(
+                request, authentication.getName(),
+                (UUID) authentication.getDetails());
+
+        return authentication;
+    }
+
+    @Test
+    void verifiedDistributorReadsOwnTelemetryButNotAnotherDistributor() {
+        var own = fixture();
+        var other = fixture();
+        seedReadings(own);
+        seedReadings(other);
+
+        assertBothDenied(
+                own, login(own.distributorAdmin()), HttpStatus.FORBIDDEN);
+
+        var authentication = verifiedDistributor(own);
+
+        var latest = queries.latest(own.device().getId(), authentication);
+        assertNotNull(latest.reading());
+        assertEquals(own.device().getId().longValue(),
+                latest.reading().deviceId());
+        assertEquals(2L, latest.reading().sequence());
+
+        var history = queries.history(
+                own.device().getId(), 0, 1, authentication);
+        assertEquals(2L, history.totalElements());
+        assertEquals(2, history.totalPages());
+        assertEquals(1, history.content().size());
+        assertEquals(own.device().getId().longValue(),
+                history.content().get(0).deviceId());
+
+        assertBothDenied(other, authentication, HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void reassignedDistributorAdministratorLosesExistingTelemetryGrant() {
+        var fixture = fixture();
+        seedReadings(fixture);
+        var authentication = verifiedDistributor(fixture);
+
+        assertNotNull(queries.latest(
+                fixture.device().getId(), authentication).reading());
+
+        User replacement = user(
+                "replacement-distributor-admin", RoleName.DISTRIBUTOR_ADMIN);
+        Distributor distributor = distributors.findById(
+                fixture.distributor().getId()).orElseThrow();
+        distributor.setAdministrator(replacement);
+        distributors.saveAndFlush(distributor);
+
+        assertBothDenied(fixture, authentication, HttpStatus.FORBIDDEN);
+
+        // The readings remain available to the company administrator.
+        assertEquals(2L, queries.history(
+                fixture.device().getId(), 0, 20,
+                fixture.adminAuthentication()).totalElements());
+    }
+
+    @Test
+    void disabledBranchRevokesCustomerAndDistributorTelemetryGrants() {
+        var fixture = fixture();
+        seedReadings(fixture);
+        var distributorAuthentication = verifiedDistributor(fixture);
+        var ownerAuthentication = verifiedUser(fixture, fixture.owner());
+
+        assertNotNull(queries.latest(
+                fixture.device().getId(), distributorAuthentication).reading());
+        assertNotNull(queries.latest(
+                fixture.device().getId(), ownerAuthentication).reading());
+
+        DistributorBranch branch = branches.findById(
+                fixture.branch().getId()).orElseThrow();
+        branch.setStatus("INACTIVE");
+        branches.saveAndFlush(branch);
+
+        assertBothDenied(
+                fixture, distributorAuthentication, HttpStatus.FORBIDDEN);
+        assertBothDenied(
+                fixture, ownerAuthentication, HttpStatus.FORBIDDEN);
+    }
+
     private record Fixture(
             User admin,
             User owner,
             Device device,
-            TestingAuthenticationToken adminAuthentication
+            TestingAuthenticationToken adminAuthentication,
+            User distributorAdmin,
+            Distributor distributor,
+            DistributorBranch branch
     ) {}
 }
