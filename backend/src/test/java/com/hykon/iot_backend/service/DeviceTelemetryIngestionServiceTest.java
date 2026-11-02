@@ -124,6 +124,7 @@ class DeviceTelemetryIngestionServiceTest {
         var receipt = service.ingest(key, "test-secret", request);
 
         assertEquals(501L, receipt.readingId());
+        assertEquals(0, receipt.receivedAt().getNano() % 1000);
         assertFalse(receipt.duplicate());
         assertEquals(boot, receipt.bootId());
 

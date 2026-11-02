@@ -79,7 +79,7 @@ public class DeviceTelemetryIngestionService {
                     sample.receivedAt(), true);
         }
 
-        Instant receivedAt = Instant.now();
+        Instant receivedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         if (request.measuredAt() != null
                 && (request.measuredAt().isAfter(
                         receivedAt.plus(Duration.ofMinutes(5)))

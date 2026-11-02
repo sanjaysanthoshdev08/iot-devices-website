@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = GateTestDatabaseInitializer.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -47,6 +47,9 @@ class DeviceTelemetryIngestionIntegrationTest {
 
     private JdbcTemplate jdbc;
     private boolean migrationApplied;
+
+    @org.springframework.beans.factory.annotation.Value("${local.server.port}")
+    private int serverPort;
 
     @BeforeAll
     void initializeTelemetryTables() throws Exception {
@@ -448,6 +451,170 @@ class DeviceTelemetryIngestionIntegrationTest {
                 .orElseThrow().retiredAt());
         assertEquals(2L,
                 count("device_telemetry_readings", fixture.deviceId()));
+    }
+
+    private String httpPayload(Fixture fixture, UUID boot) {
+        return """
+                {
+                  "schemaVersion": 1,
+                  "deviceCode": "%s",
+                  "bootId": "%s",
+                  "sequence": 1,
+                  "measuredAt": null,
+                  "uptimeMs": 5000,
+                  "simulated": true,
+                  "operatingMode": "LINE",
+                  "battery": {
+                    "voltageV": 51.2,
+                    "currentA": -2,
+                    "socPercent": 80
+                  },
+                  "grid": {
+                    "present": true,
+                    "voltageV": 230,
+                    "frequencyHz": 50,
+                    "inputPowerW": 750
+                  },
+                  "load": {
+                    "voltageV": 230,
+                    "currentA": 2.61,
+                    "outputPowerW": 600,
+                    "loadPercent": 50
+                  }
+                }
+                """.formatted(fixture.deviceCode(), boot);
+    }
+
+    private java.net.http.HttpResponse<String> httpPost(
+            Fixture fixture, String body, String suppliedSecret
+    ) throws Exception {
+        var builder = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(
+                        "http://127.0.0.1:" + serverPort
+                        + "/api/v1/telemetry/readings"))
+                .timeout(java.time.Duration.ofSeconds(10))
+                .header("Content-Type", "application/json");
+
+        if (suppliedSecret != null) {
+            builder.header(
+                    "X-Device-Key-Id", fixture.credential().keyId().toString());
+            builder.header("X-Device-Secret", suppliedSecret);
+        }
+
+        try (var client = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(5))
+                .build()) {
+            return client.send(
+                    builder.POST(
+                            java.net.http.HttpRequest.BodyPublishers
+                                    .ofString(body)).build(),
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+        }
+    }
+
+    @Test
+    void realHttpPostPersistsReadingAndAcknowledgesRetry() throws Exception {
+        var fixture = fixture();
+        UUID boot = UUID.randomUUID();
+        String body = httpPayload(fixture, boot);
+
+        var first = httpPost(fixture, body, fixture.credential().secret());
+        assertEquals(200, first.statusCode(), first.body());
+        assertEquals("no-store",
+                first.headers().firstValue("Cache-Control").orElseThrow());
+
+        var firstJson = com.jayway.jsonpath.JsonPath.parse(first.body());
+        assertEquals(Boolean.TRUE, firstJson.read("$.success", Boolean.class));
+        assertEquals(Boolean.FALSE,
+                firstJson.read("$.data.duplicate", Boolean.class));
+        long readingId = firstJson.read("$.data.readingId", Long.class);
+        String receivedAt =
+                firstJson.read("$.data.receivedAt", String.class);
+
+        assertFalse(first.body().contains(fixture.credential().secret()));
+        assertFalse(first.body().contains(
+                com.hykon.iot_backend.security.DeviceSecretCodec.hash(
+                        fixture.credential().secret())));
+
+        var stored = store.findSample(fixture.deviceId(), boot, 1L)
+                .orElseThrow();
+        assertEquals(readingId, stored.id());
+        assertEquals(stored.receivedAt(), java.time.Instant.parse(receivedAt));
+        assertEquals(0, java.time.Instant.parse(receivedAt).getNano() % 1000);
+
+        BigDecimal voltage = jdbc.queryForObject("""
+                SELECT battery_voltage_v
+                FROM device_telemetry_readings WHERE id = ?
+                """, BigDecimal.class, readingId);
+        assertNotNull(voltage);
+        assertEquals(0, new BigDecimal("51.2").compareTo(voltage));
+        assertEquals(Boolean.TRUE, jdbc.queryForObject("""
+                SELECT simulated
+                FROM device_telemetry_readings WHERE id = ?
+                """, Boolean.class, readingId));
+
+        var retry = httpPost(fixture, body, fixture.credential().secret());
+        assertEquals(200, retry.statusCode(), retry.body());
+
+        var retryJson = com.jayway.jsonpath.JsonPath.parse(retry.body());
+        assertEquals(Boolean.TRUE,
+                retryJson.read("$.data.duplicate", Boolean.class));
+        assertEquals(readingId,
+                retryJson.read("$.data.readingId", Long.class).longValue());
+        assertEquals(receivedAt,
+                retryJson.read("$.data.receivedAt", String.class));
+
+        var changed = httpPost(
+                fixture, body.replace("51.2", "52.2"),
+                fixture.credential().secret());
+        assertEquals(409, changed.statusCode(), changed.body());
+
+        assertEquals(1L,
+                count("device_telemetry_readings", fixture.deviceId()));
+        assertEquals(1L,
+                count("device_telemetry_boots", fixture.deviceId()));
+    }
+
+    @Test
+    void realHttpRejectsUnauthorizedAndInvalidUploadsWithoutWriting()
+            throws Exception {
+        var fixture = fixture();
+        String body = httpPayload(fixture, UUID.randomUUID());
+
+        var missing = httpPost(fixture, body, null);
+        assertEquals(401, missing.statusCode(), missing.body());
+
+        var wrong = httpPost(fixture, body,
+                com.hykon.iot_backend.security.DeviceSecretCodec.generate());
+        assertEquals(401, wrong.statusCode(), wrong.body());
+
+        var invalid = httpPost(
+                fixture, body.replace(
+                        "\"socPercent\": 80", "\"socPercent\": 101"),
+                fixture.credential().secret());
+        assertEquals(400, invalid.statusCode(), invalid.body());
+
+        var malformed = httpPost(
+                fixture, "{", fixture.credential().secret());
+        assertEquals(400, malformed.statusCode(), malformed.body());
+
+        var anotherDevice = httpPost(
+                fixture,
+                body.replace(fixture.deviceCode(), "unrelated-device"),
+                fixture.credential().secret());
+        assertEquals(403, anotherDevice.statusCode(), anotherDevice.body());
+
+        assertEquals(1, credentials.revoke(
+                fixture.authentication(), fixture.deviceId()));
+
+        var revoked = httpPost(
+                fixture, body, fixture.credential().secret());
+        assertEquals(401, revoked.statusCode(), revoked.body());
+
+        assertEquals(0L,
+                count("device_telemetry_readings", fixture.deviceId()));
+        assertEquals(0L,
+                count("device_telemetry_boots", fixture.deviceId()));
     }
 
     private record Fixture(
