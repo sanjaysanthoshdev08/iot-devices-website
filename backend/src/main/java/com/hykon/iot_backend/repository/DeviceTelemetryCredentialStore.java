@@ -44,8 +44,8 @@ public class DeviceTelemetryCredentialStore {
 
         jdbc.update("""
                 INSERT INTO device_telemetry_credentials
-                    (key_id, device_id, secret_hash, created_by_user_id)
-                VALUES (?, ?, ?, ?)
+                    (key_id, device_id, secret_hash, created_by_user_id, created_at)
+                VALUES (?, ?, ?, ?, clock_timestamp())
                 """, keyId, deviceId, secretHash, createdByUserId);
     }
 
@@ -85,7 +85,7 @@ public class DeviceTelemetryCredentialStore {
 
         return jdbc.update("""
                 UPDATE device_telemetry_credentials
-                SET revoked_at = CURRENT_TIMESTAMP
+                SET revoked_at = GREATEST(clock_timestamp(), created_at)
                 WHERE device_id = ? AND revoked_at IS NULL
                 """, deviceId);
     }
