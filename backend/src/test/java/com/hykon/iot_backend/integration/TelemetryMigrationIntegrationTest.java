@@ -123,6 +123,73 @@ class TelemetryMigrationIntegrationTest {
                         boot, sequence, hash, current, soc, loadPercent);
     }
 
+    private com.hykon.iot_backend.repository.DeviceTelemetryCredentialStore
+    credentialStore() {
+        var dataSource =
+                new org.springframework.jdbc.datasource.SingleConnectionDataSource(
+                        connection, true);
+        return new com.hykon.iot_backend.repository.DeviceTelemetryCredentialStore(
+                new org.springframework.jdbc.core.JdbcTemplate(dataSource));
+    }
+
+    @Test
+    void credentialStoreRoundTripStoresOnlyHashAndRedactsDiagnostics()
+            throws Exception {
+        var store = credentialStore();
+        var keyId = UUID.randomUUID();
+        String secret =
+                com.hykon.iot_backend.security.DeviceSecretCodec.generate();
+        String secretHash =
+                com.hykon.iot_backend.security.DeviceSecretCodec.hash(secret);
+
+        store.insert(keyId, 1L, secretHash, 1L);
+
+        var stored = store.findByKeyId(keyId).orElseThrow();
+        assertEquals(keyId, stored.keyId());
+        assertEquals(1L, stored.deviceId());
+        assertEquals(secretHash, stored.secretHash());
+        assertNull(stored.revokedAt());
+        assertEquals("StoredCredential[redacted]", stored.toString());
+        assertTrue(com.hykon.iot_backend.security.DeviceSecretCodec.matches(
+                secret, stored.secretHash()));
+        assertEquals(1, count("device_telemetry_credentials"));
+    }
+
+    @Test
+    void credentialStoreRevocationIsIdempotentAndAllowsReplacement()
+            throws Exception {
+        var store = credentialStore();
+        var oldKey = UUID.randomUUID();
+        var newKey = UUID.randomUUID();
+
+        store.insert(oldKey, 1L, hash, 1L);
+        assertEquals(1, store.revokeActiveForDevice(1L));
+        assertEquals(0, store.revokeActiveForDevice(1L));
+        assertNotNull(store.findByKeyId(oldKey).orElseThrow().revokedAt());
+
+        store.insert(newKey, 1L, hash, 1L);
+        assertNull(store.findByKeyId(newKey).orElseThrow().revokedAt());
+        assertEquals(2, count("device_telemetry_credentials"));
+    }
+
+    @Test
+    void credentialStoreRejectsPlaintextAndReturnsEmptyForUnknownKeys()
+            throws Exception {
+        var store = credentialStore();
+
+        assertTrue(store.findByKeyId(UUID.randomUUID()).isEmpty());
+        assertTrue(store.findByKeyId(null).isEmpty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> store.insert(
+                        UUID.randomUUID(), 1L, "plaintext-not-a-hash", 1L));
+        assertThrows(IllegalArgumentException.class,
+                () -> store.insert(UUID.randomUUID(), 0L, hash, 1L));
+        assertThrows(IllegalArgumentException.class,
+                () -> store.revokeActiveForDevice(0L));
+
+        assertEquals(0, count("device_telemetry_credentials"));
+    }
     @Test
     void migrationCreatesEmptyTablesWithoutDeviceCredentials() throws Exception {
         assertEquals(0, count("device_telemetry_credentials"));
