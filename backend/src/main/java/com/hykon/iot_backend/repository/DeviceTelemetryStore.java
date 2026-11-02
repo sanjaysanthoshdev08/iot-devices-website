@@ -85,6 +85,40 @@ public class DeviceTelemetryStore {
         ), deviceId, bootId, sequence);
     }
 
+    public Optional<Boot> findActiveBoot(long deviceId) {
+        return optional("""
+                SELECT id, boot_id, first_received_at, retired_at
+                FROM device_telemetry_boots
+                WHERE device_id = ? AND retired_at IS NULL
+                """, (row, index) -> new Boot(
+                row.getLong("id"),
+                row.getObject("boot_id", UUID.class),
+                instant(row, "first_received_at"),
+                instant(row, "retired_at")
+        ), deviceId);
+    }
+
+    public Optional<Sample> findLastSample(long deviceId, UUID bootId) {
+        return optional("""
+                SELECT id, payload_hash, sequence, uptime_ms,
+                       measured_at, received_at
+                FROM device_telemetry_readings
+                WHERE device_id = ? AND boot_id = ?
+                  AND sequence = (
+                      SELECT MAX(sequence)
+                      FROM device_telemetry_readings
+                      WHERE device_id = ? AND boot_id = ?
+                  )
+                """, (row, index) -> new Sample(
+                row.getLong("id"),
+                row.getString("payload_hash"),
+                row.getLong("sequence"),
+                row.getLong("uptime_ms"),
+                instant(row, "measured_at"),
+                instant(row, "received_at")
+        ), deviceId, bootId, deviceId, bootId);
+    }
+
     public long insertSample(
             long deviceId, TelemetryRequest request,
             String payloadHash, Instant receivedAt
