@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "deviceCode": "HALO1200-1",
+  "bootId": "d40189cd-e749-433a-881d-362d78196750",
+  "sequence": 1,
+  "measuredAt": null,
+  "uptimeMs": 5000,
+  "simulated": true,
+  "operatingMode": "LINE",
+  "battery": {
+    "voltageV": 51.2,
+    "currentA": 2.0,
+    "socPercent": 80.0
+  },
+  "grid": {
+    "present": true,
+    "voltageV": 230.0,
+    "frequencyHz": 50.0,
+    "inputPowerW": 750.0
+  },
+  "load": {
+    "voltageV": 230.0,
+    "currentA": 2.61,
+    "outputPowerW": 600.0,
+    "loadPercent": 50.0
+  }
+}
