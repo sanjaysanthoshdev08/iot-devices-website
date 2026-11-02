@@ -5,6 +5,7 @@
 #include <esp_system.h>
 #include <cstring>
 #include "secrets.h"
+#include "TelemetrySender.h"
 
 struct NetworkSettings {
     uint32_t version;
@@ -252,7 +253,7 @@ void setup() {
     Serial.println(
         "After startup, hold BOOT for 3 seconds to reopen setup. "
         "Do not hold BOOT while powering on.");
-    Serial.println("Telemetry sending is not configured yet.");
+    telemetryBegin();
 }
 
 void loop() {
@@ -334,6 +335,12 @@ void loop() {
         closeSetup();
         Serial.println("Hold BOOT for 3 seconds if setup is still needed.");
     }
+
+    telemetryTick(
+        savedSettings.backend,
+        hasSettings && !setupActive
+            && !candidateQueued && !candidateConnecting
+    );
 
     delay(5);
 }
