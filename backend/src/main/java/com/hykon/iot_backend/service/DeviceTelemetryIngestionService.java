@@ -106,7 +106,16 @@ public class DeviceTelemetryIngestionService {
                 var last = store.findLastSample(
                         identity.deviceId(), active.orElseThrow().bootId());
                 if (last.isPresent()) {
-                    rejectBackwardTime(request, last.orElseThrow());
+                    var previous = last.orElseThrow();
+                    if (request.measuredAt() == null) {
+                        throw error(HttpStatus.CONFLICT,
+                                "A replacement boot requires synchronized time");
+                    }
+                    if (!request.measuredAt().isAfter(previous.receivedAt())) {
+                        throw error(HttpStatus.CONFLICT,
+                                "Replacement boot predates the last accepted reading");
+                    }
+                    rejectBackwardTime(request, previous);
                 }
             }
         } else {

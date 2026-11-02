@@ -79,3 +79,19 @@ Step 15: ESP32 simulated samples through Wi-Fi and HTTP POST.
 Step 16: Angular monitoring integration.
 Step 17: complete wireless demonstration acceptance.
 Step 18: replace simulated readings with actual inverter measurements.
+
+## Boot replacement and timestamp acceptance
+- The first accepted boot may have measuredAt = null.
+- Replacing an existing boot requires sequence 1 and synchronized measuredAt.
+- Its measuredAt must be strictly after the previous boot's latest accepted
+  receivedAt, and must not precede that sample's known measuredAt.
+- A replacement without synchronized time is rejected without creating a boot
+  or retiring the current boot.
+- Firmware should synchronize its clock before sending startup sample 1.
+- After reboot, discard unsent samples from previous boots.
+- New samples may be at most 24 hours old or 5 minutes in the future.
+- Within a boot, new samples require increasing sequence and nondecreasing
+  uptime; known measurement timestamps must not move backwards.
+- Unchanged accepted retries return their original receipt, without updating
+  receivedAt or making stale telemetry appear online.
+- Previously accepted historical retries never reactivate a retired boot.

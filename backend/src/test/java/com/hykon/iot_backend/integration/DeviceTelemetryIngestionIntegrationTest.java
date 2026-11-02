@@ -196,8 +196,10 @@ class DeviceTelemetryIngestionIntegrationTest {
                 store.findLastSample(fixture.deviceId(), firstBoot)
                         .orElseThrow().id());
 
-        var replacement = send(fixture,
-                sample(fixture, nextBoot, 1L, 5000L, "53"));
+        var replacement = send(fixture, withMeasuredAt(
+                sample(fixture, nextBoot, 1L, 5000L, "53"),
+                store.findLastSample(fixture.deviceId(), firstBoot)
+                        .orElseThrow().receivedAt().plusMillis(1)));
 
         assertNotNull(store.findBoot(fixture.deviceId(), firstBoot)
                 .orElseThrow().retiredAt());
@@ -295,8 +297,13 @@ class DeviceTelemetryIngestionIntegrationTest {
                     EXECUTE FUNCTION telemetry_ingestion_test_reject()
                     """.formatted(fixture.deviceId()));
 
-            assertThrows(DataAccessException.class, () -> send(fixture,
-                    sample(fixture, replacement, 1L, 5000L, "52")));
+            var replacementRequest = withMeasuredAt(
+                    sample(fixture, replacement, 1L, 5000L, "52"),
+                    store.findLastSample(fixture.deviceId(), originalBoot)
+                            .orElseThrow().receivedAt().plusMillis(1));
+
+            assertThrows(DataAccessException.class,
+                    () -> send(fixture, replacementRequest));
 
             assertTrue(store.findBoot(
                     fixture.deviceId(), replacement).isEmpty());
@@ -390,6 +397,57 @@ class DeviceTelemetryIngestionIntegrationTest {
             pool.shutdownNow();
             assertTrue(pool.awaitTermination(20, TimeUnit.SECONDS));
         }
+    }
+
+    private TelemetryRequest withMeasuredAt(
+            TelemetryRequest request, java.time.Instant measuredAt
+    ) {
+        return new TelemetryRequest(
+                request.schemaVersion(), request.deviceCode(), request.bootId(),
+                request.sequence(), measuredAt, request.uptimeMs(),
+                request.simulated(), request.operatingMode(),
+                request.battery(), request.grid(), request.load());
+    }
+
+    @Test
+    void unknownDelayedBootCannotReplaceCurrentBootWithoutFreshTime() {
+        var fixture = fixture();
+        UUID originalBoot = UUID.randomUUID();
+        UUID replacementBoot = UUID.randomUUID();
+
+        send(fixture,
+                sample(fixture, originalBoot, 1L, 5000L, "51"));
+
+        var previous = store.findLastSample(
+                fixture.deviceId(), originalBoot).orElseThrow();
+        var replacement = sample(
+                fixture, replacementBoot, 1L, 5000L, "52");
+
+        assertStatus(HttpStatus.CONFLICT,
+                () -> send(fixture, replacement));
+        assertStatus(HttpStatus.CONFLICT, () -> send(fixture,
+                withMeasuredAt(replacement, previous.receivedAt())));
+        assertStatus(HttpStatus.CONFLICT, () -> send(fixture,
+                withMeasuredAt(replacement,
+                        previous.receivedAt().minusSeconds(1))));
+
+        assertTrue(store.findBoot(
+                fixture.deviceId(), replacementBoot).isEmpty());
+        assertEquals(originalBoot, store.findActiveBoot(
+                fixture.deviceId()).orElseThrow().bootId());
+        assertEquals(1L,
+                count("device_telemetry_readings", fixture.deviceId()));
+
+        var accepted = send(fixture, withMeasuredAt(
+                replacement, previous.receivedAt().plusMillis(1)));
+
+        assertFalse(accepted.duplicate());
+        assertEquals(replacementBoot, store.findActiveBoot(
+                fixture.deviceId()).orElseThrow().bootId());
+        assertNotNull(store.findBoot(fixture.deviceId(), originalBoot)
+                .orElseThrow().retiredAt());
+        assertEquals(2L,
+                count("device_telemetry_readings", fixture.deviceId()));
     }
 
     private record Fixture(

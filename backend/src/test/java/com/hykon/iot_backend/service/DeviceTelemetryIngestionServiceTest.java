@@ -84,6 +84,41 @@ class DeviceTelemetryIngestionServiceTest {
     }
 
     @Test
+    void replacementBootNeedsSynchronizedTimeAfterLastAcceptedReading() {
+        UUID oldBoot = UUID.randomUUID();
+        Instant previousReceived = Instant.now().minusSeconds(30);
+
+        when(store.findActiveBoot(101L)).thenReturn(Optional.of(
+                new DeviceTelemetryStore.Boot(
+                        1L, oldBoot, previousReceived.minusSeconds(5), null)));
+        when(store.findLastSample(101L, oldBoot)).thenReturn(Optional.of(
+                new DeviceTelemetryStore.Sample(
+                        400L, "a".repeat(64), 1L, 5000L,
+                        previousReceived.minusSeconds(1), previousReceived)));
+
+        rejects(sample(), HttpStatus.CONFLICT);
+
+        var base = sample();
+        var stale = new TelemetryRequest(
+                base.schemaVersion(), base.deviceCode(), base.bootId(),
+                base.sequence(), previousReceived, base.uptimeMs(),
+                base.simulated(), base.operatingMode(),
+                base.battery(), base.grid(), base.load());
+        rejects(stale, HttpStatus.CONFLICT);
+
+        var fresh = new TelemetryRequest(
+                base.schemaVersion(), base.deviceCode(), base.bootId(),
+                base.sequence(), previousReceived.plusSeconds(1),
+                base.uptimeMs(), base.simulated(), base.operatingMode(),
+                base.battery(), base.grid(), base.load());
+
+        var receipt = service.ingest(key, "test-secret", fresh);
+        assertFalse(receipt.duplicate());
+        verify(store).insertBoot(101L, boot, receipt.receivedAt());
+        verify(store).retireOtherBoots(101L, boot, receipt.receivedAt());
+    }
+
+    @Test
     void locksAndRechecksCredentialsBeforeWritingNewBootAndSample() {
         var request = sample();
         var receipt = service.ingest(key, "test-secret", request);
