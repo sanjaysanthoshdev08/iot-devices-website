@@ -8220,3 +8220,25 @@
     .monitor-readings { grid-template-columns: 1fr; }
   }
 }
+
+// Telemetry flow runs only when current readings support its direction.
+.device-monitor-workspace .monitor-flow-lines path.telemetry-flow-active {
+  stroke: #34d399;
+  stroke-dasharray: 8 8;
+  animation: hykonTelemetryFlow 1s linear infinite;
+}
+
+.device-monitor-workspace .monitor-flow-lines path.telemetry-flow-reverse {
+  animation-direction: reverse;
+}
+
+@keyframes hykonTelemetryFlow {
+  from { stroke-dashoffset: 16; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .device-monitor-workspace .monitor-flow-lines path.telemetry-flow-active {
+    animation: none;
+  }
+}

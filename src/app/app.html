@@ -2786,7 +2786,7 @@
 
         <!-- Populated State -->
         <div class="device-detail-content" *ngIf="!isDetailLoading() && !detailError() && selectedDevice() as dev">
-                    <!-- Device monitoring: real telemetry will be connected later -->
+                    <!-- Device monitoring: authorized backend telemetry -->
           <section class="monitor-summary" aria-label="Selected device">
             <div>
               <p class="monitor-eyebrow">DEVICE MONITORING</p>
@@ -2794,28 +2794,29 @@
               <p>{{ dev.deviceCode }} · SN: {{ dev.serialNumber }}</p>
             </div>
             <div class="monitor-connection">
-              <span>Telemetry not connected</span>
-              <small>Last reading: —</small>
+              <span>{{ telemetryConnectionLabel() }}</span>
+              <small>Last reading: {{ telemetry.reading()?.receivedAt ? (telemetry.reading()?.receivedAt | date:'medium') : '—' }}</small>
+              <small *ngIf="telemetry.reading()?.simulated">Simulated data</small>
             </div>
           </section>
 
           <div class="monitor-unavailable" role="status">
-            Device registration is available. Live measurements have not been connected yet.
+            {{ telemetryNotice() }}
           </div>
 
           <div class="monitor-layout">
             <section class="monitor-flow-panel" aria-labelledby="energy-flow-title">
               <div class="monitor-panel-heading">
                 <h3 id="energy-flow-title">Energy flow</h3>
-                <span>Awaiting readings</span>
+                <span>{{ telemetry.reading() ? "Mode: " + telemetry.reading()?.operatingMode : "Awaiting readings" }}</span>
               </div>
 
               <div class="monitor-flow">
                 <svg class="monitor-flow-lines" viewBox="0 0 600 440"
                      preserveAspectRatio="none" aria-hidden="true">
-                  <path d="M300 210 H470 Q500 210 500 180 V100" />
-                  <path d="M300 240 H130 Q100 240 100 270 V340" />
-                  <path d="M300 240 H470 Q500 240 500 270 V340" />
+                  <path d="M300 210 H470 Q500 210 500 180 V100" [class.telemetry-flow-active]="telemetryFlowDirection('grid') !== 'none'" [class.telemetry-flow-reverse]="telemetryFlowDirection('grid') === 'reverse'" />
+                  <path d="M300 240 H130 Q100 240 100 270 V340" [class.telemetry-flow-active]="telemetryFlowDirection('battery') !== 'none'" [class.telemetry-flow-reverse]="telemetryFlowDirection('battery') === 'reverse'" />
+                  <path d="M300 240 H470 Q500 240 500 270 V340" [class.telemetry-flow-active]="telemetryFlowDirection('load') !== 'none'" [class.telemetry-flow-reverse]="telemetryFlowDirection('load') === 'reverse'" />
                 </svg>
 
                 <div class="monitor-node monitor-grid">
@@ -2825,8 +2826,8 @@
                     </svg>
                   </span>
                   <strong>Grid</strong>
-                  <span class="monitor-node-value">— <small>W</small></span>
-                  <small>Input power</small>
+                  <span class="monitor-node-value">{{ telemetryValue(telemetry.reading()?.grid.inputPowerW) }} <small>W</small></span>
+                  <small>{{ telemetryFlowLabel('grid') }}</small>
                 </div>
 
                 <div class="monitor-node monitor-inverter">
@@ -2848,8 +2849,8 @@
                     </svg>
                   </span>
                   <strong>Battery</strong>
-                  <span class="monitor-node-value">— <small>%</small></span>
-                  <small>State of charge</small>
+                  <span class="monitor-node-value">{{ telemetryValue(telemetry.reading()?.battery.socPercent) }} <small>%</small></span>
+                  <small>{{ telemetryFlowLabel('battery') }}</small>
                 </div>
 
                 <div class="monitor-node monitor-load">
@@ -2859,8 +2860,8 @@
                     </svg>
                   </span>
                   <strong>Load</strong>
-                  <span class="monitor-node-value">— <small>W</small></span>
-                  <small>Output power</small>
+                  <span class="monitor-node-value">{{ telemetryValue(telemetry.reading()?.load.outputPowerW) }} <small>W</small></span>
+                  <small>{{ telemetryFlowLabel('load') }}</small>
                 </div>
               </div>
             </section>
@@ -2870,29 +2871,29 @@
               <section class="monitor-reading-group">
                 <h4>Battery</h4>
                 <dl>
-                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
-                  <div><dt>Current</dt><dd>— <small>A</small></dd></div>
-                  <div><dt>State of charge</dt><dd>— <small>%</small></dd></div>
+                  <div><dt>Voltage</dt><dd>{{ telemetryValue(telemetry.reading()?.battery.voltageV) }} <small>V</small></dd></div>
+                  <div><dt>Current</dt><dd>{{ telemetryValue(telemetry.reading()?.battery.currentA) }} <small>A</small></dd></div>
+                  <div><dt>State of charge</dt><dd>{{ telemetryValue(telemetry.reading()?.battery.socPercent) }} <small>%</small></dd></div>
                 </dl>
               </section>
               <section class="monitor-reading-group">
                 <h4>Grid</h4>
                 <dl>
-                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
-                  <div><dt>Frequency</dt><dd>— <small>Hz</small></dd></div>
-                  <div><dt>Input power</dt><dd>— <small>W</small></dd></div>
+                  <div><dt>Voltage</dt><dd>{{ telemetryValue(telemetry.reading()?.grid.voltageV) }} <small>V</small></dd></div>
+                  <div><dt>Frequency</dt><dd>{{ telemetryValue(telemetry.reading()?.grid.frequencyHz) }} <small>Hz</small></dd></div>
+                  <div><dt>Input power</dt><dd>{{ telemetryValue(telemetry.reading()?.grid.inputPowerW) }} <small>W</small></dd></div>
                 </dl>
               </section>
               <section class="monitor-reading-group">
                 <h4>Load</h4>
                 <dl>
-                  <div><dt>Voltage</dt><dd>— <small>V</small></dd></div>
-                  <div><dt>Current</dt><dd>— <small>A</small></dd></div>
-                  <div><dt>Output power</dt><dd>— <small>W</small></dd></div>
-                  <div><dt>Load</dt><dd>— <small>%</small></dd></div>
+                  <div><dt>Voltage</dt><dd>{{ telemetryValue(telemetry.reading()?.load.voltageV) }} <small>V</small></dd></div>
+                  <div><dt>Current</dt><dd>{{ telemetryValue(telemetry.reading()?.load.currentA) }} <small>A</small></dd></div>
+                  <div><dt>Output power</dt><dd>{{ telemetryValue(telemetry.reading()?.load.outputPowerW) }} <small>W</small></dd></div>
+                  <div><dt>Load</dt><dd>{{ telemetryValue(telemetry.reading()?.load.loadPercent) }} <small>%</small></dd></div>
                 </dl>
               </section>
-              <p class="monitor-reading-note">Values appear when device telemetry is connected.</p>
+              <p class="monitor-reading-note">— means unavailable. Battery current: positive charging; negative discharging.</p>
             </aside>
           </div>
 

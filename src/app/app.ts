@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
+import { DeviceTelemetryMonitor } from './services/device-telemetry-monitor.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
 import { ManagementService, DirectoryDistributor } from './services/management.service';
 import { SystemRecordsService, SystemStatus } from './services/system-records.service';
@@ -45,6 +46,7 @@ export interface InfinityParticle {
 })
 export class App implements AfterViewInit, OnDestroy {
   private readonly authService = inject(AuthService);
+  readonly telemetry = inject(DeviceTelemetryMonitor);
   readonly deviceAccessService = inject(DeviceAccessService);
   readonly managementService = inject(ManagementService);
   readonly systemRecordsService = inject(SystemRecordsService);
@@ -58,6 +60,62 @@ export class App implements AfterViewInit, OnDestroy {
   constructor(
     @Inject(PLATFORM_ID) private platformId: object
   ) {
+        // Telemetry exists only within the authorized selected-device view.
+    effect((onCleanup) => {
+      const user = this.currentUser();
+      const device = this.selectedDevice();
+      const allowed = isPlatformBrowser(this.platformId)
+        && this.isAuthenticated()
+        && this.isDashboardAuthorized()
+        && this.isDashboardOpen()
+        && this.activeDashboardNav() === 'systems'
+        && this.isDeviceDetailModalOpen()
+        && !this.isDetailLoading()
+        && !this.detailError()
+        && !!user
+        && !!device;
+
+      untracked(() => {
+        if (allowed && device) {
+          this.telemetry.start(device.id);
+        } else {
+          this.telemetry.stop();
+        }
+      });
+
+      onCleanup(() => untracked(() => this.telemetry.stop()));
+    });
+
+    // Reuse the existing access gates after server-side access rejection.
+    effect(() => {
+      const status = this.telemetry.fatalStatus();
+
+      untracked(() => {
+        if (!status || !this.isDeviceDetailModalOpen()) return;
+
+        if (status === 404) {
+          this.telemetry.stop();
+          this.detailRequestId++;
+          this.selectedDevice.set(null);
+          this.isDetailLoading.set(false);
+          this.detailError.set('Device not found or unavailable');
+          return;
+        }
+
+        const role = this.currentRole();
+        this.closeDeviceDetailsModal();
+        this.clearDashboardAndGateState();
+
+        if (status === 401 || role === 'HYKON_ADMIN') {
+          this.openLoginModal(false);
+        } else if (role === 'USER') {
+          this.openDeviceGate();
+        } else {
+          this.openDistributorGate();
+        }
+      });
+    });
+
     // Reactively observe authentication state.
     // When authentication clears, immediately close protected content/gates, reset state,
     // and invalidate pending requests without accidentally tracking dashboard/form signals.
@@ -586,6 +644,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   clearDashboardAndGateState() {
+    this.telemetry.stop();
     this.navigationRequestId++;
     this.systemsRequestId++;
     this.detailRequestId++;
@@ -859,6 +918,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   closeDashboard() {
+    this.telemetry.stop();
     this.navigationRequestId++;
     this.systemsRequestId++;
     this.detailRequestId++;
@@ -1126,7 +1186,96 @@ export class App implements AfterViewInit, OnDestroy {
     return Math.min(currentEnd, typeof total === 'number' ? total : 0);
   }
 
+  telemetryValue(value: number | null | undefined): string {
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+      : '—';
+  }
+
+  telemetryConnectionLabel(): string {
+    const labels = {
+      LOADING: 'Telemetry not connected — checking for readings',
+      NO_DATA: 'Telemetry not connected',
+      ONLINE: 'Online',
+      OFFLINE: 'Offline',
+      ERROR: 'Connection unavailable',
+    };
+    return labels[this.telemetry.connectionStatus()];
+  }
+
+  telemetryNotice(): string {
+    const reading = this.telemetry.reading();
+    const simulation = reading?.simulated
+      ? 'Simulated data — demonstration values, not actual inverter measurements. '
+      : '';
+
+    if (this.telemetry.error()) return this.telemetry.error()!;
+
+    switch (this.telemetry.connectionStatus()) {
+      case 'LOADING':
+        return 'Loading telemetry for this device...';
+      case 'NO_DATA':
+        return 'No telemetry readings have been received for this device.';
+      case 'OFFLINE':
+        return simulation + 'Device offline. Showing its last received readings.';
+      default:
+        return simulation + 'Readings update automatically.';
+    }
+  }
+
+  telemetryFlowDirection(
+    kind: 'grid' | 'battery' | 'load'
+  ): 'forward' | 'reverse' | 'none' {
+    const reading = this.telemetry.reading();
+    if (!reading || this.telemetry.connectionStatus() !== 'ONLINE'
+        || !['LINE', 'BATTERY', 'BYPASS'].includes(reading.operatingMode)) {
+      return 'none';
+    }
+
+    if (kind === 'grid') {
+      if (reading.grid.present !== true
+          || !['LINE', 'BYPASS'].includes(reading.operatingMode)) {
+        return 'none';
+      }
+      const power = reading.grid.inputPowerW;
+      if (typeof power !== 'number' || !Number.isFinite(power)) return 'none';
+      return power > 0 ? 'reverse' : power < 0 ? 'forward' : 'none';
+    }
+
+    if (kind === 'battery') {
+      const voltage = reading.battery.voltageV;
+      const current = reading.battery.currentA;
+      if (typeof voltage !== 'number' || !Number.isFinite(voltage)
+          || voltage <= 0 || typeof current !== 'number'
+          || !Number.isFinite(current)) return 'none';
+      return current > 0 ? 'forward' : current < 0 ? 'reverse' : 'none';
+    }
+
+    const voltage = reading.load.voltageV;
+    const power = reading.load.outputPowerW;
+    return typeof voltage === 'number' && Number.isFinite(voltage)
+      && voltage > 0 && typeof power === 'number'
+      && Number.isFinite(power) && power > 0
+        ? 'forward'
+        : 'none';
+  }
+
+  telemetryFlowLabel(kind: 'grid' | 'battery' | 'load'): string {
+    const direction = this.telemetryFlowDirection(kind);
+
+    if (kind === 'grid') {
+      return direction === 'reverse' ? 'Importing from grid'
+        : direction === 'forward' ? 'Exporting to grid' : 'Input power';
+    }
+    if (kind === 'battery') {
+      return direction === 'forward' ? 'Charging'
+        : direction === 'reverse' ? 'Discharging' : 'State of charge';
+    }
+    return direction === 'forward' ? 'Supplying load' : 'Output power';
+  }
+
   openDeviceDetails(id: number) {
+    this.telemetry.stop();
     const currentReq = ++this.detailRequestId;
     this.isDetailLoading.set(true);
     this.detailError.set(null);
@@ -1170,6 +1319,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   closeDeviceDetailsModal() {
+    this.telemetry.stop();
     this.detailRequestId++;
     this.isDeviceDetailModalOpen.set(false);
     this.selectedDevice.set(null);
@@ -2297,6 +2447,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.telemetry.stop();
     this.navigationRequestId++;
     this.isAuthVerifying.set(false);
     if (this.animationFrameId) {
