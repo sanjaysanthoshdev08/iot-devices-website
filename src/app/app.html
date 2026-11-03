@@ -2897,6 +2897,11 @@
             </aside>
           </div>
 
+          <app-telemetry-history
+            [deviceId]="dev.id"
+            (accessDenied)="telemetry.fatalStatus.set($event)">
+          </app-telemetry-history>
+
           <h3 class="monitor-details-title">Device information and access</h3>
 <div class="detail-grid">
             <div class="detail-row">

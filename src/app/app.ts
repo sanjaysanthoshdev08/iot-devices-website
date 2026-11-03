@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
+import { TelemetryHistoryComponent } from './components/telemetry-history/telemetry-history.component';
 import { DeviceTelemetryMonitor } from './services/device-telemetry-monitor.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
 import { ManagementService, DirectoryDistributor } from './services/management.service';
@@ -40,7 +41,7 @@ export interface InfinityParticle {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TelemetryHistoryComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
