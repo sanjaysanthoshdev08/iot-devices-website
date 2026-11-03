@@ -22,6 +22,7 @@ NetworkSettings candidate{};
 bool storageReady = false;
 bool hasSettings = false;
 bool setupActive = false;
+bool setupOpenedForRecovery = false;
 bool candidateQueued = false;
 bool candidateConnecting = false;
 bool recoveryOffered = false;
@@ -31,6 +32,7 @@ bool buttonHeld = false;
 uint32_t setupStarted = 0;
 uint32_t candidateStarted = 0;
 uint32_t disconnectedAt = 0;
+uint32_t lastWifiRetryAt = 0;
 uint32_t buttonStarted = 0;
 
 String setupToken;
@@ -124,6 +126,7 @@ bool setupRequestAllowed() {
 }
 
 void closeSetup() {
+    setupOpenedForRecovery = false;
     portal.stop();
     WiFi.softAPdisconnect(true);
     setupActive = false;
@@ -314,8 +317,30 @@ void loop() {
         }
     }
 
+    // Retry saved Wi-Fi during normal operation or automatic recovery.
+    // Leave manually opened setup available for network configuration.
+    if (hasSettings
+        && WiFi.status() != WL_CONNECTED
+        && !candidateQueued && !candidateConnecting
+        && (!setupActive || setupOpenedForRecovery)
+        && (uint32_t)(millis() - lastWifiRetryAt) >= 15000UL) {
+        lastWifiRetryAt = millis();
+        Serial.printf(
+            "Retrying saved Wi-Fi connection (status %d).\n",
+            static_cast<int>(WiFi.status())
+        );
+        if (!WiFi.reconnect()) {
+            Serial.println("Wi-Fi retry request was not accepted; will retry.");
+        }
+    }
+
     bool connected = WiFi.status() == WL_CONNECTED;
     if (connected && !wasConnected) {
+        if (setupActive && setupOpenedForRecovery
+            && !candidateConnecting && !candidateQueued) {
+            closeSetup();
+            Serial.println("Wi-Fi recovered; telemetry can resume.");
+        }
         Serial.print("Wi-Fi connected. ESP32 address: ");
         Serial.println(WiFi.localIP());
         recoveryOffered = false;
@@ -328,6 +353,7 @@ void loop() {
     if (!connected && !setupActive && !candidateConnecting
         && !recoveryOffered && now - disconnectedAt >= 20000) {
         openSetup();
+        setupOpenedForRecovery = setupActive;
     }
 
     if (setupActive && !candidateConnecting
