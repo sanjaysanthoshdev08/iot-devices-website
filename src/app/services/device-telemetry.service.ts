@@ -54,6 +54,33 @@ export interface TelemetryHistory {
   last: boolean;
 }
 
+export interface TelemetryExtreme {
+  value: number;
+  receivedAt: string;
+  measuredAt: string | null;
+  readingId: number;
+}
+
+export interface TelemetryMetricSummary {
+  metric: string;
+  label: string;
+  unit: string;
+  validSampleCount: number;
+  minimum: TelemetryExtreme | null;
+  maximum: TelemetryExtreme | null;
+}
+
+export interface TelemetryAnalysis {
+  deviceId: number;
+  from: string;
+  to: string;
+  simulated: boolean;
+  timeBasis: 'RECEIVED_AT';
+  sampleCount: number;
+  metrics: TelemetryMetricSummary[];
+  history: TelemetryHistory;
+}
+
 const DEVICES_URL = 'http://localhost:8080/api/v1/devices';
 
 @Injectable({ providedIn: 'root' })
@@ -87,6 +114,39 @@ export class DeviceTelemetryService {
 
     return this.http.get<ApiResponse<TelemetryHistory>>(
       `${DEVICES_URL}/${deviceId}/telemetry/history`,
+      { params }
+    );
+  }
+
+  analysis(
+    deviceId: number,
+    from: string,
+    to: string,
+    simulated: boolean,
+    page = 0,
+    size = 10
+  ): Observable<ApiResponse<TelemetryAnalysis>> {
+    const start = Date.parse(from);
+    const end = Date.parse(to);
+
+    if (!this.validDeviceId(deviceId)
+        || !Number.isFinite(start) || !Number.isFinite(end)
+        || start >= end || end - start > 366 * 86400000
+        || typeof simulated !== 'boolean'
+        || !Number.isSafeInteger(page) || page < 0
+        || !Number.isSafeInteger(size) || size < 1 || size > 100) {
+      return throwError(() => new Error('Invalid analysis request.'));
+    }
+
+    const params = new HttpParams()
+      .set('from', new Date(start).toISOString())
+      .set('to', new Date(end).toISOString())
+      .set('simulated', String(simulated))
+      .set('page', String(page))
+      .set('size', String(size));
+
+    return this.http.get<ApiResponse<TelemetryAnalysis>>(
+      `${DEVICES_URL}/${deviceId}/telemetry/analysis`,
       { params }
     );
   }

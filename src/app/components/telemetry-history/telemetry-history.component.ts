@@ -5,6 +5,7 @@ import {
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription, timeout } from 'rxjs';
+import { TelemetryAnalysisComponent } from './telemetry-analysis.component';
 
 import {
   DeviceTelemetryService,
@@ -14,8 +15,12 @@ import {
 @Component({
   selector: 'app-telemetry-history',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TelemetryAnalysisComponent],
   template: `
+    <app-telemetry-analysis [deviceId]="deviceId"
+      (accessDenied)="accessDenied.emit($event)">
+    </app-telemetry-analysis>
+
     <section class="history-panel" aria-labelledby="telemetry-history-title">
       <div class="history-heading">
         <div>
