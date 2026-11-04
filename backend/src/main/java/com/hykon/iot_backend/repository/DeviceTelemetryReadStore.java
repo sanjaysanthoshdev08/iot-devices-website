@@ -2,6 +2,7 @@ package com.hykon.iot_backend.repository;
 
 import com.hykon.iot_backend.dto.TelemetryReadingResponse;
 import com.hykon.iot_backend.dto.TelemetryRequest;
+import com.hykon.iot_backend.dto.TelemetryAnalysisPeriod;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -83,6 +84,43 @@ public class DeviceTelemetryReadStore {
                 ORDER BY b.id DESC, r.sequence DESC
                 LIMIT ? OFFSET ?
                 """, this::map, deviceId, size, (long) page * size);
+
+        return new PageImpl<>(
+                content, PageRequest.of(page, size),
+                java.util.Objects.requireNonNull(total));
+    }
+
+    public Page<TelemetryReadingResponse> history(
+            long deviceId, int page, int size, TelemetryAnalysisPeriod period
+    ) {
+        requireDeviceId(deviceId);
+        if (period == null || page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Invalid filtered history request");
+        }
+
+        String filter = """
+                WHERE r.device_id = ?
+                  AND r.received_at >= ? AND r.received_at < ?
+                  AND r.simulated = ?
+                """;
+        var from = java.sql.Timestamp.from(period.from());
+        var to = java.sql.Timestamp.from(period.to());
+
+        Long total = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM device_telemetry_readings r " + filter,
+                Long.class, deviceId, from, to, period.simulated());
+
+        var content = jdbc.query(
+                "SELECT " + COLUMNS + """
+                FROM device_telemetry_readings r
+                JOIN device_telemetry_boots b
+                  ON b.device_id = r.device_id AND b.boot_id = r.boot_id
+                """ + filter + """
+                ORDER BY b.id DESC, r.sequence DESC
+                LIMIT ? OFFSET ?
+                """, this::map,
+                deviceId, from, to, period.simulated(),
+                size, (long) page * size);
 
         return new PageImpl<>(
                 content, PageRequest.of(page, size),

@@ -52,6 +52,7 @@ class DeviceTelemetryQueryIntegrationTest {
     @Autowired private DeviceTelemetryCredentialService credentials;
     @Autowired private DeviceTelemetryIngestionService ingestion;
     @Autowired private DeviceTelemetryQueryService queries;
+    @Autowired private DeviceTelemetryAnalysisService analysis;
 
     private JdbcTemplate jdbc;
     private boolean migrationApplied;
@@ -213,6 +214,13 @@ class DeviceTelemetryQueryIntegrationTest {
         var history = assertThrows(ResponseStatusException.class,
                 () -> queries.history(deviceId, 0, 1, authentication));
         assertEquals(expected, history.getStatusCode());
+
+        var period = new TelemetryAnalysisPeriod(
+                java.time.Instant.parse("2026-11-01T00:00:00Z"),
+                java.time.Instant.parse("2026-12-01T00:00:00Z"), true);
+        var summary = assertThrows(ResponseStatusException.class,
+                () -> analysis.analyze(deviceId, period, 0, 10, authentication));
+        assertEquals(expected, summary.getStatusCode());
     }
 
     @Test
@@ -448,6 +456,143 @@ class DeviceTelemetryQueryIntegrationTest {
                 fixture, distributorAuthentication, HttpStatus.FORBIDDEN);
         assertBothDenied(
                 fixture, ownerAuthentication, HttpStatus.FORBIDDEN);
+    }
+
+    private TelemetryAnalysisPeriod analysisPeriod() {
+        return new TelemetryAnalysisPeriod(
+                java.time.Instant.parse("2026-11-01T00:00:00Z"),
+                java.time.Instant.parse("2026-11-02T00:00:00Z"), true);
+    }
+
+    private void setAnalysisSamples(Fixture fixture) {
+        seedReadings(fixture);
+        var from = analysisPeriod().from();
+
+        jdbc.update("""
+                UPDATE device_telemetry_readings
+                SET received_at = ?, load_output_power_w = 900,
+                    battery_voltage_v = 48, battery_current_a = -10,
+                    battery_soc_percent = 0, grid_input_power_w = -100,
+                    grid_frequency_hz = NULL, load_current_a = NULL
+                WHERE device_id = ? AND sequence = 1
+                """, java.sql.Timestamp.from(from), fixture.device().getId());
+
+        jdbc.update("""
+                UPDATE device_telemetry_readings
+                SET received_at = ?, load_output_power_w = 0,
+                    battery_voltage_v = 52, battery_current_a = 2,
+                    battery_soc_percent = 80, grid_input_power_w = 750,
+                    grid_frequency_hz = NULL, load_current_a = NULL
+                WHERE device_id = ? AND sequence = 2
+                """, java.sql.Timestamp.from(from.plusSeconds(3600)),
+                fixture.device().getId());
+    }
+
+    private TelemetryAnalysisResponse.MetricSummary metric(
+            TelemetryAnalysisResponse response, String name
+    ) {
+        return response.metrics().stream()
+                .filter(value -> value.metric().equals(name))
+                .findFirst().orElseThrow();
+    }
+
+    @Test
+    void analysisSummarizesEntireRangeBeyondDisplayedPageAndPreservesNulls() {
+        var fixture = fixture();
+        setAnalysisSamples(fixture);
+        var other = fixture();
+        seedReadings(other);
+
+        var response = analysis.analyze(
+                fixture.device().getId(), analysisPeriod(), 0, 1,
+                fixture.adminAuthentication());
+
+        assertEquals(2L, response.sampleCount());
+        assertEquals(2L, response.history().totalElements());
+        assertEquals(1, response.history().content().size());
+        assertEquals(2L, response.history().content().get(0).sequence());
+
+        var load = metric(response, "loadOutputPowerW");
+        assertEquals(0, new BigDecimal("900").compareTo(load.maximum().value()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(load.minimum().value()));
+        assertEquals(analysisPeriod().from(), load.maximum().receivedAt());
+
+        var battery = metric(response, "batteryCurrentA");
+        assertEquals(0, new BigDecimal("-10").compareTo(battery.minimum().value()));
+        assertEquals(0, new BigDecimal("2").compareTo(battery.maximum().value()));
+
+        var soc = metric(response, "batterySocPercent");
+        assertEquals(0, BigDecimal.ZERO.compareTo(soc.minimum().value()));
+
+        for (String name : List.of("gridFrequencyHz", "loadCurrentA")) {
+            var unsupported = metric(response, name);
+            assertEquals(0, unsupported.validSampleCount());
+            assertNull(unsupported.minimum());
+            assertNull(unsupported.maximum());
+        }
+    }
+
+    @Test
+    void analysisUsesInclusiveStartExclusiveEndAndSeparateDataSources() {
+        var fixture = fixture();
+        setAnalysisSamples(fixture);
+        var from = analysisPeriod().from();
+        var boundary = from.plusSeconds(3600);
+
+        var firstHour = new TelemetryAnalysisPeriod(from, boundary, true);
+        var first = analysis.analyze(
+                fixture.device().getId(), firstHour, 0, 10,
+                fixture.adminAuthentication());
+        assertEquals(1L, first.sampleCount());
+        assertEquals(1L, first.history().content().get(0).sequence());
+
+        jdbc.update("""
+                UPDATE device_telemetry_readings SET simulated = false
+                WHERE device_id = ? AND sequence = 2
+                """, fixture.device().getId());
+
+        var simulated = analysis.analyze(
+                fixture.device().getId(), analysisPeriod(), 0, 10,
+                fixture.adminAuthentication());
+        var actual = analysis.analyze(
+                fixture.device().getId(),
+                new TelemetryAnalysisPeriod(
+                        analysisPeriod().from(), analysisPeriod().to(), false),
+                0, 10, fixture.adminAuthentication());
+
+        assertEquals(1L, simulated.sampleCount());
+        assertEquals(1L, actual.sampleCount());
+        assertTrue(simulated.history().content().get(0).simulated());
+        assertFalse(actual.history().content().get(0).simulated());
+    }
+
+    @Test
+    void analysisHandlesTiedExtremesAndEmptyPeriodsDeterministically() {
+        var fixture = fixture();
+        setAnalysisSamples(fixture);
+        jdbc.update("""
+                UPDATE device_telemetry_readings SET load_output_power_w = 600
+                WHERE device_id = ?
+                """, fixture.device().getId());
+
+        var response = analysis.analyze(
+                fixture.device().getId(), analysisPeriod(), 0, 10,
+                fixture.adminAuthentication());
+        var load = metric(response, "loadOutputPowerW");
+        assertEquals(analysisPeriod().from(), load.minimum().receivedAt());
+        assertEquals(load.minimum(), load.maximum());
+
+        var emptyPeriod = new TelemetryAnalysisPeriod(
+                analysisPeriod().to(), analysisPeriod().to().plusSeconds(1), true);
+        var empty = analysis.analyze(
+                fixture.device().getId(), emptyPeriod, 0, 10,
+                fixture.adminAuthentication());
+
+        assertEquals(0L, empty.sampleCount());
+        assertTrue(empty.history().content().isEmpty());
+        assertTrue(empty.metrics().stream().allMatch(value ->
+                value.validSampleCount() == 0
+                        && value.minimum() == null && value.maximum() == null));
     }
 
     private record Fixture(
