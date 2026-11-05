@@ -1987,6 +1987,7 @@
   <!-- ===== SYSTEMS / DEVICE MANAGEMENT VIEW (EXACT MATCH TO REFERENCE IMAGE) ===== -->
   <div class="systems-page-layout"
     [class.accounts-page-active]="activeDashboardNav() === 'accounts'"
+    [class.warnings-page-active]="activeDashboardNav() === 'alerts'"
     *ngIf="isAuthenticated() && isDashboardAuthorized() && (activeDashboardNav() === 'systems' || activeDashboardNav() === 'accounts' || activeDashboardNav() === 'alerts')">
 
     <!-- 1. LEFT SIDEBAR -->
@@ -2352,11 +2353,13 @@
         *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('alerts') && activeDashboardNav() === 'alerts'">
         <section class="warnings-unavailable-panel" aria-label="Warnings">
           <div class="warnings-unavail-banner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="warnings-unavail-icon">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+            <div class="warnings-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="warnings-unavail-icon">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
             <div class="warnings-unavail-text">
               <h2 class="warnings-unavail-title">Warning Monitoring Not Available</h2>
               <p class="warnings-unavail-desc">Live warning data will appear here when device monitoring is connected.
