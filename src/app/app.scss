@@ -8158,128 +8158,578 @@
   }
 }
 
-/* ===== ACCOUNTS PROVISIONING PANEL ===== */
+/* ===== ACCOUNTS PAGE SCOPED STYLING (MATCHING REFERENCE IMAGE) ===== */
+.systems-page-layout.accounts-page-active {
+  background: linear-gradient(
+    155deg,
+    #051326 0%,
+    #031122 55%,
+    #020F1E 100%
+  );
+
+  .systems-sidebar {
+    background: linear-gradient(
+      180deg,
+      #051427 0%,
+      #041225 55%,
+      #020F1E 100%
+    );
+
+    .systems-nav-item.active {
+      background: linear-gradient(
+        100deg,
+        #042354 0%,
+        #073B86 50%,
+        #0053CC 100%
+      );
+      border: 1px solid #087FFF;
+      box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.2),
+        0 4px 16px rgba(8, 127, 255, 0.45);
+      color: #FFFFFF;
+
+      .nav-icon {
+        color: #FFFFFF;
+      }
+    }
+  }
+
+  .btn-add-system.btn-acct-primary {
+    background: linear-gradient(
+      180deg,
+      #0984FF 0%,
+      #097AFD 55%,
+      #006BEF 100%
+    );
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+    padding: 9px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(9, 132, 255, 0.4);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(9, 132, 255, 0.6);
+    }
+  }
+
+  .systems-user-avatar {
+    background: linear-gradient(
+      180deg,
+      #0984FF 0%,
+      #097AFD 55%,
+      #006BEF 100%
+    );
+    border: 1.5px solid rgba(9, 132, 255, 0.6);
+    box-shadow: 0 0 12px rgba(9, 132, 255, 0.4);
+  }
+}
+
 .acct-provisioning-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px;
-}
+  padding: 0 0 32px 0;
+  color: #F5F7FB;
 
-/* Narrowly-scoped fix: provisioning-card action-card icon SVGs */
-.pcard-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #38bdf8;
+  // Header: Distributor Directory
+  .directory-section-header {
+    margin-bottom: 8px;
 
-  svg {
-    width: 24px;
-    height: 24px;
-  }
-}
+    .directory-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
 
-.acct-unavailable-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background: rgba(37, 139, 255, 0.08);
-  border: 1px solid rgba(37, 139, 255, 0.25);
-  border-radius: 10px;
-  padding: 16px 20px;
-  color: #c8d8f0;
+      .directory-titles {
+        .directory-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #F5F7FB;
+          margin: 0 0 4px 0;
+          letter-spacing: -0.01em;
+        }
 
-  .banner-icon {
-    width: 22px;
-    height: 22px;
-    color: #38bdf8;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
+        .directory-subtitle {
+          font-size: 13.5px;
+          color: #B7C9DF;
+          margin: 0;
+          line-height: 1.45;
+        }
+      }
 
-  .banner-text {
-    .banner-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: #ffffff;
-      margin: 0 0 4px 0;
+      .btn-refresh-directory {
+        background: linear-gradient(
+          180deg,
+          #08243B 0%,
+          #04182B 100%
+        );
+        border: 1px solid #36556D;
+        border-radius: 8px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #B7C9DF;
+        cursor: pointer;
+        transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          border-color: #00DCF5;
+          color: #F5F7FB;
+          box-shadow: 0 4px 14px rgba(0, 220, 245, 0.2);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
     }
-
-    .banner-desc {
-      font-size: 13.5px;
-      line-height: 1.5;
-      margin: 0;
-      color: #94a3b8;
-    }
-  }
-}
-
-.provisioning-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.provisioning-card {
-  background: #141820;
-  border: 1px solid #232936;
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: border-color 0.2s ease, transform 0.2s ease;
-
-  &:hover {
-    border-color: #38bdf8;
-    transform: translateY(-2px);
   }
 
-  .provisioning-card-header {
+  // Large Rounded Distributor Outer Panel
+  .directory-list {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 8px;
 
-    .prov-card-icon {
-      width: 24px;
-      height: 24px;
-      color: #38bdf8;
-    }
+    .distributor-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      padding: 28px 32px;
+      background:
+        radial-gradient(
+          ellipse at 88% 100%,
+          rgba(0, 105, 145, 0.20),
+          transparent 55%
+        ),
+        linear-gradient(
+          145deg,
+          #0E2B41 0%,
+          #031C30 52%,
+          #00172B 100%
+        );
+      border: 1px solid #367B98;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 
-    .prov-card-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f1f5f9;
-      margin: 0;
+      // Cyan curved accent behind content
+      .dist-panel-curve {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 480px;
+        height: 200px;
+        pointer-events: none;
+        opacity: 0.8;
+        z-index: 1;
+      }
+
+      // Distributor Header
+      .distributor-header {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 18px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #29485D;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .dist-info-left {
+          .dist-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #F5F7FB;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.01em;
+          }
+
+          .dist-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            color: #B7C9DF;
+
+            .dist-code-val {
+              font-family: inherit;
+              color: #00DCF5;
+              font-weight: 500;
+            }
+
+            .dist-status-badge {
+              display: inline-flex;
+              align-items: center;
+              padding: 2px 10px;
+              border-radius: 9999px;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.04em;
+
+              &.status-active {
+                background: linear-gradient(
+                  180deg,
+                  #073C30 0%,
+                  #042A24 100%
+                );
+                color: #00E878;
+                border: 1px solid #158452;
+                box-shadow: 0 0 10px rgba(0, 232, 120, 0.15);
+              }
+            }
+          }
+        }
+
+        .dist-admin-info {
+          text-align: right;
+          font-size: 13px;
+          color: #B7C9DF;
+          line-height: 1.5;
+
+          .admin-label-text {
+            color: #B7C9DF;
+          }
+
+          .dist-admin-name {
+            color: #F5F7FB;
+            font-weight: 500;
+          }
+
+          .dist-admin-email {
+            color: #00DCF5;
+            text-decoration: none;
+            font-weight: 400;
+          }
+        }
+      }
+
+      // Nested Branch Panel
+      .branches-container {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .branch-card {
+          border-radius: 14px;
+          padding: 20px 24px;
+          background: linear-gradient(
+            135deg,
+            #102B42 0%,
+            #0B263C 55%,
+            #092236 100%
+          );
+          border: 1px solid #36556D;
+
+          .branch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+
+            .branch-name-location {
+              font-size: 15px;
+
+              .branch-name {
+                color: #F5F7FB;
+                font-weight: 600;
+              }
+
+              .branch-location {
+                color: #B7C9DF;
+                margin-left: 6px;
+                font-size: 13.5px;
+              }
+            }
+
+            .branch-code-badge {
+              font-size: 13px;
+              color: #B7C9DF;
+
+              .branch-code-val {
+                font-family: inherit;
+                color: #B7C9DF;
+                font-weight: 500;
+              }
+            }
+          }
+
+          .branch-devices-section {
+            .devices-count-label {
+              font-size: 13px;
+              font-weight: 500;
+              color: #B7C9DF;
+              margin-bottom: 10px;
+            }
+
+            .branch-devices-list {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+
+              .device-item-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: 8px;
+                padding: 10px 16px;
+                font-size: 13px;
+                background: linear-gradient(
+                  90deg,
+                  #061D30 0%,
+                  #04182B 70%,
+                  #041B2D 100%
+                );
+                border: 1px solid #29485D;
+                border-left: 3px solid #00DCF5;
+                flex-wrap: wrap;
+                gap: 10px;
+
+                .device-info-left {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  flex-wrap: wrap;
+
+                  .device-code {
+                    color: #F5F7FB;
+                    font-weight: 600;
+                  }
+
+                  .device-sn,
+                  .device-model {
+                    color: #B7C9DF;
+                  }
+                }
+
+                .device-customers-right {
+                  font-size: 12.5px;
+                  color: #B7C9DF;
+
+                  .customers-label {
+                    color: #7E93A8;
+                  }
+
+                  .owner-highlight {
+                    color: #00DCF5;
+                  }
+
+                  .customers-unassigned {
+                    color: #7E93A8;
+                  }
+                }
+              }
+            }
+          }
+
+          .devices-empty-note {
+            font-size: 13px;
+            color: #7E93A8;
+            margin-top: 8px;
+          }
+        }
+      }
     }
   }
 
-  .prov-card-desc {
-    font-size: 13.5px;
-    color: #94a3b8;
-    line-height: 1.5;
-    margin: 0 0 8px 0;
-    flex: 1;
+  // Three Action Cards Grid Underneath
+  .provisioning-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 8px;
+
+    .provisioning-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      padding: 28px 28px 30px 28px;
+      border: 1px solid #36556D;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      outline: none;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+      .pcard-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(0, 220, 245, 0.08);
+        border: 1px solid rgba(0, 220, 245, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #00DCF5;
+
+        svg {
+          width: 22px;
+          height: 22px;
+        }
+      }
+
+      .pcard-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #F5F7FB;
+        margin: 18px 0 8px 0;
+        letter-spacing: -0.01em;
+      }
+
+      .pcard-desc {
+        font-size: 13.5px;
+        color: #B7C9DF;
+        line-height: 1.5;
+        margin: 0 0 20px 0;
+        flex: 1;
+      }
+
+      .pcard-badge {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #B7C9DF;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      // Corner wave accents
+      .pcard-corner-curve {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 150px;
+        height: 75px;
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0.9;
+      }
+
+      // Card 1: Provision Distributor Admin
+      &.card-prov-admin {
+        background:
+          radial-gradient(
+            ellipse at 100% 100%,
+            #013E5C 0%,
+            transparent 52%
+          ),
+          linear-gradient(
+            145deg,
+            #062B40 0%,
+            #072235 60%,
+            #03182A 100%
+          );
+
+        // Highlighted appearance as shown in reference image
+        border-color: #00DCF5;
+        box-shadow: 0 0 20px rgba(0, 220, 245, 0.25);
+
+        &:hover,
+        &:focus-visible {
+          transform: translateY(-4px);
+          border-color: #00DCF5;
+          box-shadow: 0 10px 28px rgba(0, 220, 245, 0.35);
+        }
+      }
+
+      // Card 2: Register Distributor Branch
+      &.card-prov-branch {
+        background:
+          radial-gradient(
+            ellipse at 100% 100%,
+            #052C47 0%,
+            transparent 52%
+          ),
+          linear-gradient(
+            145deg,
+            #092337 0%,
+            #051F33 65%,
+            #03182A 100%
+          );
+
+        &:hover,
+        &:focus-visible {
+          transform: translateY(-4px);
+          border-color: #367B98;
+          box-shadow: 0 10px 28px rgba(9, 132, 255, 0.3);
+        }
+      }
+
+      // Card 3: Record Device Purchase
+      &.card-prov-purchase {
+        background:
+          radial-gradient(
+            ellipse at 100% 100%,
+            #252B2C 0%,
+            transparent 50%
+          ),
+          linear-gradient(
+            145deg,
+            #0C273C 0%,
+            #0D2030 65%,
+            #071A2B 100%
+          );
+
+        &:hover,
+        &:focus-visible {
+          transform: translateY(-4px);
+          border-color: rgba(167, 121, 37, 0.65);
+          box-shadow: 0 10px 28px rgba(167, 121, 37, 0.25);
+        }
+      }
+    }
   }
 
-  .btn-prov-action {
-    background: #258bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
+  // Loading & Empty banners
+  .acct-loading-banner,
+  .acct-empty-banner {
+    padding: 32px;
+    text-align: center;
+    background: rgba(14, 43, 65, 0.3);
+    border: 1px solid #36556D;
+    border-radius: 14px;
+    color: #B7C9DF;
     font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    align-self: flex-start;
+    margin-bottom: 24px;
+  }
+}
 
-    &:hover {
-      background: #1d70d4;
+@media (max-width: 1100px) {
+  .acct-provisioning-panel {
+    .provisioning-cards-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
+  }
+}
+
+@media (hover: none) {
+  .acct-provisioning-panel .provisioning-cards-grid .provisioning-card:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acct-provisioning-panel .provisioning-cards-grid .provisioning-card,
+  .acct-provisioning-panel .btn-refresh-directory,
+  .systems-page-layout.accounts-page-active .btn-add-system.btn-acct-primary {
+    transition: none !important;
+    transform: none !important;
   }
 }
 

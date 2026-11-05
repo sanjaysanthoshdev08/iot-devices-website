@@ -1986,6 +1986,7 @@
 
   <!-- ===== SYSTEMS / DEVICE MANAGEMENT VIEW (EXACT MATCH TO REFERENCE IMAGE) ===== -->
   <div class="systems-page-layout"
+    [class.accounts-page-active]="activeDashboardNav() === 'accounts'"
     *ngIf="isAuthenticated() && isDashboardAuthorized() && (activeDashboardNav() === 'systems' || activeDashboardNav() === 'accounts' || activeDashboardNav() === 'alerts')">
 
     <!-- 1. LEFT SIDEBAR -->
@@ -2122,21 +2123,13 @@
           <!-- + Create button (Accounts page) -->
           <!-- HYKON_ADMIN Provisioning buttons (Accounts page) -->
           <ng-container *ngIf="activeDashboardNav() === 'accounts' && isHykonAdminRole()">
-            <button type="button" class="btn-add-system" (click)="openCreateDistAdminModal()"
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateDistAdminModal()"
               title="Create Distributor Admin">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Provision Admin</span>
+              <span>+ Provision Admin</span>
             </button>
-            <button type="button" class="btn-add-system" (click)="openCreateDistributorModal()"
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateDistributorModal()"
               title="Create Distributor">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="plus-icon">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Register Distributor</span>
+              <span>+ Register Distributor</span>
             </button>
             <button type="button" class="btn-record-purchase" (click)="openPurchaseModal()"
               title="Record Device Purchase">
@@ -2180,117 +2173,111 @@
         *ngIf="isAuthenticated() && isDashboardAuthorized() && canAccessTab('accounts') && activeDashboardNav() === 'accounts'">
 
         <section class="acct-provisioning-panel" aria-label="Accounts and Provisioning Management">
-          <!-- Distributor Directory Header (Issue 5) -->
-          <div class="directory-section-header" style="margin-bottom: 1.5rem;" *ngIf="isHykonAdminRole()">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <h2 style="font-size:1.25rem; font-weight:600; color:#fff; margin:0 0 4px 0;">Distributor Directory</h2>
-                <p style="font-size:0.875rem; color:#8ba2c4; margin:0;">Complete distributor organizational hierarchy,
-                  branches, registered devices, and authorized customer accounts.</p>
+          <!-- Distributor Directory Header -->
+          <div class="directory-section-header" *ngIf="isHykonAdminRole()">
+            <div class="directory-header-row">
+              <div class="directory-titles">
+                <h2 class="directory-title">Distributor Directory</h2>
+                <p class="directory-subtitle">Complete distributor organizational hierarchy, branches, registered devices, and authorized customer accounts.</p>
               </div>
               <button type="button" class="btn-refresh-directory" (click)="loadDistributorDirectory()"
-                [disabled]="isDirectoryLoading()"
-                style="padding:6px 14px; background:rgba(37,139,255,0.15); border:1px solid rgba(37,139,255,0.4); border-radius:6px; color:#58a6ff; cursor:pointer;">
+                [disabled]="isDirectoryLoading()">
                 {{ isDirectoryLoading() ? 'Refreshing...' : 'Refresh Directory' }}
               </button>
             </div>
           </div>
 
           <!-- Directory Loading State -->
-          <div *ngIf="isHykonAdminRole() && isDirectoryLoading()" class="acct-loading-banner"
-            style="padding:2rem; text-align:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#8ba2c4; margin-bottom:1.5rem;">
+          <div *ngIf="isHykonAdminRole() && isDirectoryLoading()" class="acct-loading-banner">
             Loading distributor hierarchy...
           </div>
 
           <!-- Directory Error State -->
-          <div *ngIf="isHykonAdminRole() && directoryError()" class="modal-error-alert" style="margin-bottom:1.5rem;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              style="width:20px;height:20px;flex-shrink:0;">
+          <div *ngIf="isHykonAdminRole() && directoryError()" class="modal-error-alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-alert-icon">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <div class="error-alert-content">
               <span>{{ directoryError() }}</span>
-              <button type="button" (click)="loadDistributorDirectory()"
-                style="padding:4px 10px; background:#e05252; border:none; border-radius:4px; color:#fff; cursor:pointer; font-size:12px;">Retry</button>
+              <button type="button" class="btn-retry-directory" (click)="loadDistributorDirectory()">Retry</button>
             </div>
           </div>
 
           <!-- Directory Empty State -->
           <div
             *ngIf="isHykonAdminRole() && !isDirectoryLoading() && !directoryError() && distributorDirectory().length === 0"
-            class="acct-empty-banner"
-            style="padding:2rem; text-align:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#8ba2c4; margin-bottom:1.5rem;">
+            class="acct-empty-banner">
             No distributors registered in the system yet. Use the provisioning actions below to create the first
             distributor and administrator.
           </div>
 
           <!-- Directory Hierarchy List -->
           <div *ngIf="isHykonAdminRole() && !isDirectoryLoading() && distributorDirectory().length > 0"
-            class="directory-list" style="display:flex; flex-direction:column; gap:1.25rem; margin-bottom:2rem;">
-            <div *ngFor="let dist of distributorDirectory()" class="distributor-card"
-              style="background:#0f172a; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1.25rem;">
+            class="directory-list">
+            <div *ngFor="let dist of distributorDirectory()" class="distributor-card">
+              <!-- Decorative curved accent SVG within large distributor panel -->
+              <svg class="dist-panel-curve" viewBox="0 0 500 200" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,200 Q280,180 500,60" stroke="#00DCF5" stroke-opacity="0.32" stroke-width="1.5" />
+                <path d="M0,200 Q280,180 500,60 L500,200 Z" fill="url(#distPanelCurveGlow)" opacity="0.16" />
+                <defs>
+                  <linearGradient id="distPanelCurveGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00DCF5" stop-opacity="0" />
+                    <stop offset="100%" stop-color="#00DCF5" stop-opacity="0.25" />
+                  </linearGradient>
+                </defs>
+              </svg>
 
               <!-- Distributor Header -->
-              <div
-                style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:0.75rem; margin-bottom:1rem;">
-                <div>
-                  <h3 style="font-size:1.15rem; font-weight:600; color:#fff; margin:0 0 4px 0;">{{ dist.name }}</h3>
-                  <div style="font-size:0.8rem; color:#8ba2c4; display:flex; gap:12px;">
-                    <span>Code: <code style="color:#58a6ff;">{{ dist.distributorCode }}</code></span>
-                    <span>Status: <span [style.color]="dist.status === 'ACTIVE' ? '#22c55e' : '#eab308'">{{ dist.status
-                        }}</span></span>
+              <div class="distributor-header">
+                <div class="dist-info-left">
+                  <h3 class="dist-title">{{ dist.name }}</h3>
+                  <div class="dist-meta-row">
+                    <span class="dist-meta-code">Code: <code class="dist-code-val">{{ dist.distributorCode }}</code></span>
+                    <span class="dist-meta-status">Status: <span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></span>
                   </div>
                 </div>
-                <div *ngIf="dist.administrator" style="text-align:right; font-size:0.8rem; color:#cbd5e1;">
-                  <span style="color:#8ba2c4;">Administrator:</span> {{ dist.administrator.name }}
-                  <div style="color:#58a6ff;">{{ dist.administrator.email }}</div>
+                <div *ngIf="dist.administrator" class="dist-admin-info">
+                  <div class="dist-admin-name"><span class="admin-label-text">Administrator:</span> {{ dist.administrator.name }}</div>
+                  <div class="dist-admin-email">{{ dist.administrator.email }}</div>
                 </div>
               </div>
 
               <!-- Branches Section -->
-              <div class="branches-container" style="display:flex; flex-direction:column; gap:0.75rem;">
-                <div *ngFor="let branch of dist.branches" class="branch-card"
-                  style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:1rem;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                    <div>
-                      <strong style="color:#e2e8f0; font-size:0.95rem;">{{ branch.name }}</strong>
-                      <span style="font-size:0.8rem; color:#8ba2c4; margin-left:8px;">({{ branch.location }})</span>
+              <div class="branches-container">
+                <div *ngFor="let branch of dist.branches" class="branch-card">
+                  <div class="branch-header">
+                    <div class="branch-name-location">
+                      <strong class="branch-name">{{ branch.name }}</strong>
+                      <span class="branch-location">({{ branch.location }})</span>
                     </div>
-                    <span style="font-size:0.75rem; color:#8ba2c4;">Branch Code: <code
-                        style="color:#93c5fd;">{{ branch.branchCode }}</code></span>
+                    <span class="branch-code-badge">Branch Code: <code class="branch-code-val">{{ branch.branchCode }}</code></span>
                   </div>
 
                   <!-- Devices under Branch -->
-                  <div *ngIf="branch.devices && branch.devices.length > 0" class="branch-devices-list"
-                    style="margin-top:0.75rem;">
-                    <div style="font-size:0.8rem; font-weight:600; color:#94a3b8; margin-bottom:0.4rem;">Registered
-                      Devices ({{ branch.devices.length }}):</div>
-                    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                      <div *ngFor="let dev of branch.devices"
-                        style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:5px; border-left:3px solid #258bff;">
-                        <div>
-                          <strong style="color:#f8fafc;">{{ dev.deviceCode }}</strong>
-                          <span style="color:#64748b; margin-left:8px;">SN: {{ dev.serialNumber }}</span>
-                          <span *ngIf="dev.model" style="color:#8ba2c4; margin-left:8px;">Model: {{ dev.model }}</span>
+                  <div *ngIf="branch.devices && branch.devices.length > 0" class="branch-devices-section">
+                    <div class="devices-count-label">Registered Devices ({{ branch.devices.length }}):</div>
+                    <div class="branch-devices-list">
+                      <div *ngFor="let dev of branch.devices" class="device-item-row">
+                        <div class="device-info-left">
+                          <strong class="device-code">{{ dev.deviceCode }}</strong>
+                          <span class="device-sn">SN: {{ dev.serialNumber }}</span>
+                          <span *ngIf="dev.model" class="device-model">Model: {{ dev.model }}</span>
                         </div>
-                        <div style="font-size:0.75rem; color:#cbd5e1;">
-                          <span style="color:#64748b;">Customers: </span>
-                          <span *ngIf="dev.authorizedCustomers && dev.authorizedCustomers.length > 0">
+                        <div class="device-customers-right">
+                          <span class="customers-label">Customers: </span>
+                          <span *ngIf="dev.authorizedCustomers && dev.authorizedCustomers.length > 0" class="customers-val">
                             <span *ngFor="let c of dev.authorizedCustomers; let last = last">
-                              <span [style.color]="c.isPrimaryOwner ? '#38bdf8' : '#e2e8f0'">{{ c.email }}{{
-                                c.isPrimaryOwner ? ' (Owner)' : '' }}</span>{{ last ? '' : ', ' }}
+                              <span [class.owner-highlight]="c.isPrimaryOwner">{{ c.email }}{{ c.isPrimaryOwner ? ' (Owner)' : '' }}</span>{{ last ? '' : ', ' }}
                             </span>
                           </span>
-                          <span *ngIf="!dev.authorizedCustomers || dev.authorizedCustomers.length === 0"
-                            style="color:#64748b;">Unassigned</span>
+                          <span *ngIf="!dev.authorizedCustomers || dev.authorizedCustomers.length === 0" class="customers-unassigned">Unassigned</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div *ngIf="!branch.devices || branch.devices.length === 0"
-                    style="font-size:0.8rem; color:#64748b; margin-top:0.5rem;">
+                  <div *ngIf="!branch.devices || branch.devices.length === 0" class="devices-empty-note">
                     No devices registered under this branch yet.
                   </div>
                 </div>
@@ -2298,8 +2285,10 @@
             </div>
           </div>
 
+          <!-- Three Action Cards Underneath -->
           <div class="provisioning-cards-grid" *ngIf="isHykonAdminRole()">
-            <div class="provisioning-card" (click)="openCreateDistAdminModal()" role="button" tabindex="0">
+            <!-- Card 1: Provision Distributor Admin -->
+            <div class="provisioning-card card-prov-admin" (click)="openCreateDistAdminModal()" role="button" tabindex="0">
               <div class="pcard-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -2311,9 +2300,15 @@
               <h4 class="pcard-title">Provision Distributor Admin</h4>
               <p class="pcard-desc">Create a new administrator credential for a regional distributor partner.</p>
               <span class="pcard-badge">HYKON_ADMIN</span>
+              <!-- Cyan lower-right curve accent -->
+              <svg class="pcard-corner-curve curve-cyan" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,80 Q90,75 160,15" stroke="#00DCF5" stroke-width="1.2" opacity="0.65"/>
+                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#00DCF5" opacity="0.12"/>
+              </svg>
             </div>
 
-            <div class="provisioning-card" (click)="openCreateDistributorModal()" role="button" tabindex="0">
+            <!-- Card 2: Register Distributor Branch -->
+            <div class="provisioning-card card-prov-branch" (click)="openCreateDistributorModal()" role="button" tabindex="0">
               <div class="pcard-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -2323,9 +2318,15 @@
               <h4 class="pcard-title">Register Distributor Branch</h4>
               <p class="pcard-desc">Link a distributor code and branch location to an administrator user ID.</p>
               <span class="pcard-badge">HYKON_ADMIN</span>
+              <!-- Blue-cyan lower-right curve accent -->
+              <svg class="pcard-corner-curve curve-blue-cyan" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,80 Q90,75 160,15" stroke="#0099FF" stroke-width="1.2" opacity="0.55"/>
+                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#0099FF" opacity="0.10"/>
+              </svg>
             </div>
 
-            <div class="provisioning-card" (click)="openPurchaseModal()" role="button" tabindex="0">
+            <!-- Card 3: Record Device Purchase -->
+            <div class="provisioning-card card-prov-purchase" (click)="openPurchaseModal()" role="button" tabindex="0">
               <div class="pcard-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -2335,6 +2336,11 @@
               <h4 class="pcard-title">Record Device Purchase</h4>
               <p class="pcard-desc">Assign customer ownership eligibility by recording a device purchase reference.</p>
               <span class="pcard-badge">ADMIN & DISTRIBUTOR</span>
+              <!-- Muted amber lower-right curve accent -->
+              <svg class="pcard-corner-curve curve-amber" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0,80 Q90,75 160,15" stroke="#A77925" stroke-width="1.2" opacity="0.6"/>
+                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#A77925" opacity="0.12"/>
+              </svg>
             </div>
           </div>
         </section>
