@@ -2589,25 +2589,25 @@
               <!-- Populated Rows (When actual records exist) -->
               <tr *ngFor="let record of systemRecords(); let i = index" class="systems-data-row">
                 <!-- 1. Sequential Number (page * size + index + 1) -->
-                <td class="cell-no">{{ currentPage() * pageSize() + i + 1 }}</td>
+                <td class="cell-no" data-label="No.">{{ currentPage() * pageSize() + i + 1 }}</td>
                 <!-- 2. System Name (clickable for details) -->
-                <td class="cell-name">
+                <td class="cell-name" data-label="System name">
                   <button type="button" class="system-name-btn" (click)="openDeviceDetails(record.id)"
                     title="View device details">{{ record.systemName || record.deviceCode }}</button>
                 </td>
                 <!-- 3. Serial Number (string with leading zeros preserved) -->
-                <td class="cell-sn">
+                <td class="cell-sn" data-label="SN">
                   <span class="sn-code">{{ record.serialNumber }}</span>
                 </td>
                 <!-- 4. Registration Status (ACTIVE is lifecycle, not telemetry) -->
-                <td class="cell-status">
+                <td class="cell-status" data-label="Registration status">
                   <span class="status-pill status-registered">
                     <span class="status-dot"></span>
                     <span class="status-text">{{ record.status }}</span>
                   </span>
                 </td>
                 <!-- 5. User display info -->
-                <td class="cell-user">
+                <td class="cell-user" data-label="User">
                   <span class="user-text">{{ record.customerEmails && record.customerEmails.length > 0 ?
                     record.customerEmails.join(', ') : (record.ownerUserId !== null ? 'User #' + record.ownerUserId :
                     'Unassigned') }}</span>
