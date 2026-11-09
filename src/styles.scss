@@ -15,3 +15,27 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== Responsive safety net (additive; only affects small / touch screens) ===== */
+img, svg, video, canvas {
+  max-width: 100%;
+}
+
+/* Touch devices: comfortable tap targets */
+@media (pointer: coarse) {
+  button,
+  select,
+  input:not([type='checkbox']):not([type='radio']),
+  .nm-toggle {
+    min-height: 44px;
+  }
+}
+
+/* Phones: 16px inputs so iOS Safari does not zoom on focus */
+@media (max-width: 700px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

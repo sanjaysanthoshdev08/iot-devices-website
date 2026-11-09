@@ -1,0 +1,171 @@
+/* NavMenu — encapsulation is None, so every selector is prefixed `nm-`. */
+app-nav-menu {
+  display: contents;
+}
+
+/* ---------- WIDE SCREENS (> 700px): header layout is untouched ---------- */
+.nm-toggle {
+  display: none;
+}
+
+.nm-brand {
+  flex: 1; /* behaves like the previous empty spacer on the left of the header */
+  min-width: 0;
+
+  .nm-brand-text {
+    display: none;
+  }
+}
+
+.nm-panel,
+.nm-links,
+.nm-extra {
+  display: contents;
+}
+
+.nm-brand-panel {
+  display: none;
+}
+
+/* ---------- SMALL SCREENS (<= 700px) ---------- */
+@media (max-width: 700px) {
+  .nm-brand {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    position: relative;
+    z-index: 1;
+
+    .nm-brand-text {
+      display: block;
+      color: #ffffff;
+      font-family: 'Orbitron', 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Bar copy hides (keeps its space) while the panel copy shows in the same spot */
+    &.nm-brand-faded {
+      visibility: hidden;
+    }
+  }
+
+  .nm-brand-panel {
+    display: flex;
+    flex: none;
+    padding-right: 60px; /* keep clear of the hamburger */
+
+    .nm-brand-text {
+      color: #0b1220;
+    }
+  }
+
+  .nm-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    position: relative;
+    z-index: 3; /* above the panel (z-index 2) */
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(10, 20, 40, 0.65);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+
+    &:focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+
+    &.nm-toggle-open {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #0b1220;
+    }
+  }
+
+  .nm-toggle-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 18px;
+
+    span {
+      display: block;
+      height: 2px;
+      border-radius: 2px;
+      background: currentColor;
+    }
+  }
+
+  .nm-panel {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: block;
+    box-sizing: border-box;
+    padding: var(--nm-pad-top, 16px) var(--nm-pad-x, 16px) 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+
+    /* closed: laid out the whole time, just clipped + transparent + non-interactive */
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      clip-path 0.35s ease,
+      opacity 0.25s ease,
+      visibility 0s linear 0.35s;
+
+    &.nm-panel-open {
+      clip-path: inset(0 0 -40px 0);
+      opacity: 1;
+      visibility: visible;
+      transition:
+        clip-path 0.35s ease,
+        opacity 0.25s ease,
+        visibility 0s linear 0s;
+    }
+  }
+
+  .nm-links,
+  .nm-extra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+
+  .nm-links {
+    padding: 12px 0;
+  }
+
+  .nm-extra {
+    padding-top: 14px;
+    border-top: 1px solid #e2e8f0;
+  }
+}
+
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .nm-panel,
+  .nm-panel.nm-panel-open,
+  .nm-toggle {
+    transition: none;
+  }
+}

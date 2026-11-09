@@ -14,17 +14,17 @@
 
       <!-- ===== TOP NAVBAR (visible only on Home page) ===== -->
       <header class="navbar" [class.navbar-hidden]="isNavbarHidden()">
-        <div class="nav-left"></div>
-
-        <nav class="nav-pill-container">
+        <app-nav-menu brand="Infinit Monitorize" brandClass="nav-left" linksClass="nav-links-wrap"
+          extraClass="nav-extra-wrap">
+        <nav links class="nav-pill-container">
           <a *ngFor="let link of navLinks(); let i = index" href="javascript:void(0)" class="nav-item"
             [class.active]="link.active" (click)="setActiveNav(i)">
             {{ link.label }}
           </a>
         </nav>
 
-        <div class="nav-right">
-          <ng-container *ngIf="!isAuthenticated(); else authUserTpl">
+        <div extra class="nav-right">
+          <ng-container *ngIf="!isUserLoggedIn(); else authUserTpl">
             <a href="javascript:void(0)" class="nav-login" (click)="openLoginModal()">Log in</a>
             <button class="btn-signup" (click)="openSignUpModal()">
               <span>Sign up free</span>
@@ -62,6 +62,7 @@
             </div>
           </ng-template>
         </div>
+        </app-nav-menu>
       </header>
 
       <!-- ===== CENTERED HERO CONTENT ===== -->

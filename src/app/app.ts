@@ -5,6 +5,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
 import { TelemetryHistoryComponent } from './components/telemetry-history/telemetry-history.component';
+import { NavMenu } from './components/nav-menu/nav-menu.component';
 import { DeviceTelemetryMonitor } from './services/device-telemetry-monitor.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
 import { ManagementService, DirectoryDistributor } from './services/management.service';
@@ -41,7 +42,7 @@ export interface InfinityParticle {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, TelemetryHistoryComponent],
+  imports: [CommonModule, FormsModule, TelemetryHistoryComponent, NavMenu],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -142,6 +143,10 @@ export class App implements AfterViewInit, OnDestroy {
   readonly isDistributorRole = computed(() => this.currentRole() === 'DISTRIBUTOR_ADMIN');
   readonly isCustomerRole = computed(() => this.currentRole() === 'USER');
   readonly isHykonAdminRole = computed(() => this.currentRole() === 'HYKON_ADMIN');
+
+  // Explicit login tracking: only true after explicit user/admin/distributor login.
+  // Defaults to false so startup / opening the site always displays Log in / Sign up on the home page.
+  readonly isUserLoggedIn = signal<boolean>(false);
 
   // Navigation request tracking token for cancelling/ignoring outdated async responses
   navigationRequestId = 0;
@@ -447,6 +452,7 @@ export class App implements AfterViewInit, OnDestroy {
         }
 
         this.isAuthVerifying.set(false);
+        this.isUserLoggedIn.set(true);
         this.isDashboardAuthorized.set(true);
 
         // verifyDevice returns a single DeviceResponse; totalElements not available here.
@@ -527,6 +533,7 @@ export class App implements AfterViewInit, OnDestroy {
         }
 
         this.isAuthVerifying.set(false);
+        this.isUserLoggedIn.set(true);
         this.isDashboardAuthorized.set(true);
         this.isDeviceAuthModalOpen.set(false);
 
@@ -641,6 +648,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   handleAuthenticationCleared() {
+    this.isUserLoggedIn.set(false);
     this.clearDashboardAndGateState();
   }
 
@@ -809,6 +817,7 @@ export class App implements AfterViewInit, OnDestroy {
           return;
         }
         this.isAuthVerifying.set(false);
+        this.isUserLoggedIn.set(true);
         this.isDashboardAuthorized.set(true);
 
         if (res.data && typeof (res.data as any).totalElements === 'number') {
@@ -1977,6 +1986,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   onLogout() {
+    this.isUserLoggedIn.set(false);
     this.closeProfileDropdown();
     this.clearDashboardAndGateState();
     this.redirectToHome();
@@ -2186,6 +2196,7 @@ export class App implements AfterViewInit, OnDestroy {
         password: this.loginPassword()
       }).subscribe({
         next: (response) => {
+          this.isUserLoggedIn.set(true);
           this.clearDashboardAndGateState();
           this.isSubmitting.set(false);
           this.authSuccess.set(response.message || 'Login successful.');
@@ -2420,6 +2431,12 @@ export class App implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     if (isPlatformBrowser(this.platformId)) {
+      try {
+        if (!this.isUserLoggedIn() && (window.location.pathname === '/' || window.location.pathname === '')) {
+          window.localStorage.removeItem('hykon_auth_session');
+        }
+      } catch {}
+
       this.preloadFrames();
       this.updateFeaturesScale();
       this.updateDashboardScale();
