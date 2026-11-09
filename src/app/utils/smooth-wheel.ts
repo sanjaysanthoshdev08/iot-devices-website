@@ -16,6 +16,9 @@ export function enableSmoothWheel(
   speedAt: (scrollTop: number) => number = () => 1
 ): SmoothWheelHandle {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const SPEED = 0.8; // overall wheel speed (1 = native distance)
+  const MAX_STEP = 110; // max px added per wheel event
+  const MAX_LEAD = 0.75; // target may be at most this many viewport-heights ahead of the screen
   let target = scroller.scrollTop;
   let lastSet = scroller.scrollTop;
   let raf = 0;
@@ -72,8 +75,14 @@ export function enableSmoothWheel(
     }
     e.preventDefault();
     // Slow zones: judge by where the scroll is heading, so entering/leaving a zone feels gradual.
-    dy *= speedAt(target);
-    target = Math.min(Math.max(target + dy, 0), maxScroll());
+    dy *= speedAt(target) * SPEED;
+    // A single fast flick can't send a huge jump...
+    dy = Math.max(-MAX_STEP, Math.min(MAX_STEP, dy));
+    // ...and rapid / long scrolling can't run far ahead of what is currently on screen.
+    const maxLead = scroller.clientHeight * MAX_LEAD;
+    const base = scroller.scrollTop;
+    target = Math.min(Math.max(target + dy, base - maxLead), base + maxLead);
+    target = Math.min(Math.max(target, 0), maxScroll());
     if (!raf) {
       lastSet = scroller.scrollTop;
       raf = requestAnimationFrame(step);

@@ -2467,7 +2467,7 @@ export class App implements AfterViewInit, OnDestroy {
       // Eased wheel/trackpad scrolling for the main page scroller (scrollTop stays the source of truth).
       const mainScroller = document.querySelector('.viewport-wrapper') as HTMLElement | null;
       if (mainScroller) {
-        this.smoothWheel = enableSmoothWheel(mainScroller, 0.11, (top) => this.aboutZoneSpeed(mainScroller, top));
+        this.smoothWheel = enableSmoothWheel(mainScroller, 0.09, (top) => this.aboutZoneSpeed(mainScroller, top));
       }
     }
   }
