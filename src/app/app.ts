@@ -2467,7 +2467,7 @@ export class App implements AfterViewInit, OnDestroy {
       // Eased wheel/trackpad scrolling for the main page scroller (scrollTop stays the source of truth).
       const mainScroller = document.querySelector('.viewport-wrapper') as HTMLElement | null;
       if (mainScroller) {
-        this.smoothWheel = enableSmoothWheel(mainScroller);
+        this.smoothWheel = enableSmoothWheel(mainScroller, 0.11, (top) => this.aboutZoneSpeed(mainScroller, top));
       }
     }
   }
@@ -2502,6 +2502,29 @@ export class App implements AfterViewInit, OnDestroy {
       clearTimeout(this.toastTimer);
     }
     this.destroyInfinityParticleSystem();
+  }
+
+  /**
+   * Wheel-speed multiplier for the About page: slower when entering and when leaving it, so the
+   * hand-off to the neighbouring pages is not rushed. Normal speed (1) everywhere else, with a
+   * gradual ramp at the edges of each zone so there is no sudden change in feel.
+   */
+  private aboutZoneSpeed(scroller: HTMLElement, scrollTop: number): number {
+    const about = document.getElementById('about-section');
+    if (!about) return 1;
+    const vh = scroller.clientHeight || window.innerHeight;
+    const start = about.offsetTop;
+    const end = start + about.offsetHeight;
+    const SLOW = 0.45;
+
+    // distance (in px) from the nearest boundary the user is passing through
+    const enterD = Math.abs(scrollTop - start);
+    const exitD = Math.abs(scrollTop - (end - vh));
+    const zone = vh * 0.9;
+    const d = Math.min(enterD, exitD);
+    if (d >= zone) return 1;
+    const t = d / zone; // 0 at the boundary .. 1 at the zone edge
+    return SLOW + (1 - SLOW) * t * t;
   }
 
   private preloadFrames() {

@@ -9,7 +9,12 @@ export interface SmoothWheelHandle {
   destroy(): void;
 }
 
-export function enableSmoothWheel(scroller: HTMLElement, ease = 0.11): SmoothWheelHandle {
+export function enableSmoothWheel(
+  scroller: HTMLElement,
+  ease = 0.11,
+  /** Optional speed multiplier (0..1+) for a given scrollTop, e.g. to slow down specific regions. */
+  speedAt: (scrollTop: number) => number = () => 1
+): SmoothWheelHandle {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   let target = scroller.scrollTop;
   let lastSet = scroller.scrollTop;
@@ -66,6 +71,8 @@ export function enableSmoothWheel(scroller: HTMLElement, ease = 0.11): SmoothWhe
       target = scroller.scrollTop;
     }
     e.preventDefault();
+    // Slow zones: judge by where the scroll is heading, so entering/leaving a zone feels gradual.
+    dy *= speedAt(target);
     target = Math.min(Math.max(target + dy, 0), maxScroll());
     if (!raf) {
       lastSet = scroller.scrollTop;
