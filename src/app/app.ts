@@ -6,6 +6,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from './services/auth.service';
 import { TelemetryHistoryComponent } from './components/telemetry-history/telemetry-history.component';
 import { NavMenu } from './components/nav-menu/nav-menu.component';
+import { enableSmoothWheel, SmoothWheelHandle } from './utils/smooth-wheel';
 import { DeviceTelemetryMonitor } from './services/device-telemetry-monitor.service';
 import { DeviceAccessService, DeviceResponse } from './services/device-access.service';
 import { ManagementService, DirectoryDistributor } from './services/management.service';
@@ -2241,6 +2242,7 @@ export class App implements AfterViewInit, OnDestroy {
   private currentFrame = 0;
   private animationFrameId: number | null = null;
   private resizeListener: (() => void) | null = null;
+  private smoothWheel: SmoothWheelHandle | null = null;
 
   // About Us text overlay signals (driven by scroll progress)
   aboutTextOpacity = signal<number>(1);
@@ -2461,6 +2463,12 @@ export class App implements AfterViewInit, OnDestroy {
         });
       };
       window.addEventListener('resize', this.resizeListener);
+
+      // Eased wheel/trackpad scrolling for the main page scroller (scrollTop stays the source of truth).
+      const mainScroller = document.querySelector('.viewport-wrapper') as HTMLElement | null;
+      if (mainScroller) {
+        this.smoothWheel = enableSmoothWheel(mainScroller);
+      }
     }
   }
 
@@ -2485,6 +2493,7 @@ export class App implements AfterViewInit, OnDestroy {
     if (this.resizeListener) {
       window.removeEventListener('resize', this.resizeListener);
     }
+    this.smoothWheel?.destroy();
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
       this.clockInterval = null;
