@@ -39,3 +39,10 @@ img, svg, video, canvas {
     font-size: 16px !important;
   }
 }
+
+/* While the window is being resized, pause transitions so layout changes stay smooth (no shivering) */
+html.is-resizing *,
+html.is-resizing *::before,
+html.is-resizing *::after {
+  transition: none !important;
+}

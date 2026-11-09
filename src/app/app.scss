@@ -9486,3 +9486,46 @@
     }
   }
 }
+
+/* ---------- Fluid scaling for the home navbar between 701px and desktop ---------- */
+@media (min-width: 701px) {
+  .navbar {
+    padding: clamp(14px, 2.2vw, 24px) clamp(16px, 3.4vw, 48px) 0;
+
+    .nav-pill-container {
+      gap: clamp(12px, 1.7vw, 24px);
+      padding: 8px clamp(14px, 2vw, 28px);
+    }
+
+    .nav-item {
+      font-size: clamp(12px, 1.05vw, 14px);
+    }
+
+    .nav-right {
+      gap: clamp(10px, 1.4vw, 20px);
+    }
+
+    .nav-login {
+      font-size: clamp(12px, 1.05vw, 14px);
+      white-space: nowrap;
+    }
+
+    .btn-signup {
+      font-size: clamp(11.5px, 1vw, 13px);
+      padding: 8px clamp(12px, 1.6vw, 22px);
+      white-space: nowrap;
+    }
+  }
+}
+
+/* Fluid hero text between small and large desktop widths */
+@media (min-width: 701px) {
+  .hero-subtitle {
+    font-size: clamp(14px, 1.3vw, 16px);
+    max-width: min(560px, 90vw);
+  }
+
+  .badge-feature .badge-text {
+    font-size: clamp(11.5px, 1vw, 13px);
+  }
+}

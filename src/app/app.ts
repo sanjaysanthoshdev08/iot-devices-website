@@ -2444,10 +2444,21 @@ export class App implements AfterViewInit, OnDestroy {
 
       this.handleUrlRouting(window.location.pathname);
 
+      // Smooth resizing: do the work at most once per frame, and pause CSS transitions
+      // while the window is being dragged so layout changes don't "shiver".
+      let resizeRaf = 0;
+      let resizeIdleTimer: ReturnType<typeof setTimeout> | null = null;
       this.resizeListener = () => {
-        this.drawFrame(this.currentFrame);
-        this.updateFeaturesScale();
-        this.updateDashboardScale();
+        document.documentElement.classList.add('is-resizing');
+        if (resizeIdleTimer) clearTimeout(resizeIdleTimer);
+        resizeIdleTimer = setTimeout(() => document.documentElement.classList.remove('is-resizing'), 150);
+        if (resizeRaf) return;
+        resizeRaf = requestAnimationFrame(() => {
+          resizeRaf = 0;
+          this.drawFrame(this.currentFrame);
+          this.updateFeaturesScale();
+          this.updateDashboardScale();
+        });
       };
       window.addEventListener('resize', this.resizeListener);
     }
