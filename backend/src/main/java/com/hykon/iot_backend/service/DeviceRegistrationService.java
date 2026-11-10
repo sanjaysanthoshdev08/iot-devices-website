@@ -157,10 +157,11 @@ public class DeviceRegistrationService {
         String dCode = deviceCode.trim();
         String sNum = serialNumber.trim();
 
-        // 1. Validate serial number: YY + MM + 6-digit device number (exactly 10 digits)
-        if (!sNum.matches("^\\d{10}$")) {
+        // 1. Validate serial number: YY + MM + 5-digit running number (exactly 9 digits).
+        //    The running number restarts every month, e.g. 261100001, 261100002 ... 261200001.
+        if (!sNum.matches("^\\d{9}$")) {
             throw new IllegalArgumentException(
-                    "Serial number must be 10 digits in format YYMM + 6-digit device number (e.g. 2610000001)"
+                    "Serial number must be 9 digits in format YYMM + 5-digit device number (e.g. 261100001)"
             );
         }
         int month = Integer.parseInt(sNum.substring(2, 4));
@@ -169,38 +170,18 @@ public class DeviceRegistrationService {
                     "Serial number month must be between 01 and 12"
             );
         }
-        String serialSuffix = sNum.substring(4, 10);
-        int serialDeviceNumber = Integer.parseInt(serialSuffix);
-        if (serialDeviceNumber < 1 || serialDeviceNumber > 100000) {
+        int serialDeviceNumber = Integer.parseInt(sNum.substring(4, 9));
+        if (serialDeviceNumber < 1) {
             throw new IllegalArgumentException(
-                    "Device number must be between 000001 and 100000"
+                    "Device number must be between 00001 and 99999"
             );
         }
 
-        // 2. Validate Device ID: <model>-<6-digit device number>
-        int lastHyphen = dCode.lastIndexOf('-');
-        if (lastHyphen <= 0 || lastHyphen == dCode.length() - 1) {
+        // 2. Validate Device ID: <model>-<number>. It is independent of the serial number,
+        //    because serial running numbers repeat across months while Device IDs must stay unique.
+        if (!dCode.matches("^[A-Za-z0-9]+-\\d+$")) {
             throw new IllegalArgumentException(
-                    "Device ID must follow format <model>-<6-digit device number> (e.g. halo1200-000001)"
-            );
-        }
-        String deviceCodeSuffix = dCode.substring(lastHyphen + 1);
-        if (!deviceCodeSuffix.matches("^\\d{6}$")) {
-            throw new IllegalArgumentException(
-                    "Device ID suffix must be exactly 6 digits (e.g. halo1200-000001)"
-            );
-        }
-        int deviceCodeNum = Integer.parseInt(deviceCodeSuffix);
-        if (deviceCodeNum < 1 || deviceCodeNum > 100000) {
-            throw new IllegalArgumentException(
-                    "Device ID number must be between 000001 and 100000"
-            );
-        }
-
-        // 3. Ensure numeric suffix matches between Device ID and serial number
-        if (!deviceCodeSuffix.equals(serialSuffix)) {
-            throw new IllegalArgumentException(
-                    "Device ID numeric suffix (" + deviceCodeSuffix + ") and serial number suffix (" + serialSuffix + ") must match"
+                    "Device ID must follow format <model>-<number> (e.g. halo1200-1)"
             );
         }
     }

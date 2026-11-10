@@ -125,7 +125,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     const device = {
       id: 101,
       deviceCode: 'halo1200-000101',
-      serialNumber: '2610000101',
+      serialNumber: '261000101',
       systemName: 'Monitoring Test',
       model: 'HALO1200',
       branchId: 1,
@@ -1270,7 +1270,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         expect(app.isAddSystemModalOpen()).toBe(true);
 
         app.newSystemDeviceCode.set('halo1200-000001');
-        app.newSystemSN.set('2610000001');
+        app.newSystemSN.set('261000001');
         app.newSystemName.set('Residential Backup 1200');
         app.newSystemModel.set('HALO 1200');
         app.newSystemBranchId.set('');
@@ -1296,7 +1296,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000001',
-          serialNumber: '2610000001',
+          serialNumber: '261000001',
           systemName: 'Residential Backup 1200',
           model: 'HALO 1200',
           branchId: null
@@ -1319,7 +1319,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000002');
-        app.newSystemSN.set('2610000002');
+        app.newSystemSN.set('261000002');
         app.newSystemName.set('Distributor Unit 1');
         app.newSystemBranchId.set(''); // Empty branch ID
 
@@ -1337,7 +1337,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000002',
-          serialNumber: '2610000002',
+          serialNumber: '261000002',
           systemName: 'Distributor Unit 1',
           model: null,
           branchId: 5
@@ -1366,7 +1366,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('displays backend 400 validation and 409 conflict errors without closing modal', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000099');
-        app.newSystemSN.set('2610000099');
+        app.newSystemSN.set('261000099');
         app.newSystemName.set('Duplicate Unit');
 
         // 409 Conflict
@@ -1409,7 +1409,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('prevents duplicate submissions while registration request is pending', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000001');
-        app.newSystemSN.set('2610000001');
+        app.newSystemSN.set('261000001');
         app.newSystemName.set('Unit 1');
 
         const pendingSubject = new Subject<any>();
@@ -1668,7 +1668,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('ignores late registration response after logout', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000100');
-        app.newSystemSN.set('2610000100');
+        app.newSystemSN.set('261000100');
         app.newSystemName.set('Unit 100');
 
         const pendingSubject = new Subject<any>();
@@ -1693,7 +1693,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('401 error during registration triggers login recovery', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000100');
-        app.newSystemSN.set('2610000100');
+        app.newSystemSN.set('261000100');
         app.newSystemName.set('Unit 100');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -1720,7 +1720,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000200');
-        app.newSystemSN.set('2610000200');
+        app.newSystemSN.set('261000200');
         app.newSystemName.set('Unit 200');
         app.newSystemBranchId.set('1');
 
@@ -1740,7 +1740,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('403 error for HYKON_ADMIN displays toast and never opens customer or distributor verification gate', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000300');
-        app.newSystemSN.set('2610000300');
+        app.newSystemSN.set('261000300');
         app.newSystemName.set('Unit 300');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -1758,7 +1758,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       it('uncertain network failure (status 0) shows message asking user to check result before submitting and does not retry', () => {
         app.openAddSystemModal();
         app.newSystemDeviceCode.set('halo1200-000400');
-        app.newSystemSN.set('2610000400');
+        app.newSystemSN.set('261000400');
         app.newSystemName.set('Unit 400');
 
         mockManagementService.registerDevice.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -2375,56 +2375,86 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.openAddSystemModal();
       });
 
-      it('rejects serial numbers that do not match YYMM + 6-digit device number format', () => {
-        app.newSystemDeviceCode.set('halo1200-000001');
-        app.newSystemSN.set('INVALID-SN');
-        app.newSystemName.set('Unit 1');
+      it('rejects serial numbers that do not match YYMM + 5-digit device number format', () => {
+        for (const sn of ['INVALID-SN', '2611000001', '26110001']) {
+          app.newSystemDeviceCode.set('halo1200-000001');
+          app.newSystemSN.set(sn);
+          app.newSystemName.set('Unit 1');
 
-        app.submitAddSystem();
+          app.submitAddSystem();
 
-        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toContain('Serial number must be in format YYMM + six-digit device number');
+          expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+          expect(app.newSystemError()).toContain('Serial number must be in format YYMM + five-digit device number');
+        }
       });
 
       it('rejects serial numbers with invalid month (e.g. 13 or 00)', () => {
         app.newSystemDeviceCode.set('halo1200-000001');
-        app.newSystemSN.set('2613000001'); // Month 13
+        app.newSystemSN.set('261300001'); // Month 13
         app.newSystemName.set('Unit 1');
 
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toContain('Serial number must be in format YYMM + six-digit device number');
+        expect(app.newSystemError()).toContain('Serial number must be in format YYMM + five-digit device number');
       });
 
-      it('rejects suffix mismatch between Device ID and serial number', () => {
-        app.newSystemDeviceCode.set('halo1200-000002'); // Suffix 000002
-        app.newSystemSN.set('2610000001'); // Suffix 000001
+      it('rejects device number 00000 in the serial', () => {
+        app.newSystemDeviceCode.set('halo1200-1');
+        app.newSystemSN.set('261100000');
         app.newSystemName.set('Unit 1');
 
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toContain('must match serial number suffix');
+        expect(app.newSystemError()).toContain('between 00001 and 99999');
+      });
+
+      it('rejects Device IDs without a <model>-<number> format', () => {
+        app.newSystemDeviceCode.set('halo1200');
+        app.newSystemSN.set('261100001');
+        app.newSystemName.set('Unit 1');
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+        expect(app.newSystemError()).toContain('Device ID must be in format <model>-<number>');
+      });
+
+      it('does not require the Device ID number to match the serial number', () => {
+        app.newSystemDeviceCode.set('halo1200-4'); // Device 4 overall
+        app.newSystemSN.set('261200001'); // First device of December
+        app.newSystemName.set('Unit 4');
+
+        mockManagementService.registerDevice.mockReturnValue(of({
+          success: true,
+          message: 'Device registered successfully',
+          data: { id: 4, deviceCode: 'halo1200-4', serialNumber: '261200001', systemName: 'Unit 4', status: 'ACTIVE' }
+        }));
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).toHaveBeenCalled();
+        expect(app.newSystemError()).toBe('');
       });
 
       it('accepts valid credentials with matching suffixes and model prefix', () => {
         app.newSystemDeviceCode.set('halo1200-000050');
-        app.newSystemSN.set('2610000050');
+        app.newSystemSN.set('261000050');
         app.newSystemName.set('Solar Unit 50');
         app.newSystemModel.set('HALO 1200');
 
         mockManagementService.registerDevice.mockReturnValue(of({
           success: true,
           message: 'Device registered successfully',
-          data: { id: 50, deviceCode: 'halo1200-000050', serialNumber: '2610000050', systemName: 'Solar Unit 50', status: 'ACTIVE' }
+          data: { id: 50, deviceCode: 'halo1200-000050', serialNumber: '261000050', systemName: 'Solar Unit 50', status: 'ACTIVE' }
         }));
 
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000050',
-          serialNumber: '2610000050',
+          serialNumber: '261000050',
           systemName: 'Solar Unit 50',
           model: 'HALO 1200',
           branchId: null
@@ -2447,7 +2477,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         const deviceData: any = {
           id: 10,
           deviceCode: 'halo1200-000010',
-          serialNumber: '2610000010',
+          serialNumber: '261000010',
           systemName: 'Halo System',
           customerEmails: ['owner@test.com']
         };
@@ -2471,7 +2501,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         const deviceData: any = {
           id: 10,
           deviceCode: 'halo1200-000010',
-          serialNumber: '2610000010',
+          serialNumber: '261000010',
           systemName: 'Halo System',
           customerEmails: ['owner@test.com', 'c2@test.com', 'c3@test.com']
         };
@@ -2488,7 +2518,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         const deviceData: any = {
           id: 10,
           deviceCode: 'halo1200-000010',
-          serialNumber: '2610000010',
+          serialNumber: '261000010',
           systemName: 'Halo System',
           customerEmails: ['owner@test.com', 'second@test.com']
         };
@@ -2632,7 +2662,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
                 location: 'Kochi',
                 status: 'ACTIVE',
                 devices: [
-                  { id: 50, deviceCode: 'halo1200-000050', serialNumber: '2610000050', systemName: 'Halo 1200', customerEmails: ['client@test.com'] }
+                  { id: 50, deviceCode: 'halo1200-000050', serialNumber: '261000050', systemName: 'Halo 1200', customerEmails: ['client@test.com'] }
                 ]
               }
             ]

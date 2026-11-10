@@ -59,7 +59,7 @@ class DeviceRegistrationServiceTest {
     private RegisterDeviceRequest request() {
         RegisterDeviceRequest request = new RegisterDeviceRequest();
         request.setDeviceCode(" halo1200-000001 ");
-        request.setSerialNumber(" 2610000001 ");
+        request.setSerialNumber(" 261100001 ");
         request.setSystemName(" HALO 1200 ");
         return request;
     }
@@ -96,7 +96,7 @@ class DeviceRegistrationServiceTest {
                 service.register(request(), "creator@example.com");
 
         assertEquals("halo1200-000001", response.deviceCode());
-        assertEquals("2610000001", response.serialNumber());
+        assertEquals("261100001", response.serialNumber());
         assertEquals("HALO 1200", response.systemName());
         assertEquals("ACTIVE", response.status());
         assertNull(response.ownerUserId());
@@ -200,7 +200,7 @@ class DeviceRegistrationServiceTest {
     @Test
     void duplicateSerialNumberIsRejected() {
         stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
-        when(deviceRepository.findBySerialNumberNormalized("2610000001"))
+        when(deviceRepository.findBySerialNumberNormalized("261100001"))
                 .thenReturn(Optional.of(new Device()));
 
         assertThrows(DuplicateResourceException.class,
@@ -211,80 +211,67 @@ class DeviceRegistrationServiceTest {
 
     @Test
     void formatValidationRejectsInvalidSerialNumbers() {
-        // Not 10 digits
+        // Not 9 digits (old 10-digit format, too short, non-numeric)
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "123"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "123"));
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "26100001"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "26110001"));
+        assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "2610000001"));
+        assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "SN-HYK-1200-01"));
 
         // Invalid month
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "2600000001"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "260000001"));
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "2613000001"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "261300001"));
 
-        // Device number out of bounds
+        // Device number 00000 is not allowed
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000000", "2610000000"));
-        assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-100001", "2610100001"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "261100000"));
     }
 
     @Test
     void formatValidationRejectsInvalidDeviceCodes() {
-        // Missing suffix
+        // Missing number
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200", "2610000001"));
-        // Wrong suffix length
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200", "261100001"));
         assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "2610000001"));
-    }
-
-    @Test
-    void formatValidationRejectsMismatchedSuffixes() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000002", "2610000001"));
-        assertTrue(ex.getMessage().contains("must match"));
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-", "261100001"));
+        // Missing model
+        assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("-1", "261100001"));
+        // Non-numeric number
+        assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-abc", "261100001"));
     }
 
     @Test
     void formatValidationAcceptsValidExamples() {
-        // Serial 2610000001 and Device ID halo1200-000001
-        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "2610000001"));
-        // Serial 2610000100 and Device ID halo1200-000100
-        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000100", "2610000100"));
-        // Serial 2610100000 and Device ID halo1200-100000 (boundary 100000)
-        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-100000", "2610100000"));
-        // Model egen-000001
-        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("egen-000001", "2605000001"));
+        // Device 1, 2, 3 of November 2026
+        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("HALO1200-1", "261100001"));
+        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("HALO1200-2", "261100002"));
+        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("HALO1200-3", "261100003"));
+        // Numbering restarts in December; Device ID does not have to match the serial
+        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000004", "261200001"));
+        // Upper bound of the running number
+        assertDoesNotThrow(() -> DeviceRegistrationService.validateDeviceCredentialsFormat("egen-99999", "260599999"));
     }
 
     @Test
-    void formatValidationRejectsBoundaryViolationsAndLegacyFormats() {
-        // Month 00 invalid
-        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "2600000001"));
-        assertTrue(ex1.getMessage().contains("month must be between 01 and 12"));
+    void formatValidationReportsClearMessages() {
+        IllegalArgumentException length = assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "2610000001"));
+        assertTrue(length.getMessage().contains("9 digits"));
 
-        // Month 13 invalid
-        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000001", "2613000001"));
-        assertTrue(ex2.getMessage().contains("month must be between 01 and 12"));
+        IllegalArgumentException month = assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "261300001"));
+        assertTrue(month.getMessage().contains("month must be between 01 and 12"));
 
-        // Device number 000000 (below 000001) invalid
-        IllegalArgumentException ex3 = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000000", "2610000000"));
-        assertTrue(ex3.getMessage().contains("between 000001 and 100000"));
-
-        // Device number 100001 (above 100000) invalid
-        IllegalArgumentException ex4 = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-100001", "2610100001"));
-        assertTrue(ex4.getMessage().contains("between 000001 and 100000"));
-
-        // Suffix mismatch (000002 vs 000001)
-        IllegalArgumentException ex5 = assertThrows(IllegalArgumentException.class,
-                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-000002", "2610000001"));
-        assertTrue(ex5.getMessage().contains("must match"));
+        IllegalArgumentException number = assertThrows(IllegalArgumentException.class,
+                () -> DeviceRegistrationService.validateDeviceCredentialsFormat("halo1200-1", "261100000"));
+        assertTrue(number.getMessage().contains("between 00001 and 99999"));
 
         // Legacy format without model prefix or YYMM rejected for new registrations
         assertThrows(IllegalArgumentException.class,

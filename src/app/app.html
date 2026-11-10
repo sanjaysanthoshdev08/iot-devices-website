@@ -2691,20 +2691,19 @@
         <!-- Field: Device ID (deviceCode) -->
         <div class="modal-field">
           <label class="modal-label" for="systemDeviceCode">Device ID</label>
-          <input type="text" id="systemDeviceCode" class="modal-input" placeholder="e.g., halo1200-000001"
+          <input type="text" id="systemDeviceCode" class="modal-input" placeholder="e.g., halo1200-4"
             [ngModel]="newSystemDeviceCode()" (ngModelChange)="newSystemDeviceCode.set($event)" name="deviceCode"
             required />
-          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: &lt;model&gt;-&lt;6-digit device
-            number&gt; (suffix must match Serial)</span>
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: &lt;model&gt;-&lt;number&gt;</span>
         </div>
 
         <!-- Field: Serial Number (SN) -->
         <div class="modal-field">
           <label class="modal-label" for="systemSN">Serial number (SN)</label>
-          <input type="text" id="systemSN" class="modal-input" placeholder="e.g., 2610000001 (YYMM + 6 digits)"
+          <input type="text" id="systemSN" class="modal-input" placeholder="e.g., 261100004 (YYMM + 5 digits)"
             [ngModel]="newSystemSN()" (ngModelChange)="newSystemSN.set($event)" name="systemSN" required />
-          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: YYMM + 6-digit device number (month
-            01–12, number 000001–100000)</span>
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Format: YYMM + 5-digit device number (month
+            01–12, number 00001–99999, restarts each month)</span>
         </div>
 
         <!-- Field: Model -->

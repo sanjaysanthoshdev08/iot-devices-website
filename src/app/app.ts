@@ -405,8 +405,9 @@ export class App implements AfterViewInit, OnDestroy {
 
   fillDemoCredentials(deviceIndex: number = 1) {
     this.authDeviceId.set(`halo1200-${deviceIndex}`);
-    const num = String(deviceIndex).padStart(2, '0');
-    this.authSerialNumber.set(`SN-HYK-1200-${num}`);
+    // Serial format: YYMM + 5-digit running number (e.g. 261100001)
+    const num = String(deviceIndex).padStart(5, '0');
+    this.authSerialNumber.set(`2611${num}`);
     this.authErrorMessage.set('');
   }
 
@@ -1409,28 +1410,21 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // Issue 1: Serial number (YYMM + 6-digit device number) and Device ID (<model>-<6-digit>) validation
-    const serialRegex = /^(\d{2})(0[1-9]|1[0-2])(\d{6})$/;
+    // Serial number: YYMM + 5-digit running number that restarts each month (e.g. 261100001).
+    // Device ID: <model>-<number>, independent of the serial (serial numbers repeat across months).
+    const serialRegex = /^(\d{2})(0[1-9]|1[0-2])(\d{5})$/;
     const serialMatch = serialNumber.match(serialRegex);
     if (!serialMatch) {
-      this.newSystemError.set('Serial number must be in format YYMM + six-digit device number (month 01-12, device 000001-100000, e.g. 2610000001).');
+      this.newSystemError.set('Serial number must be in format YYMM + five-digit device number (month 01-12, device 00001-99999, e.g. 261100001).');
       return;
     }
-    const serialDevNum = parseInt(serialMatch[3], 10);
-    if (serialDevNum < 1 || serialDevNum > 100000) {
-      this.newSystemError.set('Serial number device number must be between 000001 and 100000.');
-      return;
-    }
-
-    const deviceIdRegex = /^[a-zA-Z0-9]+-(\d{6})$/;
-    const deviceIdMatch = deviceCode.match(deviceIdRegex);
-    if (!deviceIdMatch) {
-      this.newSystemError.set('Device ID must be in format <model>-<six-digit device number> (e.g. halo1200-000001).');
+    if (parseInt(serialMatch[3], 10) < 1) {
+      this.newSystemError.set('Serial number device number must be between 00001 and 99999.');
       return;
     }
 
-    if (deviceIdMatch[1] !== serialMatch[3]) {
-      this.newSystemError.set(`Device ID number suffix (${deviceIdMatch[1]}) must match serial number suffix (${serialMatch[3]}).`);
+    if (!/^[a-zA-Z0-9]+-\d+$/.test(deviceCode)) {
+      this.newSystemError.set('Device ID must be in format <model>-<number> (e.g. halo1200-1).');
       return;
     }
     if (!systemName) {
