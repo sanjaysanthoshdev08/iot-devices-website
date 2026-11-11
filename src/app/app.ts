@@ -183,6 +183,11 @@ export class App implements AfterViewInit, OnDestroy {
   loginConfirmPassword = signal<string>('');
   showPassword = signal<boolean>(false);
   isSignUpMode = signal<boolean>(false);
+  // Forgot password page state
+  isForgotPasswordOpen = signal<boolean>(false);
+  forgotEmail = signal<string>('');
+  forgotEmailError = signal<string>('');
+  forgotSuccess = signal<string>('');
   rememberMe = signal<boolean>(false);
 
   // Validation Error Signals
@@ -778,6 +783,16 @@ export class App implements AfterViewInit, OnDestroy {
         }
       }
       return;
+    }
+
+    if (path === '/forgot-password') {
+      this.isLoginModalOpen.set(false);
+      this.isForgotPasswordOpen.set(true);
+      return;
+    }
+
+    if (this.isForgotPasswordOpen()) {
+      this.isForgotPasswordOpen.set(false);
     }
 
     if (path === '/' || path === '') {
@@ -1962,6 +1977,47 @@ export class App implements AfterViewInit, OnDestroy {
 
   openSignUpModal() {
     this.openLoginModal(true);
+  }
+
+  openForgotPassword() {
+    this.clearErrors();
+    this.forgotEmail.set(this.loginEmail());
+    this.forgotEmailError.set('');
+    this.forgotSuccess.set('');
+    this.isLoginModalOpen.set(false);
+    this.isForgotPasswordOpen.set(true);
+    if (isPlatformBrowser(this.platformId) && this.normalizePath(window.location.pathname) !== '/forgot-password') {
+      window.history.pushState({ page: 'forgot-password' }, '', '/forgot-password');
+    }
+  }
+
+  closeForgotPassword(backToLogin: boolean = false) {
+    this.isForgotPasswordOpen.set(false);
+    this.forgotEmailError.set('');
+    this.forgotSuccess.set('');
+    if (isPlatformBrowser(this.platformId) && this.normalizePath(window.location.pathname) === '/forgot-password') {
+      window.history.pushState({ page: 'home' }, '', '/');
+    }
+    if (backToLogin) {
+      this.openLoginModal(false);
+    }
+  }
+
+  onForgotSubmit(event: Event) {
+    event.preventDefault();
+    const email = this.forgotEmail().trim();
+    this.forgotSuccess.set('');
+    if (!email) {
+      this.forgotEmailError.set('Email is required');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.forgotEmailError.set('Enter a valid email address');
+      return;
+    }
+    this.forgotEmailError.set('');
+    // TODO: call the backend reset endpoint once it exists (none yet).
+    this.forgotSuccess.set('If an account exists for this email, a password reset link will be sent.');
   }
 
   closeLoginModal() {
