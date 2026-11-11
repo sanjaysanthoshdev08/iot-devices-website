@@ -188,6 +188,12 @@ export class App implements AfterViewInit, OnDestroy {
   forgotEmail = signal<string>('');
   forgotEmailError = signal<string>('');
   forgotSuccess = signal<string>('');
+  // Reset password page state
+  isResetPasswordOpen = signal<boolean>(false);
+  resetNewPassword = signal<string>('');
+  resetConfirmPassword = signal<string>('');
+  resetError = signal<string>('');
+  resetSuccess = signal<string>('');
   rememberMe = signal<boolean>(false);
 
   // Validation Error Signals
@@ -787,12 +793,23 @@ export class App implements AfterViewInit, OnDestroy {
 
     if (path === '/forgot-password') {
       this.isLoginModalOpen.set(false);
+      this.isResetPasswordOpen.set(false);
       this.isForgotPasswordOpen.set(true);
+      return;
+    }
+
+    if (path === '/reset-password') {
+      this.isLoginModalOpen.set(false);
+      this.isForgotPasswordOpen.set(false);
+      this.isResetPasswordOpen.set(true);
       return;
     }
 
     if (this.isForgotPasswordOpen()) {
       this.isForgotPasswordOpen.set(false);
+    }
+    if (this.isResetPasswordOpen()) {
+      this.isResetPasswordOpen.set(false);
     }
 
     if (path === '/' || path === '') {
@@ -2016,8 +2033,51 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
     this.forgotEmailError.set('');
-    // TODO: call the backend reset endpoint once it exists (none yet).
-    this.forgotSuccess.set('If an account exists for this email, a password reset link will be sent.');
+    // TODO: call the backend "send reset link" endpoint once it exists (none yet).
+    this.openResetPassword();
+  }
+
+  openResetPassword() {
+    this.resetNewPassword.set('');
+    this.resetConfirmPassword.set('');
+    this.resetError.set('');
+    this.resetSuccess.set('');
+    this.isForgotPasswordOpen.set(false);
+    this.isResetPasswordOpen.set(true);
+    if (isPlatformBrowser(this.platformId) && this.normalizePath(window.location.pathname) !== '/reset-password') {
+      window.history.pushState({ page: 'reset-password' }, '', '/reset-password');
+    }
+  }
+
+  closeResetPassword(backToLogin: boolean = false) {
+    this.isResetPasswordOpen.set(false);
+    this.resetNewPassword.set('');
+    this.resetConfirmPassword.set('');
+    this.resetError.set('');
+    this.resetSuccess.set('');
+    if (isPlatformBrowser(this.platformId) && this.normalizePath(window.location.pathname) === '/reset-password') {
+      window.history.pushState({ page: 'home' }, '', '/');
+    }
+    if (backToLogin) {
+      this.openLoginModal(false);
+    }
+  }
+
+  onResetSubmit(event: Event) {
+    event.preventDefault();
+    this.resetSuccess.set('');
+    const pw = this.resetNewPassword();
+    if (pw.length < 8) {
+      this.resetError.set('Password must be at least 8 characters');
+      return;
+    }
+    if (pw !== this.resetConfirmPassword()) {
+      this.resetError.set('Passwords do not match');
+      return;
+    }
+    this.resetError.set('');
+    // TODO: call the backend reset-password endpoint once it exists (none yet).
+    this.resetSuccess.set('Your password has been reset. You can now log in.');
   }
 
   closeLoginModal() {

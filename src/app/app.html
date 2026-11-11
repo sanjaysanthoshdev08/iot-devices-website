@@ -1379,6 +1379,46 @@
     </div>
   </div>
 
+  <!-- ===== RESET PASSWORD PAGE ===== -->
+  <div class="login-modal-overlay" *ngIf="isResetPasswordOpen()">
+    <div class="split-login-card">
+      <button class="ref-modal-close" (click)="closeResetPassword()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="login-card-left">
+        <img src="assets/download (9).jpg" alt="Reset Password Graphic" class="login-banner-img" />
+      </div>
+      <div class="login-card-right">
+        <h2 class="split-title">Reset Password</h2>
+        <p class="split-subtitle">Choose a new password for your account</p>
+        <form class="split-form" (submit)="onResetSubmit($event)" novalidate>
+          <div class="split-field-group">
+            <label class="split-label">New Password</label>
+            <input type="password" class="split-input" [class.input-error]="!!resetError()"
+              [value]="resetNewPassword()" (input)="resetNewPassword.set($any($event.target).value); resetError.set('')"
+              placeholder="At least 8 characters" autocomplete="new-password" />
+          </div>
+          <div class="split-field-group">
+            <label class="split-label">Confirm Password</label>
+            <input type="password" class="split-input" [class.input-error]="!!resetError()"
+              [value]="resetConfirmPassword()" (input)="resetConfirmPassword.set($any($event.target).value); resetError.set('')"
+              placeholder="Confirm new password" autocomplete="new-password" />
+            <span class="field-error-text" *ngIf="resetError()" role="alert">{{ resetError() }}</span>
+          </div>
+          <p *ngIf="resetSuccess()" role="status">{{ resetSuccess() }}</p>
+          <button type="submit" class="btn-split-login">Reset Password</button>
+          <p class="signup-toggle-text">
+            <a href="javascript:void(0)" class="signup-link" (click)="closeResetPassword(true)">Back to Login</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== LOGIN PAGE / MODAL (Split Card Layout with Fixed Background) ===== -->
   <div class="login-modal-overlay" *ngIf="isLoginModalOpen()">
     <div class="split-login-card">
