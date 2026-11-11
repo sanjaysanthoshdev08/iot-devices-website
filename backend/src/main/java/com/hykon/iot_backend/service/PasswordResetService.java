@@ -28,16 +28,19 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordResetEmailSender emailSender;
     private final SecureRandom random = new SecureRandom();
 
     public PasswordResetService(
             UserRepository userRepository,
             PasswordResetTokenRepository tokenRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            PasswordResetEmailSender emailSender
     ) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailSender = emailSender;
     }
 
     /**
@@ -61,9 +64,7 @@ public class PasswordResetService {
         entity.setExpiresAt(LocalDateTime.now().plusMinutes(CODE_MINUTES));
         tokenRepository.save(entity);
 
-        // No email provider is configured yet: the code is logged for local
-        // development. Replace with a real mail sender before production.
-        log.info("DEV ONLY - password reset code for {}: {}", user.getEmail(), code);
+        emailSender.sendResetCode(user.getEmail(), code, CODE_MINUTES);
     }
 
     @Transactional(noRollbackFor = IllegalArgumentException.class)
