@@ -8,13 +8,18 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
 
+    // Newest unused code for the user (at most one is active at a time).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT t FROM PasswordResetToken t JOIN FETCH t.user WHERE t.tokenHash = :hash")
-    Optional<PasswordResetToken> findByTokenHashForUpdate(@Param("hash") String hash);
+    @Query("""
+            SELECT t FROM PasswordResetToken t
+            WHERE t.user.id = :userId AND t.used = false
+            ORDER BY t.createdAt DESC
+            """)
+    List<PasswordResetToken> findActiveForUserForUpdate(@Param("userId") Long userId);
 
     @Modifying
     @Query("UPDATE PasswordResetToken t SET t.used = true WHERE t.user.id = :userId AND t.used = false")

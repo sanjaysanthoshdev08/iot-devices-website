@@ -28,14 +28,15 @@ public class PasswordResetController {
             @Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.requestReset(request.getEmail());
         return ResponseEntity.ok(new LogoutResponse(
-                "If an account exists for this email, a password reset link has been sent."));
+                "If an account exists for this email, a password reset code has been sent."));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<LogoutResponse> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(
-                request.getToken(), request.getPassword(), request.getConfirmPassword());
+                request.getEmail(), request.getCode(),
+                request.getPassword(), request.getConfirmPassword());
         return ResponseEntity.ok(new LogoutResponse(
                 "Your password has been reset. You can now log in."));
     }

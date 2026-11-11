@@ -1,14 +1,20 @@
 package com.hykon.iot_backend.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class ResetPasswordRequest {
 
-    @NotBlank(message = "Reset token is required")
-    @Size(max = 200, message = "Reset token is invalid")
-    private String token;
+    @NotBlank(message = "Email is required")
+    @Email(message = "Please enter a valid email address")
+    @Size(max = 255, message = "Email must not exceed 255 characters")
+    private String email;
+
+    @NotBlank(message = "Reset code is required")
+    @Pattern(regexp = "^\\d{6}$", message = "Reset code must be 6 digits")
+    private String code;
 
     // Same password rules as registration.
     @NotBlank(message = "Password is required")
@@ -25,8 +31,11 @@ public class ResetPasswordRequest {
     public ResetPasswordRequest() {
     }
 
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }

@@ -6,7 +6,6 @@ import com.hykon.iot_backend.repository.PasswordResetTokenRepository;
 import com.hykon.iot_backend.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,31 +15,29 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 
 @Service
 public class PasswordResetService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
-    private static final long TOKEN_MINUTES = 30;
+    private static final long CODE_MINUTES = 15;
+    private static final int MAX_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final String frontendUrl;
     private final SecureRandom random = new SecureRandom();
 
     public PasswordResetService(
             UserRepository userRepository,
             PasswordResetTokenRepository tokenRepository,
-            PasswordEncoder passwordEncoder,
-            @Value("${app.frontend-url:http://localhost:4200}") String frontendUrl
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
-        this.frontendUrl = frontendUrl;
     }
 
     /**
@@ -48,48 +45,62 @@ public class PasswordResetService {
      */
     @Transactional
     public void requestReset(String email) {
-        if (email == null) {
+        User user = findActiveUser(email);
+        if (user == null) {
             return;
         }
 
-        User user = userRepository.findByEmailWithRole(email.trim()).orElse(null);
-        if (user == null || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            return;
-        }
-
+        // Only the newest code is valid.
         tokenRepository.invalidateAllForUser(user.getId());
 
-        byte[] raw = new byte[32];
-        random.nextBytes(raw);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+        String code = String.format("%06d", random.nextInt(1_000_000));
 
         PasswordResetToken entity = new PasswordResetToken();
         entity.setUser(user);
-        entity.setTokenHash(hash(token));
-        entity.setExpiresAt(LocalDateTime.now().plusMinutes(TOKEN_MINUTES));
+        entity.setCodeHash(hash(code));
+        entity.setExpiresAt(LocalDateTime.now().plusMinutes(CODE_MINUTES));
         tokenRepository.save(entity);
 
-        // No email provider is configured yet: the link is logged for local
+        // No email provider is configured yet: the code is logged for local
         // development. Replace with a real mail sender before production.
-        log.info("DEV ONLY - password reset link for {}: {}/reset-password?token={}",
-                user.getEmail(), frontendUrl, token);
+        log.info("DEV ONLY - password reset code for {}: {}", user.getEmail(), code);
     }
 
-    @Transactional
-    public void resetPassword(String token, String newPassword, String confirmPassword) {
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    public void resetPassword(String email, String code, String newPassword, String confirmPassword) {
         if (newPassword == null || !newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("Passwords do not match");
         }
 
-        PasswordResetToken entity = tokenRepository
-                .findByTokenHashForUpdate(hash(token == null ? "" : token))
-                .orElseThrow(PasswordResetService::invalidLink);
-
-        if (entity.isUsed() || !entity.getExpiresAt().isAfter(LocalDateTime.now())) {
-            throw invalidLink();
+        User user = findActiveUser(email);
+        if (user == null) {
+            throw invalidCode();
         }
 
-        User user = entity.getUser();
+        List<PasswordResetToken> active = tokenRepository.findActiveForUserForUpdate(user.getId());
+        if (active.isEmpty()) {
+            throw invalidCode();
+        }
+        PasswordResetToken entity = active.get(0);
+
+        if (!entity.getExpiresAt().isAfter(LocalDateTime.now())
+                || entity.getAttempts() >= MAX_ATTEMPTS) {
+            entity.setUsed(true);
+            tokenRepository.save(entity);
+            throw invalidCode();
+        }
+
+        if (!MessageDigest.isEqual(
+                hash(code == null ? "" : code).getBytes(StandardCharsets.UTF_8),
+                entity.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
+            entity.setAttempts(entity.getAttempts() + 1);
+            if (entity.getAttempts() >= MAX_ATTEMPTS) {
+                entity.setUsed(true);
+            }
+            tokenRepository.save(entity);
+            throw new IllegalArgumentException("The reset code is incorrect.");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
@@ -98,9 +109,20 @@ public class PasswordResetService {
         tokenRepository.revokeRefreshTokensForUser(user.getId());
     }
 
-    private static IllegalArgumentException invalidLink() {
+    private User findActiveUser(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        User user = userRepository.findByEmailWithRole(email.trim()).orElse(null);
+        if (user == null || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            return null;
+        }
+        return user;
+    }
+
+    private static IllegalArgumentException invalidCode() {
         return new IllegalArgumentException(
-                "This reset link is invalid or has expired. Please request a new one.");
+                "This reset code is invalid or has expired. Please request a new one.");
     }
 
     private static String hash(String value) {

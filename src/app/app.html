@@ -1360,7 +1360,7 @@
       </div>
       <div class="login-card-right">
         <h2 class="split-title">Forgot Password</h2>
-        <p class="split-subtitle">Enter your email and we'll send you a link to reset your password</p>
+        <p class="split-subtitle">Enter your email and we'll send you a 6-digit code to reset your password</p>
         <form class="split-form" (submit)="onForgotSubmit($event)" novalidate>
           <div class="split-field-group">
             <label class="split-label">Email</label>
@@ -1370,7 +1370,9 @@
             <span class="field-error-text" *ngIf="forgotEmailError()">{{ forgotEmailError() }}</span>
           </div>
           <p *ngIf="forgotSuccess()" role="status">{{ forgotSuccess() }}</p>
-          <button type="submit" class="btn-split-login">Send Reset Link</button>
+          <button type="submit" class="btn-split-login" [disabled]="isForgotSubmitting()">
+            {{ isForgotSubmitting() ? 'Please wait...' : 'Send Reset Link' }}
+          </button>
           <p class="signup-toggle-text">
             Remembered it? <a href="javascript:void(0)" class="signup-link" (click)="closeForgotPassword(true)">Back to Login</a>
           </p>
@@ -1394,8 +1396,14 @@
       </div>
       <div class="login-card-right">
         <h2 class="split-title">Reset Password</h2>
-        <p class="split-subtitle">Choose a new password for your account</p>
+        <p class="split-subtitle">Enter the 6-digit code sent to {{ forgotEmail() }} and choose a new password</p>
         <form class="split-form" (submit)="onResetSubmit($event)" novalidate>
+          <div class="split-field-group">
+            <label class="split-label">Reset Code</label>
+            <input type="text" class="split-input" [class.input-error]="!!resetError()" inputmode="numeric"
+              maxlength="6" [value]="resetCode()" (input)="resetCode.set($any($event.target).value); resetError.set('')"
+              placeholder="6-digit code" autocomplete="one-time-code" />
+          </div>
           <div class="split-field-group">
             <label class="split-label">New Password</label>
             <input type="password" class="split-input" [class.input-error]="!!resetError()"
@@ -1410,7 +1418,9 @@
             <span class="field-error-text" *ngIf="resetError()" role="alert">{{ resetError() }}</span>
           </div>
           <p *ngIf="resetSuccess()" role="status">{{ resetSuccess() }}</p>
-          <button type="submit" class="btn-split-login">Reset Password</button>
+          <button type="submit" class="btn-split-login" [disabled]="isResetSubmitting()">
+            {{ isResetSubmitting() ? 'Please wait...' : 'Reset Password' }}
+          </button>
           <p class="signup-toggle-text">
             <a href="javascript:void(0)" class="signup-link" (click)="closeResetPassword(true)">Back to Login</a>
           </p>

@@ -1,15 +1,17 @@
--- Migration 007: password reset tokens.
+-- Migration 007: password reset codes.
 -- Additive: creates one new table; does not alter users, sessions or tokens.
--- Only a SHA-256 hash of each reset token is stored, never the token itself.
+-- Only a SHA-256 hash of each 6-digit reset code is stored, never the code.
+-- Codes expire after 15 minutes and are locked after 5 wrong attempts.
 -- (Hibernate ddl-auto=update also creates this table from the entity; this
 -- script is the reviewed, explicit equivalent.)
 
 CREATE TABLE IF NOT EXISTS public.password_reset_tokens (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    code_hash VARCHAR(64) NOT NULL,
     expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     used BOOLEAN NOT NULL DEFAULT FALSE,
+    attempts INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT LOCALTIMESTAMP
 );
 

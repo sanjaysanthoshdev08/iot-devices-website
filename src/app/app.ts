@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from './services/auth.service';
+import { PasswordResetService } from './services/password-reset.service';
 import { TelemetryHistoryComponent } from './components/telemetry-history/telemetry-history.component';
 import { NavMenu } from './components/nav-menu/nav-menu.component';
 import { enableSmoothWheel, SmoothWheelHandle } from './utils/smooth-wheel';
@@ -194,6 +195,10 @@ export class App implements AfterViewInit, OnDestroy {
   resetConfirmPassword = signal<string>('');
   resetError = signal<string>('');
   resetSuccess = signal<string>('');
+  resetCode = signal<string>('');
+  isForgotSubmitting = signal<boolean>(false);
+  isResetSubmitting = signal<boolean>(false);
+  private readonly passwordResetService = inject(PasswordResetService);
   rememberMe = signal<boolean>(false);
 
   // Validation Error Signals
@@ -800,6 +805,16 @@ export class App implements AfterViewInit, OnDestroy {
 
     if (path === '/reset-password') {
       this.isLoginModalOpen.set(false);
+      // The reset page needs the email from the forgot step; without it
+      // (e.g. a page refresh) send the user back to the forgot page.
+      if (!this.forgotEmail().trim()) {
+        this.isResetPasswordOpen.set(false);
+        this.isForgotPasswordOpen.set(true);
+        if (isPlatformBrowser(this.platformId)) {
+          window.history.replaceState({ page: 'forgot-password' }, '', '/forgot-password');
+        }
+        return;
+      }
       this.isForgotPasswordOpen.set(false);
       this.isResetPasswordOpen.set(true);
       return;
@@ -2033,11 +2048,24 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
     this.forgotEmailError.set('');
-    // TODO: call the backend "send reset link" endpoint once it exists (none yet).
-    this.openResetPassword();
+    this.isForgotSubmitting.set(true);
+    this.passwordResetService.requestCode(email.toLowerCase()).subscribe({
+      next: (res) => {
+        this.isForgotSubmitting.set(false);
+        this.openResetPassword();
+        this.resetSuccess.set(res?.message || 'If an account exists for this email, a reset code has been sent.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isForgotSubmitting.set(false);
+        this.forgotEmailError.set(
+          err.error?.errors?.email || this.extractErrorMessage(err, 'Unable to send reset code. Please try again.')
+        );
+      }
+    });
   }
 
   openResetPassword() {
+    this.resetCode.set('');
     this.resetNewPassword.set('');
     this.resetConfirmPassword.set('');
     this.resetError.set('');
@@ -2066,9 +2094,15 @@ export class App implements AfterViewInit, OnDestroy {
   onResetSubmit(event: Event) {
     event.preventDefault();
     this.resetSuccess.set('');
+    const code = this.resetCode().trim();
     const pw = this.resetNewPassword();
-    if (pw.length < 8) {
-      this.resetError.set('Password must be at least 8 characters');
+    if (!/^\d{6}$/.test(code)) {
+      this.resetError.set('Enter the 6-digit code sent to your email');
+      return;
+    }
+    // Same rules as registration (checked again by the backend).
+    if (pw.length < 8 || pw.length > 72 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s])\S+$/.test(pw)) {
+      this.resetError.set('Password must be 8-72 characters with an uppercase letter, a lowercase letter, a digit and a special character');
       return;
     }
     if (pw !== this.resetConfirmPassword()) {
@@ -2076,8 +2110,29 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
     this.resetError.set('');
-    // TODO: call the backend reset-password endpoint once it exists (none yet).
-    this.resetSuccess.set('Your password has been reset. You can now log in.');
+    this.isResetSubmitting.set(true);
+    this.passwordResetService.resetPassword({
+      email: this.forgotEmail().trim().toLowerCase(),
+      code,
+      password: pw,
+      confirmPassword: this.resetConfirmPassword()
+    }).subscribe({
+      next: (res) => {
+        this.isResetSubmitting.set(false);
+        this.resetCode.set('');
+        this.resetNewPassword.set('');
+        this.resetConfirmPassword.set('');
+        this.resetSuccess.set(res?.message || 'Your password has been reset. You can now log in.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isResetSubmitting.set(false);
+        const errors = err.error?.errors;
+        this.resetError.set(
+          errors?.code || errors?.password || errors?.email ||
+          this.extractErrorMessage(err, 'Unable to reset password. Please try again.')
+        );
+      }
+    });
   }
 
   closeLoginModal() {
