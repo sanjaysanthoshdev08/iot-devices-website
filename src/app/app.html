@@ -3331,7 +3331,7 @@
           </div>
 
           <!-- Admin Customer Management Section (Issue 2) -->
-          <div *ngIf="isHykonAdminRole() || isDistributorRole()" class="device-customer-mgmt"
+          <div *ngIf="isHykonAdminRole() || isDistributorRole() || isBranchAdminRole()" class="device-customer-mgmt"
             style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
             <div style="font-size:0.85rem; font-weight:600; color:#cbd5e1; margin-bottom:0.5rem;">
               Manage Authorized Customer Accounts (Max 3)
