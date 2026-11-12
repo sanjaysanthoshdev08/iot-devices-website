@@ -49,9 +49,13 @@ public class DevicePurchaseService {
             throw new AccessDeniedException("Administrator access is required");
         }
 
+        boolean hasCustomerEmail = request.getCustomerEmail() != null
+                && !request.getCustomerEmail().isBlank();
+
         if (request.getDeviceId() == null || request.getDeviceId() <= 0
-                || request.getCustomerUserId() == null
-                || request.getCustomerUserId() <= 0) {
+                || (!hasCustomerEmail
+                    && (request.getCustomerUserId() == null
+                        || request.getCustomerUserId() <= 0))) {
             throw new IllegalArgumentException(
                     "Valid device and customer account IDs are required"
             );
@@ -99,8 +103,10 @@ public class DevicePurchaseService {
             );
         }
 
-        User customer = userRepository.findById(
-                request.getCustomerUserId()
+        User customer = (hasCustomerEmail
+                ? userRepository.findByEmailWithRole(
+                        request.getCustomerEmail().trim().toLowerCase(java.util.Locale.ROOT))
+                : userRepository.findById(request.getCustomerUserId())
         ).orElseThrow(() -> new IllegalArgumentException(
                 "Customer account is unavailable"
         ));

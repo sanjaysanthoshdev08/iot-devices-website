@@ -11,9 +11,15 @@ public class RecordDevicePurchaseRequest {
     @Positive(message = "Registered device ID must be positive")
     private Long deviceId;
 
-    @NotNull(message = "Customer account ID is required")
     @Positive(message = "Customer account ID must be positive")
     private Long customerUserId;
+
+    @jakarta.validation.constraints.Email(message = "Valid customer email is required")
+    @Size(max = 150, message = "Email must not exceed 150 characters")
+    private String customerEmail;
+
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
 
     @NotBlank(message = "Purchase reference is required")
     @Size(max = 150, message = "Purchase reference must not exceed 150 characters")
