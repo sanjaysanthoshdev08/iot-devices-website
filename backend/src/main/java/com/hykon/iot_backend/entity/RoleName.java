@@ -4,5 +4,6 @@ public enum RoleName {
 
     USER,
     DISTRIBUTOR_ADMIN,
-    HYKON_ADMIN
+    HYKON_ADMIN,
+    BRANCH_ADMIN
 }

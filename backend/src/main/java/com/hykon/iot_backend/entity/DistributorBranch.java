@@ -37,6 +37,16 @@ public class DistributorBranch {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "branch_admin_user_id",
+        foreignKey = @ForeignKey(name = "fk_branches_admin")
+    )
+    private User branchAdmin;
+
+    public User getBranchAdmin() { return branchAdmin; }
+    public void setBranchAdmin(User branchAdmin) { this.branchAdmin = branchAdmin; }
+
     public DistributorBranch() {
     }
 

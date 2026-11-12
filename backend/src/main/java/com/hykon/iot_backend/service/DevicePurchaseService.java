@@ -44,7 +44,8 @@ public class DevicePurchaseService {
                         new AccessDeniedException("Administrator access is required"));
 
         if (!isActiveRole(creator, RoleName.HYKON_ADMIN)
-                && !isActiveRole(creator, RoleName.DISTRIBUTOR_ADMIN)) {
+                && !isActiveRole(creator, RoleName.DISTRIBUTOR_ADMIN)
+                && !isActiveRole(creator, RoleName.BRANCH_ADMIN)) {
             throw new AccessDeniedException("Administrator access is required");
         }
 
@@ -78,6 +79,11 @@ public class DevicePurchaseService {
                 || !creator.getId().equals(
                         distributor.getAdministrator().getId()
                 ))) {
+            throw new AccessDeniedException("Device is unavailable");
+        }
+
+        if (creator.getRole().getName() == RoleName.BRANCH_ADMIN
+                && !BranchAccess.canManage(creator, branch)) {
             throw new AccessDeniedException("Device is unavailable");
         }
 

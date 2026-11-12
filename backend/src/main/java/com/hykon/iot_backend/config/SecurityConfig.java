@@ -129,34 +129,39 @@ public class SecurityConfig {
                 ).hasRole("USER")
 
                 .requestMatchers("/api/v1/user/**")
-                    .hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
+                    .hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN", "BRANCH_ADMIN")
 
                 // All remaining endpoints require authentication.
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/v1/management/devices",
                     "/api/v1/management/devices/**"
-                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")
 
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/v1/management/devices/**"
-                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")
 
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/v1/management/device-purchases"
-                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN")
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")
 
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/v1/devices",
                     "/api/v1/devices/*"
-                ).hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
+                ).hasAnyRole("USER", "DISTRIBUTOR_ADMIN", "HYKON_ADMIN", "BRANCH_ADMIN")
 
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/v1/distributor/access/verify"
+                ).hasRole("DISTRIBUTOR_ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/distributor/branches"
                 ).hasRole("DISTRIBUTOR_ADMIN")
 
                 .anyRequest().authenticated()

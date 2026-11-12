@@ -54,14 +54,15 @@ public class DeviceRegistrationService {
         RoleName role = creator.getRole().getName();
 
         if (role != RoleName.HYKON_ADMIN
-                && role != RoleName.DISTRIBUTOR_ADMIN) {
+                && role != RoleName.DISTRIBUTOR_ADMIN
+                && role != RoleName.BRANCH_ADMIN) {
             throw new AccessDeniedException("Administrator access is required");
         }
 
         DistributorBranch branch = null;
 
         if (request.getBranchId() == null) {
-            if (role == RoleName.DISTRIBUTOR_ADMIN) {
+            if (role != RoleName.HYKON_ADMIN) {
                 throw new AccessDeniedException(
                         "An authorized distributor branch is required"
                 );
@@ -91,6 +92,11 @@ public class DeviceRegistrationService {
                     ))) {
                 throw new AccessDeniedException("Branch is unavailable");
             }
+
+            if (role == RoleName.BRANCH_ADMIN
+                    && !BranchAccess.canManage(creator, branch)) {
+                throw new AccessDeniedException("Branch is unavailable");
+            }
         }
 
         String rawDeviceCode = requiredText(
@@ -115,7 +121,7 @@ public class DeviceRegistrationService {
                         serialNumber
                 ).isPresent()) {
             throw new DuplicateResourceException(
-                    "Device ID or serial number is already registered"
+                    "This system is already registered"
             );
         }
 

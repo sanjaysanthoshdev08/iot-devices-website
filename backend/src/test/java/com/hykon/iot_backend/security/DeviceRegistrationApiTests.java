@@ -203,7 +203,7 @@ class DeviceRegistrationApiTests {
                 any(RegisterDeviceRequest.class),
                 eq("creator@example.com")
         )).thenThrow(new DuplicateResourceException(
-                "Device ID or serial number is already registered"
+                "This system is already registered"
         ));
 
         mockMvc.perform(post(ENDPOINT)

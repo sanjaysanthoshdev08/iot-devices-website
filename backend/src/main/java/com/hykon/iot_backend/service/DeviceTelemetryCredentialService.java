@@ -98,7 +98,8 @@ public class DeviceTelemetryCredentialService {
                 || account.getId() == null
                 || account.getRole() == null
                 || (account.getRole().getName() != RoleName.HYKON_ADMIN
-                    && account.getRole().getName() != RoleName.DISTRIBUTOR_ADMIN)) {
+                    && account.getRole().getName() != RoleName.DISTRIBUTOR_ADMIN
+                    && account.getRole().getName() != RoleName.BRANCH_ADMIN)) {
             throw forbidden();
         }
 

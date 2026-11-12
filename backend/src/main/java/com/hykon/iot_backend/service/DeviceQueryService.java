@@ -76,6 +76,11 @@ public class DeviceQueryService {
                         );
             }
 
+            case BRANCH_ADMIN ->
+                    devices = deviceRepository.findByBranch_BranchAdmin_Id(
+                            account.getId(), pageable
+                    );
+
             case USER ->
                     devices = deviceRepository.findByOwner_Id(
                             account.getId(), pageable
@@ -114,6 +119,11 @@ public class DeviceQueryService {
                         )
                         .orElseThrow(this::notFound);
             }
+
+            case BRANCH_ADMIN ->
+                    device = deviceRepository.findByIdAndBranch_BranchAdmin_Id(
+                            deviceId, account.getId()
+                    ).orElseThrow(this::notFound);
 
             case USER ->
                     device = deviceRepository.findByIdAndOwner_Id(

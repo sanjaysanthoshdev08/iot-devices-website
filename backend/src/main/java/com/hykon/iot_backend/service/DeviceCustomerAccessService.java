@@ -136,7 +136,8 @@ public class DeviceCustomerAccessService {
             throw new AccessDeniedException("Administrator access is required");
         }
         RoleName role = user.getRole().getName();
-        if (role != RoleName.HYKON_ADMIN && role != RoleName.DISTRIBUTOR_ADMIN) {
+        if (role != RoleName.HYKON_ADMIN && role != RoleName.DISTRIBUTOR_ADMIN
+                && role != RoleName.BRANCH_ADMIN) {
             throw new AccessDeniedException("Administrator access is required");
         }
         return user;
@@ -153,6 +154,10 @@ public class DeviceCustomerAccessService {
                     || !admin.getId().equals(distributor.getAdministrator().getId())) {
                 throw new AccessDeniedException("You do not have permission to manage this device");
             }
+        }
+        if (admin.getRole().getName() == RoleName.BRANCH_ADMIN
+                && !BranchAccess.canManage(admin, device.getBranch())) {
+            throw new AccessDeniedException("You do not have permission to manage this device");
         }
         return device;
     }

@@ -69,7 +69,7 @@ public class SessionAccessPolicyService {
         RoleName role = account.getRole().getName();
 
         // Company administrators do not use customer/distributor gates.
-        if (role == RoleName.HYKON_ADMIN) {
+        if (role == RoleName.HYKON_ADMIN || role == RoleName.BRANCH_ADMIN) {
             return;
         }
 

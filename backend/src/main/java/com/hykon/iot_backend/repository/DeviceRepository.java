@@ -125,6 +125,16 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
             Pageable pageable
     );
 
+    Optional<Device> findByIdAndBranch_BranchAdmin_Id(
+            Long deviceId,
+            Long branchAdminUserId
+    );
+
+    Page<Device> findByBranch_BranchAdmin_Id(
+            Long branchAdminUserId,
+            Pageable pageable
+    );
+
     List<Device> findByBranch_IdIn(List<Long> branchIds);
 
     Page<Device> findByBranch_Id(Long branchId, Pageable pageable);
