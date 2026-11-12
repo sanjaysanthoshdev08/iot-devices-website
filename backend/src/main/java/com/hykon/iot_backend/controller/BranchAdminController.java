@@ -42,6 +42,16 @@ public class BranchAdminController {
         return respond(branchAdminService.create(null, request, name(principal)));
     }
 
+    /** HYKON_ADMIN or the owning DISTRIBUTOR_ADMIN: create the login for an existing branch. */
+    @PostMapping("/api/v1/management/branches/{branchId}/admin")
+    public ResponseEntity<ApiResponse<DistributorDirectoryResponse.BranchHierarchy>> assignAdmin(
+            @PathVariable Long branchId,
+            @Valid @RequestBody com.hykon.iot_backend.dto.AssignBranchAdminRequest request,
+            Principal principal
+    ) {
+        return respond(branchAdminService.assignAdmin(branchId, request, name(principal)));
+    }
+
     private String name(Principal principal) {
         if (principal == null) {
             throw new AccessDeniedException("Administrator access is required");

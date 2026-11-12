@@ -45,6 +45,62 @@ public class BranchAdminService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /** Creates the BRANCH_ADMIN login for an existing branch that has none yet. */
+    @Transactional
+    public DistributorDirectoryResponse.BranchHierarchy assignAdmin(
+            Long branchId,
+            com.hykon.iot_backend.dto.AssignBranchAdminRequest request,
+            String actorEmail
+    ) {
+        User actor = userRepository.findByEmailWithRole(actorEmail == null ? "" : actorEmail)
+                .orElseThrow(() -> new AccessDeniedException("Administrator access is required"));
+
+        if (!"ACTIVE".equalsIgnoreCase(actor.getStatus()) || actor.getRole() == null
+                || (actor.getRole().getName() != RoleName.HYKON_ADMIN
+                    && actor.getRole().getName() != RoleName.DISTRIBUTOR_ADMIN)) {
+            throw new AccessDeniedException("Administrator access is required");
+        }
+
+        DistributorBranch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new IllegalArgumentException("Branch was not found"));
+
+        if (!BranchAccess.canManage(actor, branch)) {
+            throw new AccessDeniedException("Branch is unavailable");
+        }
+        if (branch.getBranchAdmin() != null) {
+            throw new DuplicateResourceException("This branch already has a branch admin");
+        }
+        if (!request.getAdminPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+
+        String adminEmail = request.getAdminEmail().trim().toLowerCase(Locale.ROOT);
+        if (userRepository.existsByEmail(adminEmail)) {
+            throw new DuplicateResourceException("Email is already registered");
+        }
+
+        Role branchAdminRole = roleRepository.findByName(RoleName.BRANCH_ADMIN)
+                .orElseThrow(() -> new IllegalStateException("BRANCH_ADMIN role is not configured"));
+
+        User branchAdmin = new User();
+        branchAdmin.setName(request.getAdminName().trim());
+        branchAdmin.setEmail(adminEmail);
+        branchAdmin.setPassword(passwordEncoder.encode(request.getAdminPassword()));
+        branchAdmin.setRole(branchAdminRole);
+        branchAdmin.setStatus("ACTIVE");
+
+        try {
+            branch.setBranchAdmin(userRepository.saveAndFlush(branchAdmin));
+            DistributorBranch saved = branchRepository.saveAndFlush(branch);
+            return new DistributorDirectoryResponse.BranchHierarchy(
+                    saved.getId(), saved.getBranchCode(), saved.getName(),
+                    saved.getLocation(), saved.getStatus(), List.of());
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateResourceException(
+                    "Branch admin details conflict with an existing database record");
+        }
+    }
+
     /**
      * HYKON_ADMIN passes the target distributorId. A DISTRIBUTOR_ADMIN passes
      * null (their own distributor is used) or their own distributor id.
