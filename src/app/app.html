@@ -2641,12 +2641,13 @@
                 <th scope="col" class="th-sn">SN</th>
                 <th scope="col" class="th-status">Registration status</th>
                 <th scope="col" class="th-user">User</th>
+                <th scope="col" class="th-distributor">Distributor</th>
               </tr>
             </thead>
             <tbody>
               <!-- Empty State (When no registered systems exist or match) -->
               <tr *ngIf="systemRecords().length === 0" class="empty-state-row">
-                <td colspan="5" class="empty-state-cell">
+                <td colspan="6" class="empty-state-cell">
                   <div class="empty-state-content">
                     <div class="empty-icon-wrap">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -2695,6 +2696,12 @@
                   <span class="user-text">{{ record.customerEmails && record.customerEmails.length > 0 ?
                     record.customerEmails.join(', ') : (record.ownerUserId !== null ? 'User #' + record.ownerUserId :
                     'Unassigned') }}</span>
+                </td>
+                <!-- 6. Distributor (each device/user belongs to exactly one distributor) -->
+                <td class="cell-distributor" data-label="Distributor">
+                  <span class="distributor-text">{{ record.distributorName || (record.distributorId !== null ?
+                    'Distributor #' + record.distributorId : 'Unassigned') }}</span>
+                  <small class="branch-text" *ngIf="record.branchName"> · {{ record.branchName }}</small>
                 </td>
               </tr>
             </tbody>

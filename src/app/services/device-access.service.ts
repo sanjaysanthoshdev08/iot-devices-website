@@ -40,6 +40,8 @@ export interface DeviceResponse {
   status: string;
   createdAt: string;
   customerEmails?: string[];
+  distributorName?: string | null;
+  branchName?: string | null;
 }
 
 // Mirrors backend DistributorAccessResponse.java
