@@ -31,6 +31,18 @@ public class CreateDistributorRequest {
     @Size(max = 150, message = "Location must not exceed 150 characters")
     private String location;
 
+    @Size(max = 100, message = "State must not exceed 100 characters")
+    private String state;
+
+    @Size(max = 100, message = "District must not exceed 100 characters")
+    private String district;
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+
     public CreateDistributorRequest() {
     }
 

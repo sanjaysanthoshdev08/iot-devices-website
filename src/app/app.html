@@ -2321,6 +2321,8 @@
                   <h3 class="dist-title">{{ dist.name }}</h3>
                   <div class="dist-meta-row">
                     <span class="dist-meta-code">Code: <code class="dist-code-val">{{ dist.distributorCode }}</code></span>
+                    <span class="dist-meta-code" *ngIf="dist.district || dist.state">{{ dist.district || '—' }}, {{
+                      dist.state || '—' }}</span>
                     <span class="dist-meta-status">Status: <span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></span>
                   </div>
                 </div>
@@ -3020,6 +3022,20 @@
             (ngModelChange)="distAdminUserId.set($event)" name="distAdminUserId" required />
         </div>
 
+        <!-- Field: State -->
+        <div class="modal-field">
+          <label class="modal-label" for="distState">State</label>
+          <input type="text" id="distState" class="modal-input" placeholder="e.g., Kerala" [ngModel]="distState()"
+            (ngModelChange)="distState.set($event)" name="distState" />
+        </div>
+
+        <!-- Field: District -->
+        <div class="modal-field">
+          <label class="modal-label" for="distDistrict">District</label>
+          <input type="text" id="distDistrict" class="modal-input" placeholder="e.g., Ernakulam"
+            [ngModel]="distDistrict()" (ngModelChange)="distDistrict.set($event)" name="distDistrict" />
+        </div>
+
         <!-- Field: Initial Branch Code -->
         <div class="modal-field">
           <label class="modal-label" for="distBranchCode">Initial Branch Code</label>
@@ -3394,6 +3410,8 @@
           <div class="dist-detail-meta">
             <span><strong>Code:</strong> {{ dist.distributorCode }}</span>
             <span><strong>Status:</strong> {{ dist.status }}</span>
+            <span *ngIf="dist.district || dist.state"><strong>District / State:</strong> {{ dist.district || '—' }}, {{
+              dist.state || '—' }}</span>
             <span *ngIf="dist.administrator"><strong>Administrator:</strong> {{ dist.administrator.name }} ({{
               dist.administrator.email }})</span>
           </div>

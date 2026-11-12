@@ -143,7 +143,9 @@ public class DistributorService {
                     dist.getStatus(),
                     dist.getCreatedAt(),
                     adminSummary,
-                    branchList
+                    branchList,
+                    dist.getState(),
+                    dist.getDistrict()
             );
         }).toList();
     }
@@ -333,6 +335,8 @@ public class DistributorService {
         distributor.setAdministrator(administrator);
         distributor.setCreatedBy(creator);
         distributor.setStatus("ACTIVE");
+        distributor.setState(blankToNull(request.getState()));
+        distributor.setDistrict(blankToNull(request.getDistrict()));
 
         try {
             Distributor savedDistributor =
@@ -355,6 +359,10 @@ public class DistributorService {
                     "Distributor details conflict with an existing database record"
             );
         }
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String requiredText(String value, String fieldName) {

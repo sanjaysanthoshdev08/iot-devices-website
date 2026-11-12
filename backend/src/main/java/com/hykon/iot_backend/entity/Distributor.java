@@ -48,6 +48,12 @@ public class Distributor {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(length = 100)
+    private String state;
+
+    @Column(length = 100)
+    private String district;
+
     public Distributor() {
     }
 
@@ -72,6 +78,12 @@ public class Distributor {
     public void setDistributorCode(String distributorCode) {
         this.distributorCode = distributorCode;
     }
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

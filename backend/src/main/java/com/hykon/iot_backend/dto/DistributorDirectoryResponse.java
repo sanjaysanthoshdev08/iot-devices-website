@@ -10,7 +10,9 @@ public record DistributorDirectoryResponse(
         String status,
         LocalDateTime createdAt,
         AdminSummary administrator,
-        List<BranchHierarchy> branches
+        List<BranchHierarchy> branches,
+        String state,
+        String district
 ) {
     public record AdminSummary(
             Long id,

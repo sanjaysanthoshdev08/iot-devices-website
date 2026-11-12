@@ -1156,6 +1156,8 @@ export class App implements AfterViewInit, OnDestroy {
   distBranchCode = signal<string>('');
   distBranchName = signal<string>('');
   distLocation = signal<string>('');
+  distState = signal<string>('Kerala');
+  distDistrict = signal<string>('');
   distError = signal<string>('');
   distSuccess = signal<string>('');
   isSubmittingDistributor = signal<boolean>(false);
@@ -1851,7 +1853,9 @@ export class App implements AfterViewInit, OnDestroy {
       administratorUserId,
       branchCode,
       branchName,
-      location
+      location,
+      state: this.distState().trim() || undefined,
+      district: this.distDistrict().trim() || undefined
     }).subscribe({
       next: (res) => {
         if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isCreateDistributorModalOpen()) {
@@ -1865,6 +1869,7 @@ export class App implements AfterViewInit, OnDestroy {
         this.distBranchCode.set('');
         this.distBranchName.set('');
         this.distLocation.set('');
+        this.distDistrict.set('');
         this.lastCreatedAdminId.set(null);
         this.showDashboardToast('Distributor and initial branch created successfully.');
       },

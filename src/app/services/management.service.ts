@@ -34,6 +34,8 @@ export interface CreateDistributorRequest {
   branchCode: string;
   branchName: string;
   location: string;
+  state?: string;
+  district?: string;
 }
 
 // ─── Management & Admin Response DTOs ─────────────────────────────────────────
@@ -86,6 +88,7 @@ export interface DirectoryDevice {
   id: number;
   deviceCode: string;
   serialNumber: string;
+  systemName?: string;
   model: string;
   status: string;
   customerEmails?: string[];
@@ -116,6 +119,8 @@ export interface DirectoryDistributor {
   status: string;
   administrator: DirectoryDistributorAdmin | null;
   branches: DirectoryBranch[];
+  state?: string | null;
+  district?: string | null;
 }
 
 // ─── Endpoints ────────────────────────────────────────────────────────────────
