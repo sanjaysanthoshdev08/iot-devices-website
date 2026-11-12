@@ -108,4 +108,21 @@ public class DistributorController {
                 devices
         ));
     }
+
+    @PostMapping("/{distributorId}/branches")
+    public ResponseEntity<ApiResponse<DistributorDirectoryResponse.BranchHierarchy>> addBranch(
+            @PathVariable Long distributorId,
+            @Valid @RequestBody com.hykon.iot_backend.dto.AddBranchRequest request,
+            Principal principal
+    ) {
+        if (principal == null) {
+            throw new AccessDeniedException("HYKON_ADMIN access is required");
+        }
+
+        DistributorDirectoryResponse.BranchHierarchy branch =
+                distributorService.addBranch(distributorId, request, principal.getName());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Branch created successfully", branch));
+    }
 }

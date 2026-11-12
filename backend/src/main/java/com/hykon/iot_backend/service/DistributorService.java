@@ -265,6 +265,44 @@ public class DistributorService {
     }
 
     @Transactional
+    public DistributorDirectoryResponse.BranchHierarchy addBranch(
+            Long distributorId,
+            com.hykon.iot_backend.dto.AddBranchRequest request,
+            String creatorEmail
+    ) {
+        requireHykonAdmin(creatorEmail);
+
+        Distributor distributor = distributorRepository.findById(distributorId)
+                .orElseThrow(() -> new IllegalArgumentException("Distributor was not found"));
+
+        String branchCode = requiredText(request.getBranchCode(), "Branch code")
+                .toUpperCase(Locale.ROOT);
+        String branchName = requiredText(request.getBranchName(), "Branch name");
+        String location = requiredText(request.getLocation(), "Location");
+
+        if (branchRepository.findByDistributorAndCode(distributor.getId(), branchCode).isPresent()) {
+            throw new DuplicateResourceException("Branch code is already used by this distributor");
+        }
+
+        DistributorBranch branch = new DistributorBranch();
+        branch.setDistributor(distributor);
+        branch.setBranchCode(branchCode);
+        branch.setName(branchName);
+        branch.setLocation(location);
+        branch.setStatus("ACTIVE");
+
+        try {
+            DistributorBranch saved = branchRepository.saveAndFlush(branch);
+            return new DistributorDirectoryResponse.BranchHierarchy(
+                    saved.getId(), saved.getBranchCode(), saved.getName(),
+                    saved.getLocation(), saved.getStatus(), List.of());
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateResourceException(
+                    "Branch details conflict with an existing database record");
+        }
+    }
+
+    @Transactional
     public DistributorResponse create(
             CreateDistributorRequest request,
             String creatorEmail
