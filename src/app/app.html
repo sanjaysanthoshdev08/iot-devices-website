@@ -2346,6 +2346,7 @@
                       <strong class="branch-name">{{ branch.name }}</strong>
                       <span class="branch-location">({{ branch.location }})</span>
                     </div>
+                    <span class="branch-code-badge">Branch ID: <code class="branch-code-val">{{ branch.id }}</code></span>
                     <span class="branch-code-badge">Branch Code: <code class="branch-code-val">{{ branch.branchCode }}</code></span>
                   </div>
 
@@ -3498,7 +3499,7 @@
 
           <h5 class="dist-detail-sub">Branches &amp; addresses ({{ dist.branches.length }})</h5>
           <div class="dist-branch-item" *ngFor="let b of dist.branches">
-            <div class="dist-branch-title">{{ b.name }} <small>· {{ b.branchCode }} · {{ b.status }}</small></div>
+            <div class="dist-branch-title">{{ b.name }} <small>· Branch ID {{ b.id }} · {{ b.branchCode }} · {{ b.status }}</small></div>
             <div class="dist-branch-address">{{ b.location }}</div>
             <div class="dist-branch-devices">{{ b.devices.length }} system{{ b.devices.length !== 1 ? 's' : '' }}</div>
             <ul class="dist-branch-device-list" *ngIf="b.devices.length > 0">
