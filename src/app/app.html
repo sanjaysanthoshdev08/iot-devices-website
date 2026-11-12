@@ -2232,6 +2232,10 @@
             </svg>
             <span>+ Add System</span>
           </button>
+          <button type="button" class="btn-record-purchase" *ngIf="activeDashboardNav() === 'systems' && isDistributorRole()"
+            (click)="openCreateBranchModal()" title="Create a branch and its branch admin login">
+            Create Branch
+          </button>
           <button type="button" class="btn-record-purchase"
             *ngIf="activeDashboardNav() === 'systems' && !isCustomerRole()" (click)="openPurchaseModal()"
             title="Record Device Purchase">
@@ -2319,6 +2323,8 @@
               <div class="distributor-header">
                 <div class="dist-info-left">
                   <h3 class="dist-title">{{ dist.name }}</h3>
+                  <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id)"
+                    title="Create a branch and its branch admin login">+ Add Branch</button>
                   <div class="dist-meta-row">
                     <span class="dist-meta-code">Code: <code class="dist-code-val">{{ dist.distributorCode }}</code></span>
                     <span class="dist-meta-code" *ngIf="dist.district || dist.state">{{ dist.district || '—' }}, {{
@@ -2873,12 +2879,20 @@
             required />
         </div>
 
-        <!-- Field: Customer User ID -->
+        <!-- Field: Customer Email (select an existing customer by email) -->
         <div class="modal-field">
-          <label class="modal-label" for="purchaseCustomerId">Customer Account ID</label>
+          <label class="modal-label" for="purchaseCustomerEmail">Customer Email (existing customer)</label>
+          <input type="email" id="purchaseCustomerEmail" class="modal-input" placeholder="e.g., customer1@gmail.com"
+            [ngModel]="purchaseCustomerEmail()" (ngModelChange)="purchaseCustomerEmail.set($event)"
+            name="purchaseCustomerEmail" />
+        </div>
+
+        <!-- Field: Customer User ID (used when no email is entered) -->
+        <div class="modal-field">
+          <label class="modal-label" for="purchaseCustomerId">Customer Account ID (or enter the email above)</label>
           <input type="number" id="purchaseCustomerId" class="modal-input" placeholder="e.g., 42"
             [ngModel]="purchaseCustomerUserId()" (ngModelChange)="purchaseCustomerUserId.set($event)"
-            name="purchaseCustomerId" required />
+            name="purchaseCustomerId" />
         </div>
 
         <!-- Field: Purchase Reference -->
@@ -3381,6 +3395,72 @@
     <span>{{ dashboardToast() }}</span>
     <button *ngIf="dashboardRetryAction()" type="button" class="dash-toast-retry-btn"
       (click)="retryDashboardAuthorization()">Retry</button>
+  </div>
+
+  <!-- CREATE BRANCH + BRANCH ADMIN MODAL -->
+  <div class="system-modal-backdrop" *ngIf="isAuthenticated() && isCreateBranchModalOpen()"
+    (click)="closeCreateBranchModal()">
+    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="branch-modal-title">
+      <div class="modal-card-header">
+        <h3 id="branch-modal-title" class="modal-card-title">Create Branch &amp; Branch Admin</h3>
+        <button type="button" class="modal-close-btn" (click)="closeCreateBranchModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="submitCreateBranch()">
+        <div class="modal-error-alert" *ngIf="branchError()">
+          <span>{{ branchError() }}</span>
+        </div>
+
+        <div class="modal-field">
+          <label class="modal-label" for="brCode">Branch Code</label>
+          <input type="text" id="brCode" class="modal-input" placeholder="e.g., KL-A-03" [ngModel]="newBranchCode()"
+            (ngModelChange)="newBranchCode.set($event)" name="brCode" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brName">Branch Name</label>
+          <input type="text" id="brName" class="modal-input" placeholder="e.g., Aluva Branch"
+            [ngModel]="branchNameInput()" (ngModelChange)="branchNameInput.set($event)" name="brName" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brLocation">Branch Address / Location</label>
+          <input type="text" id="brLocation" class="modal-input" placeholder="e.g., Aluva, Ernakulam, Kerala"
+            [ngModel]="branchLocation()" (ngModelChange)="branchLocation.set($event)" name="brLocation" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brAdminName">Branch Admin Name</label>
+          <input type="text" id="brAdminName" class="modal-input" [ngModel]="branchAdminName()"
+            (ngModelChange)="branchAdminName.set($event)" name="brAdminName" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brAdminEmail">Branch Admin Email (login)</label>
+          <input type="email" id="brAdminEmail" class="modal-input" [ngModel]="branchAdminEmail()"
+            (ngModelChange)="branchAdminEmail.set($event)" name="brAdminEmail" autocomplete="off" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brAdminPw">Branch Admin Password</label>
+          <input type="password" id="brAdminPw" class="modal-input" [ngModel]="branchAdminPassword()"
+            (ngModelChange)="branchAdminPassword.set($event)" name="brAdminPw" autocomplete="new-password" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brAdminPw2">Confirm Password</label>
+          <input type="password" id="brAdminPw2" class="modal-input" [ngModel]="branchAdminConfirm()"
+            (ngModelChange)="branchAdminConfirm.set($event)" name="brAdminPw2" autocomplete="new-password" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeCreateBranchModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingBranch()">
+            {{ isSubmittingBranch() ? 'Creating...' : 'Create Branch' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- DISTRIBUTOR DETAILS POPUP (opened from Distributor column) -->

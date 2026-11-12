@@ -1638,7 +1638,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           administratorUserId: 88,
           branchCode: 'BR-WEST-02',
           branchName: 'West Branch',
-          location: 'Kochi'
+          location: 'Kochi',
+          state: 'Kerala'
         });
         expect(app.isCreateDistributorModalOpen()).toBe(false);
         expect(app.lastCreatedAdminId()).toBeNull();

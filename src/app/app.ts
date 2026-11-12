@@ -145,6 +145,7 @@ export class App implements AfterViewInit, OnDestroy {
   readonly isDistributorRole = computed(() => this.currentRole() === 'DISTRIBUTOR_ADMIN');
   readonly isCustomerRole = computed(() => this.currentRole() === 'USER');
   readonly isHykonAdminRole = computed(() => this.currentRole() === 'HYKON_ADMIN');
+  readonly isBranchAdminRole = computed(() => this.currentRole() === 'BRANCH_ADMIN');
 
   // Explicit login tracking: only true after explicit user/admin/distributor login.
   // Defaults to false so startup / opening the site always displays Log in / Sign up on the home page.
@@ -364,7 +365,7 @@ export class App implements AfterViewInit, OnDestroy {
     }
 
     // 4. HYKON_ADMIN: bypass verification and open Overview
-    if (role === 'HYKON_ADMIN') {
+    if (role === 'HYKON_ADMIN' || role === 'BRANCH_ADMIN') {
       this.openDashboard('overview');
       this.setDashboardNav('overview');
       return;
@@ -747,6 +748,7 @@ export class App implements AfterViewInit, OnDestroy {
       case 'USER':
         return tab === 'systems' || tab === 'alerts';
       case 'DISTRIBUTOR_ADMIN':
+      case 'BRANCH_ADMIN':
         return tab === 'overview' || tab === 'systems' || tab === 'alerts';
       case 'HYKON_ADMIN':
         return tab === 'overview' || tab === 'systems' || tab === 'accounts' || tab === 'alerts';
@@ -784,7 +786,7 @@ export class App implements AfterViewInit, OnDestroy {
         this.openDeviceGate();
       } else if (role === 'DISTRIBUTOR_ADMIN') {
         this.openDistributorGate();
-      } else if (role === 'HYKON_ADMIN') {
+      } else if (role === 'HYKON_ADMIN' || role === 'BRANCH_ADMIN') {
         this.openDashboard('overview');
       } else {
         this.closeDeviceAuthModal();
@@ -1129,8 +1131,90 @@ export class App implements AfterViewInit, OnDestroy {
   newSystemSuccess = signal<string>('');
   isSubmittingSystem = signal<boolean>(false);
 
+  // Create Branch + Branch Admin modal state (HYKON_ADMIN per distributor, DISTRIBUTOR_ADMIN for own)
+  isCreateBranchModalOpen = signal<boolean>(false);
+  branchTargetDistributorId = signal<number | null>(null);
+  newBranchCode = signal<string>('');
+  branchNameInput = signal<string>('');
+  branchLocation = signal<string>('');
+  branchAdminName = signal<string>('');
+  branchAdminEmail = signal<string>('');
+  branchAdminPassword = signal<string>('');
+  branchAdminConfirm = signal<string>('');
+  branchError = signal<string>('');
+  isSubmittingBranch = signal<boolean>(false);
+
+  openCreateBranchModal(distributorId: number | null = null) {
+    if (!this.isHykonAdminRole() && !this.isDistributorRole()) return;
+    this.branchTargetDistributorId.set(distributorId);
+    this.newBranchCode.set('');
+    this.branchNameInput.set('');
+    this.branchLocation.set('');
+    this.branchAdminName.set('');
+    this.branchAdminEmail.set('');
+    this.branchAdminPassword.set('');
+    this.branchAdminConfirm.set('');
+    this.branchError.set('');
+    this.isCreateBranchModalOpen.set(true);
+  }
+
+  closeCreateBranchModal() {
+    this.isCreateBranchModalOpen.set(false);
+    this.branchError.set('');
+  }
+
+  submitCreateBranch() {
+    if (this.isSubmittingBranch()) return;
+    const distributorId = this.isHykonAdminRole() ? this.branchTargetDistributorId() : null;
+    if (this.isHykonAdminRole() && distributorId === null) {
+      this.branchError.set('Select a distributor first.');
+      return;
+    }
+    const request = {
+      branchCode: this.newBranchCode().trim(),
+      branchName: this.branchNameInput().trim(),
+      location: this.branchLocation().trim(),
+      adminName: this.branchAdminName().trim(),
+      adminEmail: this.branchAdminEmail().trim(),
+      adminPassword: this.branchAdminPassword(),
+      confirmPassword: this.branchAdminConfirm()
+    };
+    if (!request.branchCode || !request.branchName || !request.location) {
+      this.branchError.set('Branch code, name and location are required.');
+      return;
+    }
+    if (!request.adminName || !request.adminEmail || !request.adminPassword) {
+      this.branchError.set('Branch admin name, email and password are required.');
+      return;
+    }
+    if (request.adminPassword !== request.confirmPassword) {
+      this.branchError.set('Passwords do not match.');
+      return;
+    }
+
+    this.branchError.set('');
+    this.isSubmittingBranch.set(true);
+    this.managementService.createBranchWithAdmin(distributorId, request).subscribe({
+      next: () => {
+        this.isSubmittingBranch.set(false);
+        this.closeCreateBranchModal();
+        this.showDashboardToast('Branch and branch admin created successfully.');
+        if (this.isHykonAdminRole()) {
+          this.loadDistributorDirectory();
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isSubmittingBranch.set(false);
+        const body = err.error;
+        const fieldMsg = body?.errors ? (Object.values(body.errors)[0] as string) : '';
+        this.branchError.set(fieldMsg || this.extractErrorMessage(err, 'Failed to create branch.'));
+      }
+    });
+  }
+
   // Purchase Recording Modal state
   isPurchaseModalOpen = signal<boolean>(false);
+  purchaseCustomerEmail = signal<string>('');
   purchaseDeviceId = signal<string>('');
   purchaseCustomerUserId = signal<string>('');
   purchaseReference = signal<string>('');
@@ -1606,8 +1690,14 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const customerEmail = this.purchaseCustomerEmail().trim().toLowerCase();
     const customerUserId = parseInt(customerUserIdStr, 10);
-    if (!customerUserIdStr || isNaN(customerUserId) || customerUserId <= 0) {
+    if (customerEmail) {
+      if (!customerEmail.includes('@')) {
+        this.purchaseError.set('Please enter a valid customer email address.');
+        return;
+      }
+    } else if (!customerUserIdStr || isNaN(customerUserId) || customerUserId <= 0) {
       this.purchaseError.set('A valid positive numeric Customer User ID is required.');
       return;
     }
@@ -1626,7 +1716,7 @@ export class App implements AfterViewInit, OnDestroy {
 
     this.managementService.recordDevicePurchase({
       deviceId,
-      customerUserId,
+      ...(customerEmail ? { customerEmail } : { customerUserId }),
       purchaseReference: purchaseRef
     }).subscribe({
       next: (res) => {
@@ -1637,6 +1727,7 @@ export class App implements AfterViewInit, OnDestroy {
         this.closePurchaseModal();
         this.purchaseDeviceId.set('');
         this.purchaseCustomerUserId.set('');
+        this.purchaseCustomerEmail.set('');
         this.purchaseReference.set('');
         this.showDashboardToast('Purchase eligibility recorded successfully.');
         this.loadSystems(this.currentPage());

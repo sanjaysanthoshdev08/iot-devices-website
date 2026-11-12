@@ -279,7 +279,7 @@ export class AuthService {
         user.id > 0 &&
         typeof user?.name === 'string' &&
         typeof user?.email === 'string' &&
-        ['USER', 'DISTRIBUTOR_ADMIN', 'HYKON_ADMIN'].includes(user?.role) &&
+        ['USER', 'DISTRIBUTOR_ADMIN', 'HYKON_ADMIN', 'BRANCH_ADMIN'].includes(user?.role) &&
         user?.status === 'ACTIVE';
 
       if (!valid) {

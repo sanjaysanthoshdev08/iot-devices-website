@@ -16,8 +16,19 @@ export interface RegisterDeviceManagementRequest {
 
 export interface RecordDevicePurchaseRequest {
   deviceId: number;
-  customerUserId: number;
+  customerUserId?: number;
+  customerEmail?: string;
   purchaseReference: string;
+}
+
+export interface CreateBranchWithAdminRequest {
+  branchCode: string;
+  branchName: string;
+  location: string;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+  confirmPassword: string;
 }
 
 export interface CreateDistributorAdminRequest {
@@ -187,6 +198,21 @@ export class ManagementService {
    */
   getDistributorDirectory(): Observable<ApiResponse<DirectoryDistributor[]>> {
     return this.http.get<ApiResponse<DirectoryDistributor[]>>(DISTRIBUTOR_DIRECTORY_URL);
+  }
+
+  /**
+   * Create a branch together with its dedicated BRANCH_ADMIN login.
+   * HYKON_ADMIN: pass the distributorId.  DISTRIBUTOR_ADMIN: pass null (own distributor).
+   * POST /api/v1/admin/distributors/{id}/branch-with-admin  |  POST /api/v1/distributor/branches
+   */
+  createBranchWithAdmin(
+    distributorId: number | null,
+    request: CreateBranchWithAdminRequest
+  ): Observable<ApiResponse<DirectoryBranch>> {
+    const url = distributorId === null
+      ? 'http://localhost:8080/api/v1/distributor/branches'
+      : `${DISTRIBUTOR_DIRECTORY_URL}/${distributorId}/branch-with-admin`;
+    return this.http.post<ApiResponse<DirectoryBranch>>(url, request);
   }
 
   /**
