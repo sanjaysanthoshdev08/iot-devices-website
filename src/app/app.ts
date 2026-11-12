@@ -1087,6 +1087,27 @@ export class App implements AfterViewInit, OnDestroy {
   systemsRequestId = 0;
 
   // Device details modal state & cancellation token
+  // Distributor details popup (opened from the Distributor column in the systems list)
+  isDistributorDetailOpen = signal<boolean>(false);
+  selectedDistributorId = signal<number | null>(null);
+  selectedDistributor = computed(() =>
+    this.distributorDirectory().find(d => d.id === this.selectedDistributorId()) ?? null
+  );
+
+  openDistributorDetails(distributorId: number | null) {
+    if (distributorId === null || !this.isHykonAdminRole()) return;
+    this.selectedDistributorId.set(distributorId);
+    this.isDistributorDetailOpen.set(true);
+    if (this.distributorDirectory().length === 0) {
+      this.loadDistributorDirectory();
+    }
+  }
+
+  closeDistributorDetails() {
+    this.isDistributorDetailOpen.set(false);
+    this.selectedDistributorId.set(null);
+  }
+
   isDeviceDetailModalOpen = signal<boolean>(false);
   isDetailLoading = signal<boolean>(false);
   detailError = signal<string | null>(null);

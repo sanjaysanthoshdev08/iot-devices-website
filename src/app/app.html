@@ -2699,7 +2699,12 @@
                 </td>
                 <!-- 6. Distributor (each device/user belongs to exactly one distributor) -->
                 <td class="cell-distributor" data-label="Distributor">
-                  <span class="distributor-text">{{ record.distributorName || (record.distributorId !== null ?
+                  <button type="button" class="distributor-link-btn"
+                    *ngIf="isHykonAdminRole() && record.distributorId !== null"
+                    (click)="openDistributorDetails(record.distributorId)" title="View distributor details">{{
+                    record.distributorName || 'Distributor #' + record.distributorId }}</button>
+                  <span class="distributor-text" *ngIf="!(isHykonAdminRole() && record.distributorId !== null)">{{
+                    record.distributorName || (record.distributorId !== null ?
                     'Distributor #' + record.distributorId : 'Unassigned') }}</span>
                   <small class="branch-text" *ngIf="record.branchName"> · {{ record.branchName }}</small>
                 </td>
@@ -3360,6 +3365,54 @@
     <span>{{ dashboardToast() }}</span>
     <button *ngIf="dashboardRetryAction()" type="button" class="dash-toast-retry-btn"
       (click)="retryDashboardAuthorization()">Retry</button>
+  </div>
+
+  <!-- DISTRIBUTOR DETAILS POPUP (opened from Distributor column) -->
+  <div class="system-modal-backdrop" *ngIf="isAuthenticated() && isDistributorDetailOpen()"
+    (click)="closeDistributorDetails()">
+    <div class="system-modal-card dist-detail-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="dist-detail-title">
+      <div class="modal-card-header">
+        <h3 id="dist-detail-title" class="modal-card-title">Distributor details</h3>
+        <button type="button" class="modal-close-btn" (click)="closeDistributorDetails()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="dist-detail-body">
+        <p class="dist-detail-note" *ngIf="isDirectoryLoading()">Loading distributor details…</p>
+        <p class="dist-detail-note dist-detail-error" *ngIf="!isDirectoryLoading() && directoryError()">{{
+          directoryError() }}</p>
+        <p class="dist-detail-note" *ngIf="!isDirectoryLoading() && !directoryError() && !selectedDistributor()">
+          Distributor details not found.</p>
+
+        <ng-container *ngIf="!isDirectoryLoading() && selectedDistributor() as dist">
+          <h4 class="dist-detail-name">{{ dist.name }}</h4>
+          <div class="dist-detail-meta">
+            <span><strong>Code:</strong> {{ dist.distributorCode }}</span>
+            <span><strong>Status:</strong> {{ dist.status }}</span>
+            <span *ngIf="dist.administrator"><strong>Administrator:</strong> {{ dist.administrator.name }} ({{
+              dist.administrator.email }})</span>
+          </div>
+
+          <h5 class="dist-detail-sub">Branches &amp; addresses ({{ dist.branches.length }})</h5>
+          <div class="dist-branch-item" *ngFor="let b of dist.branches">
+            <div class="dist-branch-title">{{ b.name }} <small>· {{ b.branchCode }} · {{ b.status }}</small></div>
+            <div class="dist-branch-address">{{ b.location }}</div>
+            <div class="dist-branch-devices">{{ b.devices.length }} system{{ b.devices.length !== 1 ? 's' : '' }}</div>
+            <ul class="dist-branch-device-list" *ngIf="b.devices.length > 0">
+              <li *ngFor="let d of b.devices">{{ d.systemName || d.deviceCode }} <small>(SN {{ d.serialNumber }})</small>
+                <small *ngIf="d.customerEmails && d.customerEmails.length > 0"> — {{ d.customerEmails.join(', ')
+                  }}</small>
+              </li>
+            </ul>
+          </div>
+        </ng-container>
+      </div>
+    </div>
   </div>
 
 </div>
