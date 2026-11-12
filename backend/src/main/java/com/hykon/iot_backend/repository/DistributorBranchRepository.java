@@ -13,6 +13,8 @@ public interface DistributorBranchRepository
 
     List<DistributorBranch> findByDistributor_Id(Long distributorId);
 
+    Optional<DistributorBranch> findByBranchAdmin_Id(Long branchAdminUserId);
+
     org.springframework.data.domain.Page<DistributorBranch> findByDistributor_Id(Long distributorId, org.springframework.data.domain.Pageable pageable);
 
     List<DistributorBranch> findByDistributor_IdIn(List<Long> distributorIds);

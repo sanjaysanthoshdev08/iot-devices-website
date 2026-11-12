@@ -59,6 +59,11 @@ public class DeviceRegistrationService {
             throw new AccessDeniedException("Administrator access is required");
         }
 
+        if (role == RoleName.BRANCH_ADMIN && request.getBranchId() == null) {
+            branchRepository.findByBranchAdmin_Id(creator.getId())
+                    .ifPresent(own -> request.setBranchId(own.getId()));
+        }
+
         DistributorBranch branch = null;
 
         if (request.getBranchId() == null) {
