@@ -2681,14 +2681,11 @@
                 </td>
                 <!-- 6. Distributor (each device/user belongs to exactly one distributor) -->
                 <td class="cell-distributor" data-label="Distributor">
-                  <button type="button" class="distributor-link-btn"
-                    *ngIf="isHykonAdminRole() && record.distributorId !== null"
-                    (click)="openDistributorDetails(record.distributorId)" title="View distributor details">{{
-                    record.distributorName || 'Distributor #' + record.distributorId }}</button>
-                  <span class="distributor-text" *ngIf="!(isHykonAdminRole() && record.distributorId !== null)">{{
-                    record.distributorName || (record.distributorId !== null ?
-                    'Distributor #' + record.distributorId : 'Unassigned') }}</span>
-                  <small class="branch-text" *ngIf="record.branchName"> · {{ record.branchName }}</small>
+                  <button type="button" class="distributor-link-btn" *ngIf="record.distributorId !== null"
+                    (click)="openDistributorFromRecord(record)" title="View distributor and branch details">{{
+                    record.distributorName || 'Distributor #' + record.distributorId }}<span *ngIf="record.branchName">
+                      · {{ record.branchName }}</span></button>
+                  <span class="distributor-text" *ngIf="record.distributorId === null">Unassigned</span>
                 </td>
               </tr>
             </tbody>
@@ -3376,15 +3373,31 @@
       </div>
 
       <div class="dist-detail-body">
-        <p class="dist-detail-note" *ngIf="isDirectoryLoading()">Loading distributor details…</p>
-        <p class="dist-detail-note dist-detail-error" *ngIf="!isDirectoryLoading() && directoryError()">{{
-          directoryError() }}</p>
-        <p class="dist-detail-note" *ngIf="!isDirectoryLoading() && !directoryError() && !selectedDistributor()">
-          Distributor details not found.</p>
-
-        <ng-container *ngIf="!isDirectoryLoading() && selectedDistributor() as dist">
-          <h4 class="dist-detail-name">{{ dist.name }}</h4>
+        <!-- This system's distributor and branch (available to every role) -->
+        <ng-container *ngIf="distributorRecord() as rec">
+          <h4 class="dist-detail-name">{{ rec.distributorName }}</h4>
           <div class="dist-detail-meta">
+            <span *ngIf="rec.distributorCode"><strong>Code:</strong> {{ rec.distributorCode }}</span>
+            <span *ngIf="rec.district || rec.state"><strong>District / State:</strong> {{ rec.district || '—' }}, {{
+              rec.state || '—' }}</span>
+          </div>
+          <h5 class="dist-detail-sub">This system's branch</h5>
+          <div class="dist-branch-item">
+            <div class="dist-branch-title">{{ rec.branchName }} <small *ngIf="rec.branchCode">· Branch ID {{
+                rec.branchId }} · {{ rec.branchCode }}</small></div>
+            <div class="dist-branch-address" *ngIf="rec.branchLocation">{{ rec.branchLocation }}</div>
+            <div class="dist-branch-devices">System: {{ rec.systemName || rec.deviceCode }} (SN {{ rec.serialNumber
+              }})</div>
+          </div>
+        </ng-container>
+
+        <p class="dist-detail-note" *ngIf="isHykonAdminRole() && isDirectoryLoading()">Loading all branches…</p>
+        <p class="dist-detail-note dist-detail-error"
+          *ngIf="isHykonAdminRole() && !isDirectoryLoading() && directoryError()">{{ directoryError() }}</p>
+
+        <ng-container *ngIf="isHykonAdminRole() && !isDirectoryLoading() && selectedDistributor() as dist">
+          <h4 class="dist-detail-name" *ngIf="!distributorRecord()">{{ dist.name }}</h4>
+          <div class="dist-detail-meta" *ngIf="!distributorRecord()">
             <span><strong>Code:</strong> {{ dist.distributorCode }}</span>
             <span><strong>Status:</strong> {{ dist.status }}</span>
             <span *ngIf="dist.district || dist.state"><strong>District / State:</strong> {{ dist.district || '—' }}, {{
@@ -3393,7 +3406,7 @@
               dist.administrator.email }})</span>
           </div>
 
-          <h5 class="dist-detail-sub">Branches &amp; addresses ({{ dist.branches.length }})</h5>
+          <h5 class="dist-detail-sub">All branches of this distributor ({{ dist.branches.length }})</h5>
           <div class="dist-branch-item" *ngFor="let b of dist.branches">
             <div class="dist-branch-title">{{ b.name }} <small>· Branch ID {{ b.id }} · {{ b.branchCode }} · {{ b.status }}</small></div>
             <div class="dist-branch-address">{{ b.location }}</div>

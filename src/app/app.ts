@@ -1105,9 +1105,23 @@ export class App implements AfterViewInit, OnDestroy {
     }
   }
 
+  // Row-based details: works for every role from the data already in the device record.
+  distributorRecord = signal<DeviceResponse | null>(null);
+
+  openDistributorFromRecord(record: DeviceResponse) {
+    if (record.distributorId === null || record.distributorId === undefined) return;
+    this.distributorRecord.set(record);
+    this.selectedDistributorId.set(record.distributorId);
+    this.isDistributorDetailOpen.set(true);
+    if (this.isHykonAdminRole() && this.distributorDirectory().length === 0) {
+      this.loadDistributorDirectory();
+    }
+  }
+
   closeDistributorDetails() {
     this.isDistributorDetailOpen.set(false);
     this.selectedDistributorId.set(null);
+    this.distributorRecord.set(null);
   }
 
   isDeviceDetailModalOpen = signal<boolean>(false);
