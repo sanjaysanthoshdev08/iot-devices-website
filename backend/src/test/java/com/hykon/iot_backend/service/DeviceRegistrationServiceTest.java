@@ -121,6 +121,41 @@ class DeviceRegistrationServiceTest {
     }
 
     @Test
+    void registersWhenSelectedBranchBelongsToSelectedDistributor() {
+        User creator = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(creator);
+        allowSave();
+        DistributorBranch branch = branch(creator, "ACTIVE", "ACTIVE");
+        when(distributorRepository.findById(1L)).thenReturn(Optional.of(branch.getDistributor()));
+        when(branchRepository.findById(1L)).thenReturn(Optional.of(branch));
+        RegisterDeviceRequest request = request();
+        request.setDistributorId(1L);
+        request.setBranchId(1L);
+
+        DeviceResponse response = service.register(request, "creator@example.com");
+        assertEquals(Long.valueOf(1), response.branchId());
+    }
+
+    @Test
+    void selectedBranchUnderAnotherDistributorIsRejected() {
+        User creator = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(creator);
+        DistributorBranch branch = branch(creator, "ACTIVE", "ACTIVE");
+        Distributor other = new Distributor();
+        ReflectionTestUtils.setField(other, "id", 2L);
+        when(distributorRepository.findById(2L)).thenReturn(Optional.of(other));
+        when(branchRepository.findById(1L)).thenReturn(Optional.of(branch));
+        RegisterDeviceRequest request = request();
+        request.setDistributorId(2L);
+        request.setBranchId(1L);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.register(request, "creator@example.com"));
+        assertTrue(ex.getMessage().contains("does not belong"));
+        verify(deviceRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void unknownDistributorCodeIsRejectedAndNothingSaved() {
         stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
         when(distributorRepository.findByCode("NOPE")).thenReturn(Optional.empty());
