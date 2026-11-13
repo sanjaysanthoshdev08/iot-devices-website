@@ -1154,6 +1154,8 @@ export class App implements AfterViewInit, OnDestroy {
   branchNameInput = signal<string>('');
   branchLocation = signal<string>('');
   branchPincode = signal<string>('');
+  branchDistributorCode = signal<string>('');
+  branchAddress = signal<string>('');
   branchAdminName = signal<string>('');
   branchAdminEmail = signal<string>('');
   branchAdminPassword = signal<string>('');
@@ -1161,9 +1163,11 @@ export class App implements AfterViewInit, OnDestroy {
   branchError = signal<string>('');
   isSubmittingBranch = signal<boolean>(false);
 
-  openCreateBranchModal(distributorId: number | null = null) {
+  openCreateBranchModal(distributorId: number | null = null, distributorCode: string = '') {
     if (!this.isHykonAdminRole() && !this.isDistributorRole()) return;
     this.branchTargetDistributorId.set(distributorId);
+    this.branchDistributorCode.set(distributorCode);
+    this.branchAddress.set('');
     this.newBranchCode.set('');
     this.branchNameInput.set('');
     this.branchLocation.set('');
@@ -1183,16 +1187,18 @@ export class App implements AfterViewInit, OnDestroy {
 
   submitCreateBranch() {
     if (this.isSubmittingBranch()) return;
-    const distributorId = this.isHykonAdminRole() ? this.branchTargetDistributorId() : null;
-    if (this.isHykonAdminRole() && distributorId === null) {
-      this.branchError.set('Select a distributor first.');
+    const distributorCode = this.branchDistributorCode().trim();
+    if (!distributorCode) {
+      this.branchError.set('Distributor code is required.');
       return;
     }
     const request = {
+      distributorCode,
       branchCode: this.newBranchCode().trim(),
       branchName: this.branchNameInput().trim(),
       location: this.branchLocation().trim(),
-      pincode: this.branchPincode().trim() || undefined,
+      address: this.branchAddress().trim(),
+      pincode: this.branchPincode().trim(),
       adminName: this.branchAdminName().trim(),
       adminEmail: this.branchAdminEmail().trim(),
       adminPassword: this.branchAdminPassword(),
@@ -1202,7 +1208,11 @@ export class App implements AfterViewInit, OnDestroy {
       this.branchError.set('Branch code, name and location are required.');
       return;
     }
-    if (request.pincode && !/^[0-9]{6}$/.test(request.pincode)) {
+    if (!request.address) {
+      this.branchError.set('Full address is required.');
+      return;
+    }
+    if (!/^[0-9]{6}$/.test(request.pincode)) {
       this.branchError.set('Pincode must be exactly 6 digits.');
       return;
     }
@@ -1217,7 +1227,10 @@ export class App implements AfterViewInit, OnDestroy {
 
     this.branchError.set('');
     this.isSubmittingBranch.set(true);
-    this.managementService.createBranchWithAdmin(distributorId, request).subscribe({
+    const branchCall$ = this.isHykonAdminRole()
+      ? this.managementService.createBranchByCode(request)
+      : this.managementService.createBranchWithAdmin(null, request);
+    branchCall$.subscribe({
       next: () => {
         this.isSubmittingBranch.set(false);
         this.closeCreateBranchModal();
@@ -1260,6 +1273,7 @@ export class App implements AfterViewInit, OnDestroy {
   distCode = signal<string>('');
   distName = signal<string>('');
   distAdminUserId = signal<string>('');
+  availableDistAdmins = signal<Array<{ id: number; name: string; email: string }>>([]);
   distBranchCode = signal<string>('');
   distBranchName = signal<string>('');
   distLocation = signal<string>('');
@@ -1897,6 +1911,14 @@ export class App implements AfterViewInit, OnDestroy {
     this.distError.set('');
     this.distSuccess.set('');
     this.isCreateDistributorModalOpen.set(true);
+    this.loadAvailableDistAdmins();
+  }
+
+  loadAvailableDistAdmins() {
+    this.managementService.listAvailableDistributorAdmins().subscribe({
+      next: (res) => this.availableDistAdmins.set(res.data ?? []),
+      error: () => this.availableDistAdmins.set([])
+    });
   }
 
   closeCreateDistributorModal() {
@@ -1916,16 +1938,15 @@ export class App implements AfterViewInit, OnDestroy {
     const distributorCode = this.distCode().trim();
     const name = this.distName().trim();
     const adminUserIdStr = String(this.distAdminUserId() ?? '').trim();
-    const branchCode = this.distBranchCode().trim();
-    const branchName = this.distBranchName().trim();
-    const location = this.distLocation().trim();
+    const state = this.distState().trim();
+    const district = this.distDistrict().trim();
 
     this.distError.set('');
     this.distSuccess.set('');
 
     const administratorUserId = parseInt(adminUserIdStr, 10);
     if (!adminUserIdStr || isNaN(administratorUserId) || administratorUserId <= 0) {
-      this.distError.set('A valid positive numeric Administrator User ID is required.');
+      this.distError.set('Select the distributor administrator account.');
       return;
     }
     if (!distributorCode) {
@@ -1944,34 +1965,12 @@ export class App implements AfterViewInit, OnDestroy {
       this.distError.set('Distributor name must not exceed 150 characters.');
       return;
     }
-    if (!branchCode) {
-      this.distError.set('Initial branch code is required.');
+    if (!state) {
+      this.distError.set('State is required.');
       return;
     }
-    if (branchCode.length > 100) {
-      this.distError.set('Branch code must not exceed 100 characters.');
-      return;
-    }
-    if (!branchName) {
-      this.distError.set('Initial branch name is required.');
-      return;
-    }
-    if (branchName.length > 150) {
-      this.distError.set('Branch name must not exceed 150 characters.');
-      return;
-    }
-    if (!location) {
-      this.distError.set('Branch location is required.');
-      return;
-    }
-    if (location.length > 150) {
-      this.distError.set('Branch location must not exceed 150 characters.');
-      return;
-    }
-
-    const distPin = this.distPincode().trim();
-    if (distPin && !/^[0-9]{6}$/.test(distPin)) {
-      this.distError.set('Pincode must be exactly 6 digits.');
+    if (!district) {
+      this.distError.set('District is required.');
       return;
     }
 
@@ -1982,12 +1981,8 @@ export class App implements AfterViewInit, OnDestroy {
       distributorCode,
       name,
       administratorUserId,
-      branchCode,
-      branchName,
-      location,
-      pincode: this.distPincode().trim() || undefined,
-      state: this.distState().trim() || undefined,
-      district: this.distDistrict().trim() || undefined
+      state,
+      district
     }).subscribe({
       next: (res) => {
         if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isCreateDistributorModalOpen()) {
@@ -2004,7 +1999,8 @@ export class App implements AfterViewInit, OnDestroy {
         this.distDistrict.set('');
         this.distPincode.set('');
         this.lastCreatedAdminId.set(null);
-        this.showDashboardToast('Distributor and initial branch created successfully.');
+        this.showDashboardToast('Distributor created successfully. Next: create its branch.');
+        this.loadDistributorDirectory();
       },
       error: (err: HttpErrorResponse) => {
         if (currentReq !== this.managementRequestId) return;

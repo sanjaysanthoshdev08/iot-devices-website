@@ -27,6 +27,8 @@ export interface CreateBranchWithAdminRequest {
   branchCode: string;
   branchName: string;
   location: string;
+  address?: string;
+  distributorCode?: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -41,13 +43,19 @@ export interface CreateDistributorAdminRequest {
   confirmPassword: string;
 }
 
+export interface DistributorAdminOption {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export interface CreateDistributorRequest {
   distributorCode: string;
   name: string;
   administratorUserId: number;
-  branchCode: string;
-  branchName: string;
-  location: string;
+  branchCode?: string;
+  branchName?: string;
+  location?: string;
   state?: string;
   district?: string;
   pincode?: string;
@@ -218,6 +226,24 @@ export class ManagementService {
       ? 'http://localhost:8080/api/v1/distributor/branches'
       : `${DISTRIBUTOR_DIRECTORY_URL}/${distributorId}/branch-with-admin`;
     return this.http.post<ApiResponse<DirectoryBranch>>(url, request);
+  }
+
+  /**
+   * Distributor admin logins that are not yet assigned to a distributor organization.
+   * GET /api/v1/admin/distributor-admins/available  (HYKON_ADMIN only)
+   */
+  listAvailableDistributorAdmins(): Observable<ApiResponse<DistributorAdminOption[]>> {
+    return this.http.get<ApiResponse<DistributorAdminOption[]>>(`${CREATE_DIST_ADMIN_URL}/available`);
+  }
+
+  /**
+   * HYKON_ADMIN: create a branch + branch admin, identifying the distributor by its code.
+   * POST /api/v1/admin/branches
+   */
+  createBranchByCode(
+    request: CreateBranchWithAdminRequest
+  ): Observable<ApiResponse<DirectoryBranch>> {
+    return this.http.post<ApiResponse<DirectoryBranch>>('http://localhost:8080/api/v1/admin/branches', request);
   }
 
   /**

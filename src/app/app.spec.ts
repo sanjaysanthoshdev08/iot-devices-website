@@ -29,6 +29,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     registerDevice: any;
     recordDevicePurchase: any;
     createDistributorAdmin: any;
+    listAvailableDistributorAdmins: any;
+    createBranchByCode: any;
     createDistributor: any;
     getDistributorDirectory: any;
     authorizeDeviceCustomer: any;
@@ -58,6 +60,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       registerDevice: vi.fn(),
       recordDevicePurchase: vi.fn(),
       createDistributorAdmin: vi.fn(),
+      listAvailableDistributorAdmins: vi.fn().mockReturnValue(of({ success: true, data: [] })),
+      createBranchByCode: vi.fn(),
       createDistributor: vi.fn(),
       getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
       authorizeDeviceCustomer: vi.fn(),
@@ -1625,6 +1629,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchCode.set('BR-WEST-01');
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
+        app.distState.set('Kerala');
+        app.distDistrict.set('Ernakulam');
 
         // Step 2: Distributor creation fails on backend (e.g. branch code conflict)
         mockManagementService.createDistributor.mockReturnValue(throwError(() => new HttpErrorResponse({
@@ -1672,14 +1678,12 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           distributorCode: 'DIST-88',
           name: 'Hykon West',
           administratorUserId: 88,
-          branchCode: 'BR-WEST-02',
-          branchName: 'West Branch',
-          location: 'Kochi',
-          state: 'Kerala'
+          state: 'Kerala',
+          district: 'Ernakulam'
         });
         expect(app.isCreateDistributorModalOpen()).toBe(false);
         expect(app.lastCreatedAdminId()).toBeNull();
-        expect(app.dashboardToast()).toContain('Distributor and initial branch created successfully');
+        expect(app.dashboardToast()).toContain('Distributor created successfully');
       });
 
       it('clears sensitive passwords on modal close, logout, or session reset', () => {
@@ -2206,6 +2210,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchCode.set('BR-WEST-01');
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
+        app.distState.set('Kerala');
+        app.distDistrict.set('Ernakulam');
 
         mockManagementService.createDistributor.mockReturnValue(
           throwError(() => new HttpErrorResponse({ status: 401, error: { message: 'Token expired' } }))
@@ -2227,6 +2233,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchCode.set('BR-WEST-01');
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
+        app.distState.set('Kerala');
+        app.distDistrict.set('Ernakulam');
 
         const pendingSubject = new Subject<any>();
         mockManagementService.createDistributor.mockReturnValue(pendingSubject.asObservable());
@@ -2254,6 +2262,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchCode.set('BR-1');
         app.distBranchName.set('Branch 1');
         app.distLocation.set('Kochi');
+        app.distState.set('Kerala');
+        app.distDistrict.set('Ernakulam');
 
         app.submitCreateDistributor();
         expect(mockManagementService.createDistributor).not.toHaveBeenCalled();

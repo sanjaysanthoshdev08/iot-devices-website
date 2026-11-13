@@ -2217,6 +2217,10 @@
               title="Create Distributor">
               <span>+ Register Distributor</span>
             </button>
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateBranchModal()"
+              title="Create a branch and its branch admin login">
+              <span>+ Create Branch</span>
+            </button>
           </ng-container>
 
           <!-- + Add New button (Device page) -->
@@ -2314,7 +2318,7 @@
               <div class="distributor-header">
                 <div class="dist-info-left">
                   <h3 class="dist-title">{{ dist.name }}</h3>
-                  <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id)"
+                  <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id, dist.distributorCode)"
                     title="Create a branch and its branch admin login">+ Add Branch</button>
                   <div class="dist-meta-row">
                     <span class="dist-meta-code">Code: <code class="dist-code-val">{{ dist.distributorCode }}</code></span>
@@ -2743,7 +2747,7 @@
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span>A customer becomes the owner by entering this Device ID and serial number on the Access your device page.</span>
+          <span>A customer must sign in, enter the matching Device ID and serial number, and be authorized for this device. Each device supports up to three authorized customer accounts, including the owner. The same customer account can be linked to multiple devices.</span>
         </div>
 
         <!-- Error Alert -->
@@ -2888,7 +2892,7 @@
     <div class="system-modal-card dist-register-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="dist-modal-title">
       <div class="modal-card-header">
-        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization & Branch</h3>
+        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization</h3>
         <button type="button" class="modal-close-btn" (click)="closeCreateDistributorModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2931,55 +2935,30 @@
             [ngModel]="distName()" (ngModelChange)="distName.set($event)" name="distName" required />
         </div>
 
-        <!-- Field: Administrator User ID -->
+        <!-- Field: Distributor Administrator (existing account) -->
         <div class="modal-field">
-          <label class="modal-label" for="distAdminUserId">Administrator Account ID</label>
-          <input type="number" id="distAdminUserId" class="modal-input"
-            placeholder="e.g., numeric ID of the administrator" [ngModel]="distAdminUserId()"
-            (ngModelChange)="distAdminUserId.set($event)" name="distAdminUserId" required />
+          <label class="modal-label" for="distAdminUserId">Distributor Administrator</label>
+          <select id="distAdminUserId" class="modal-input modal-select" [ngModel]="distAdminUserId()"
+            (ngModelChange)="distAdminUserId.set($event)" name="distAdminUserId" required>
+            <option value="">Select administrator (name – email)</option>
+            <option *ngFor="let a of availableDistAdmins()" [value]="'' + a.id">{{ a.name }} – {{ a.email }}</option>
+          </select>
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;" *ngIf="availableDistAdmins().length === 0">
+            No unassigned administrator found. Create one with “+ Create Distributor” first.</span>
         </div>
 
         <!-- Field: State -->
         <div class="modal-field">
           <label class="modal-label" for="distState">State</label>
           <input type="text" id="distState" class="modal-input" placeholder="e.g., Kerala" [ngModel]="distState()"
-            (ngModelChange)="distState.set($event)" name="distState" />
+            (ngModelChange)="distState.set($event)" name="distState" required />
         </div>
 
         <!-- Field: District -->
         <div class="modal-field">
           <label class="modal-label" for="distDistrict">District</label>
           <input type="text" id="distDistrict" class="modal-input" placeholder="e.g., Ernakulam"
-            [ngModel]="distDistrict()" (ngModelChange)="distDistrict.set($event)" name="distDistrict" />
-        </div>
-
-        <!-- Field: Initial Branch Code -->
-        <div class="modal-field">
-          <label class="modal-label" for="distBranchCode">Initial Branch Code</label>
-          <input type="text" id="distBranchCode" class="modal-input" placeholder="e.g., BR-KOCHI-01"
-            [ngModel]="distBranchCode()" (ngModelChange)="distBranchCode.set($event)" name="distBranchCode" required />
-        </div>
-
-        <!-- Field: Initial Branch Name -->
-        <div class="modal-field">
-          <label class="modal-label" for="distBranchName">Initial Branch Name</label>
-          <input type="text" id="distBranchName" class="modal-input" placeholder="e.g., Kochi Main Branch"
-            [ngModel]="distBranchName()" (ngModelChange)="distBranchName.set($event)" name="distBranchName" required />
-        </div>
-
-        <!-- Field: Location -->
-        <div class="modal-field">
-          <label class="modal-label" for="distLocation">Location</label>
-          <input type="text" id="distLocation" class="modal-input" placeholder="e.g., Kakkanad, Kochi, Kerala"
-            [ngModel]="distLocation()" (ngModelChange)="distLocation.set($event)" name="distLocation" required />
-        </div>
-
-        <!-- Field: Pincode -->
-        <div class="modal-field">
-          <label class="modal-label" for="distPincode">Pincode (6 digits)</label>
-          <input type="text" id="distPincode" class="modal-input" placeholder="e.g., 680306" maxlength="6"
-            inputmode="numeric" [ngModel]="distPincode()" (ngModelChange)="distPincode.set($event)"
-            name="distPincode" />
+            [ngModel]="distDistrict()" (ngModelChange)="distDistrict.set($event)" name="distDistrict" required />
         </div>
 
         <!-- Form Actions -->
@@ -3329,6 +3308,12 @@
         </div>
 
         <div class="modal-field">
+          <label class="modal-label" for="brDistCode">Distributor Code</label>
+          <input type="text" id="brDistCode" class="modal-input" placeholder="e.g., DIST-TCR-01"
+            [ngModel]="branchDistributorCode()" (ngModelChange)="branchDistributorCode.set($event)"
+            name="brDistCode" />
+        </div>
+        <div class="modal-field">
           <label class="modal-label" for="brCode">Branch Code</label>
           <input type="text" id="brCode" class="modal-input" placeholder="e.g., KL-A-03" [ngModel]="newBranchCode()"
             (ngModelChange)="newBranchCode.set($event)" name="brCode" />
@@ -3339,9 +3324,14 @@
             [ngModel]="branchNameInput()" (ngModelChange)="branchNameInput.set($event)" name="brName" />
         </div>
         <div class="modal-field">
-          <label class="modal-label" for="brLocation">Branch Address / Location</label>
+          <label class="modal-label" for="brLocation">Location (used for branch verification)</label>
           <input type="text" id="brLocation" class="modal-input" placeholder="e.g., Aluva, Ernakulam, Kerala"
             [ngModel]="branchLocation()" (ngModelChange)="branchLocation.set($event)" name="brLocation" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="brAddress">Full Address</label>
+          <input type="text" id="brAddress" class="modal-input" placeholder="e.g., Ollur Road, Thrissur, Kerala"
+            [ngModel]="branchAddress()" (ngModelChange)="branchAddress.set($event)" name="brAddress" />
         </div>
         <div class="modal-field">
           <label class="modal-label" for="brPincode">Pincode (6 digits)</label>
