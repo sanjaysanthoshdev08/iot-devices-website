@@ -9624,3 +9624,39 @@
     }
   }
 }
+
+/* ----- Register Distributor modal: compact two-column layout (lower height) ----- */
+.system-modal-backdrop .system-modal-card.dist-register-modal {
+  max-width: 640px;
+  padding: 18px 20px;
+
+  .modal-card-header {
+    margin-bottom: 12px;
+  }
+
+  .modal-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+
+    .modal-notice-banner,
+    .modal-error-alert,
+    .modal-actions {
+      grid-column: 1 / -1;
+    }
+
+    .modal-field {
+      gap: 4px;
+
+      .modal-input {
+        padding: 7px 12px;
+      }
+    }
+  }
+
+  @media (max-width: 560px) {
+    .modal-form {
+      grid-template-columns: 1fr;
+    }
+  }
+}
