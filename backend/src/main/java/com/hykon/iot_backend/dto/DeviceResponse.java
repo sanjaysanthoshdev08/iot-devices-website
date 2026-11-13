@@ -19,8 +19,31 @@ public record DeviceResponse(
         LocalDateTime createdAt,
         List<String> customerEmails,
         String distributorName,
-        String branchName
+        String branchName,
+        String distributorCode,
+        String state,
+        String district,
+        String branchCode,
+        String branchLocation
 ) {
+    public DeviceResponse(
+            Long id,
+            String deviceCode,
+            String serialNumber,
+            String systemName,
+            String model,
+            Long branchId,
+            Long distributorId,
+            Long ownerUserId,
+            String status,
+            LocalDateTime createdAt,
+            List<String> customerEmails,
+            String distributorName,
+            String branchName
+    ) {
+        this(id, deviceCode, serialNumber, systemName, model, branchId, distributorId, ownerUserId, status, createdAt, customerEmails, distributorName, branchName, null, null, null, null, null);
+    }
+
     public DeviceResponse(
             Long id,
             String deviceCode,
@@ -73,7 +96,12 @@ public record DeviceResponse(
                 device.getCreatedAt(),
                 customerEmails == null ? List.of() : List.copyOf(customerEmails),
                 branch == null ? null : branch.getDistributor().getName(),
-                branch == null ? null : branch.getName()
+                branch == null ? null : branch.getName(),
+                branch == null ? null : branch.getDistributor().getDistributorCode(),
+                branch == null ? null : branch.getDistributor().getState(),
+                branch == null ? null : branch.getDistributor().getDistrict(),
+                branch == null ? null : branch.getBranchCode(),
+                branch == null ? null : branch.getLocation()
         );
     }
 }
