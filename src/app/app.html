@@ -2217,10 +2217,6 @@
               title="Create Distributor">
               <span>+ Register Distributor</span>
             </button>
-            <button type="button" class="btn-record-purchase" (click)="openPurchaseModal()"
-              title="Record Device Purchase">
-              Record Purchase
-            </button>
           </ng-container>
 
           <!-- + Add New button (Device page) -->
@@ -2235,11 +2231,6 @@
           <button type="button" class="btn-record-purchase" *ngIf="activeDashboardNav() === 'systems' && isDistributorRole()"
             (click)="openCreateBranchModal()" title="Create a branch and its branch admin login">
             Create Branch
-          </button>
-          <button type="button" class="btn-record-purchase"
-            *ngIf="activeDashboardNav() === 'systems' && !isCustomerRole()" (click)="openPurchaseModal()"
-            title="Record Device Purchase">
-            Record Purchase
           </button>
 
           <!-- Authenticated User Avatar -->
@@ -2417,24 +2408,6 @@
               <svg class="pcard-corner-curve curve-blue-cyan" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
                 <path d="M0,80 Q90,75 160,15" stroke="#0099FF" stroke-width="1.2" opacity="0.55"/>
                 <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#0099FF" opacity="0.10"/>
-              </svg>
-            </div>
-
-            <!-- Card 3: Record Device Purchase -->
-            <div class="provisioning-card card-prov-purchase" (click)="openPurchaseModal()" role="button" tabindex="0">
-              <div class="pcard-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="M7 15h0M2 9.5h20" />
-                </svg>
-              </div>
-              <h4 class="pcard-title">Record Device Purchase</h4>
-              <p class="pcard-desc">Assign customer ownership eligibility by recording a device purchase reference.</p>
-              <span class="pcard-badge">ADMIN & DISTRIBUTOR</span>
-              <!-- Muted amber lower-right curve accent -->
-              <svg class="pcard-corner-curve curve-amber" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,80 Q90,75 160,15" stroke="#A77925" stroke-width="1.2" opacity="0.6"/>
-                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#A77925" opacity="0.12"/>
               </svg>
             </div>
           </div>
@@ -2773,7 +2746,7 @@
             <line x1="12" y1="16" x2="12" y2="12" />
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
-          <span>Ownership is established through purchase eligibility and customer claim.</span>
+          <span>A customer becomes the owner by entering this Device ID and serial number on the Access your device page.</span>
         </div>
 
         <!-- Error Alert -->
@@ -2832,83 +2805,6 @@
           <button type="button" class="btn-modal-cancel" (click)="closeAddSystemModal()">Cancel</button>
           <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingSystem()">
             {{ isSubmittingSystem() ? 'Registering...' : 'Register System' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- RECORD PURCHASE MODAL DIALOG -->
-  <div class="system-modal-backdrop" *ngIf="isPurchaseModalOpen()" (click)="closePurchaseModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-      aria-labelledby="purchase-modal-title">
-      <div class="modal-card-header">
-        <h3 id="purchase-modal-title" class="modal-card-title">Record Purchase Eligibility</h3>
-        <button type="button" class="modal-close-btn" (click)="closePurchaseModal()" aria-label="Close modal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <form class="modal-form" (ngSubmit)="submitRecordPurchase()">
-        <div class="modal-notice-banner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
-          <span>Record customer purchase eligibility before a customer account can claim the device.</span>
-        </div>
-
-        <!-- Error Alert -->
-        <div class="modal-error-alert" *ngIf="purchaseError()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>{{ purchaseError() }}</span>
-        </div>
-
-        <!-- Field: Device ID -->
-        <div class="modal-field">
-          <label class="modal-label" for="purchaseDeviceId">Registered Device ID</label>
-          <input type="number" id="purchaseDeviceId" class="modal-input" placeholder="e.g., 10"
-            [ngModel]="purchaseDeviceId()" (ngModelChange)="purchaseDeviceId.set($event)" name="purchaseDeviceId"
-            required />
-        </div>
-
-        <!-- Field: Customer Email (select an existing customer by email) -->
-        <div class="modal-field">
-          <label class="modal-label" for="purchaseCustomerEmail">Customer Email (existing customer)</label>
-          <input type="email" id="purchaseCustomerEmail" class="modal-input" placeholder="e.g., customer1@gmail.com"
-            [ngModel]="purchaseCustomerEmail()" (ngModelChange)="purchaseCustomerEmail.set($event)"
-            name="purchaseCustomerEmail" />
-        </div>
-
-        <!-- Field: Customer User ID (used when no email is entered) -->
-        <div class="modal-field">
-          <label class="modal-label" for="purchaseCustomerId">Customer Account ID (or enter the email above)</label>
-          <input type="number" id="purchaseCustomerId" class="modal-input" placeholder="e.g., 42"
-            [ngModel]="purchaseCustomerUserId()" (ngModelChange)="purchaseCustomerUserId.set($event)"
-            name="purchaseCustomerId" />
-        </div>
-
-        <!-- Field: Purchase Reference -->
-        <div class="modal-field">
-          <label class="modal-label" for="purchaseReference">Purchase Reference</label>
-          <input type="text" id="purchaseReference" class="modal-input" placeholder="e.g., INV-2026-00891"
-            [ngModel]="purchaseReference()" (ngModelChange)="purchaseReference.set($event)" name="purchaseReference"
-            required />
-        </div>
-
-        <!-- Form Actions -->
-        <div class="modal-actions">
-          <button type="button" class="btn-modal-cancel" (click)="closePurchaseModal()">Cancel</button>
-          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingPurchase()">
-            {{ isSubmittingPurchase() ? 'Recording...' : 'Record Purchase' }}
           </button>
         </div>
       </form>
