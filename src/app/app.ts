@@ -1151,6 +1151,7 @@ export class App implements AfterViewInit, OnDestroy {
   newBranchCode = signal<string>('');
   branchNameInput = signal<string>('');
   branchLocation = signal<string>('');
+  branchPincode = signal<string>('');
   branchAdminName = signal<string>('');
   branchAdminEmail = signal<string>('');
   branchAdminPassword = signal<string>('');
@@ -1164,6 +1165,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.newBranchCode.set('');
     this.branchNameInput.set('');
     this.branchLocation.set('');
+    this.branchPincode.set('');
     this.branchAdminName.set('');
     this.branchAdminEmail.set('');
     this.branchAdminPassword.set('');
@@ -1188,6 +1190,7 @@ export class App implements AfterViewInit, OnDestroy {
       branchCode: this.newBranchCode().trim(),
       branchName: this.branchNameInput().trim(),
       location: this.branchLocation().trim(),
+      pincode: this.branchPincode().trim() || undefined,
       adminName: this.branchAdminName().trim(),
       adminEmail: this.branchAdminEmail().trim(),
       adminPassword: this.branchAdminPassword(),
@@ -1195,6 +1198,10 @@ export class App implements AfterViewInit, OnDestroy {
     };
     if (!request.branchCode || !request.branchName || !request.location) {
       this.branchError.set('Branch code, name and location are required.');
+      return;
+    }
+    if (request.pincode && !/^[0-9]{6}$/.test(request.pincode)) {
+      this.branchError.set('Pincode must be exactly 6 digits.');
       return;
     }
     if (!request.adminName || !request.adminEmail || !request.adminPassword) {
@@ -1254,6 +1261,7 @@ export class App implements AfterViewInit, OnDestroy {
   distBranchCode = signal<string>('');
   distBranchName = signal<string>('');
   distLocation = signal<string>('');
+  distPincode = signal<string>('');
   distState = signal<string>('Kerala');
   distDistrict = signal<string>('');
   distError = signal<string>('');
@@ -1949,6 +1957,12 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const distPin = this.distPincode().trim();
+    if (distPin && !/^[0-9]{6}$/.test(distPin)) {
+      this.distError.set('Pincode must be exactly 6 digits.');
+      return;
+    }
+
     this.isSubmittingDistributor.set(true);
     const currentReq = ++this.managementRequestId;
 
@@ -1959,6 +1973,7 @@ export class App implements AfterViewInit, OnDestroy {
       branchCode,
       branchName,
       location,
+      pincode: this.distPincode().trim() || undefined,
       state: this.distState().trim() || undefined,
       district: this.distDistrict().trim() || undefined
     }).subscribe({
@@ -1975,6 +1990,7 @@ export class App implements AfterViewInit, OnDestroy {
         this.distBranchName.set('');
         this.distLocation.set('');
         this.distDistrict.set('');
+        this.distPincode.set('');
         this.lastCreatedAdminId.set(null);
         this.showDashboardToast('Distributor and initial branch created successfully.');
       },

@@ -47,6 +47,11 @@ export interface DeviceResponse {
   district?: string | null;
   branchCode?: string | null;
   branchLocation?: string | null;
+  distributorAdminName?: string | null;
+  distributorAdminEmail?: string | null;
+  branchAdminName?: string | null;
+  branchAdminEmail?: string | null;
+  branchPincode?: string | null;
 }
 
 // Mirrors backend DistributorAccessResponse.java

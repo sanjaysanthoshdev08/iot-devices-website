@@ -29,6 +29,7 @@ export interface CreateBranchWithAdminRequest {
   adminEmail: string;
   adminPassword: string;
   confirmPassword: string;
+  pincode?: string;
 }
 
 export interface CreateDistributorAdminRequest {
@@ -47,6 +48,7 @@ export interface CreateDistributorRequest {
   location: string;
   state?: string;
   district?: string;
+  pincode?: string;
 }
 
 // ─── Management & Admin Response DTOs ─────────────────────────────────────────
@@ -113,6 +115,7 @@ export interface DirectoryBranch {
   location: string;
   status: string;
   devices: DirectoryDevice[];
+  pincode?: string | null;
 }
 
 export interface DirectoryDistributorAdmin {

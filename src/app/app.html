@@ -2335,7 +2335,7 @@
                   <div class="branch-header">
                     <div class="branch-name-location">
                       <strong class="branch-name">{{ branch.name }}</strong>
-                      <span class="branch-location">({{ branch.location }})</span>
+                      <span class="branch-location">({{ branch.location }}{{ branch.pincode ? " - " + branch.pincode : "" }})</span>
                     </div>
                     <span class="branch-code-badge">Branch ID: <code class="branch-code-val">{{ branch.id }}</code></span>
                     <span class="branch-code-badge">Branch Code: <code class="branch-code-val">{{ branch.branchCode }}</code></span>
@@ -2965,6 +2965,14 @@
             [ngModel]="distLocation()" (ngModelChange)="distLocation.set($event)" name="distLocation" required />
         </div>
 
+        <!-- Field: Pincode -->
+        <div class="modal-field">
+          <label class="modal-label" for="distPincode">Pincode (6 digits)</label>
+          <input type="text" id="distPincode" class="modal-input" placeholder="e.g., 680306" maxlength="6"
+            inputmode="numeric" [ngModel]="distPincode()" (ngModelChange)="distPincode.set($event)"
+            name="distPincode" />
+        </div>
+
         <!-- Form Actions -->
         <div class="modal-actions">
           <button type="button" class="btn-modal-cancel" (click)="closeCreateDistributorModal()">Cancel</button>
@@ -3327,6 +3335,12 @@
             [ngModel]="branchLocation()" (ngModelChange)="branchLocation.set($event)" name="brLocation" />
         </div>
         <div class="modal-field">
+          <label class="modal-label" for="brPincode">Pincode (6 digits)</label>
+          <input type="text" id="brPincode" class="modal-input" placeholder="e.g., 680306" maxlength="6"
+            inputmode="numeric" [ngModel]="branchPincode()" (ngModelChange)="branchPincode.set($event)"
+            name="brPincode" />
+        </div>
+        <div class="modal-field">
           <label class="modal-label" for="brAdminName">Branch Admin Name</label>
           <input type="text" id="brAdminName" class="modal-input" [ngModel]="branchAdminName()"
             (ngModelChange)="branchAdminName.set($event)" name="brAdminName" />
@@ -3380,12 +3394,23 @@
             <span *ngIf="rec.distributorCode"><strong>Code:</strong> {{ rec.distributorCode }}</span>
             <span *ngIf="rec.district || rec.state"><strong>District / State:</strong> {{ rec.district || '—' }}, {{
               rec.state || '—' }}</span>
+            <span *ngIf="rec.distributorAdminName || rec.distributorAdminEmail"><strong>Distributor admin:</strong> {{
+              rec.distributorAdminName }}<span *ngIf="rec.distributorAdminEmail"> ({{ rec.distributorAdminEmail
+                }})</span></span>
           </div>
           <h5 class="dist-detail-sub">This system's branch</h5>
           <div class="dist-branch-item">
             <div class="dist-branch-title">{{ rec.branchName }} <small *ngIf="rec.branchCode">· Branch ID {{
                 rec.branchId }} · {{ rec.branchCode }}</small></div>
-            <div class="dist-branch-address" *ngIf="rec.branchLocation">{{ rec.branchLocation }}</div>
+            <div class="dist-branch-address" *ngIf="rec.branchLocation"><strong>Address:</strong> {{ rec.branchLocation
+              }}</div>
+            <div class="dist-branch-address" *ngIf="rec.branchPincode"><strong>Pincode:</strong> {{ rec.branchPincode
+              }}</div>
+            <div class="dist-branch-address"><strong>Branch admin:</strong>
+              <span *ngIf="rec.branchAdminName || rec.branchAdminEmail">{{ rec.branchAdminName }}<span
+                  *ngIf="rec.branchAdminEmail"> ({{ rec.branchAdminEmail }})</span></span>
+              <span *ngIf="!rec.branchAdminName && !rec.branchAdminEmail">Managed by the distributor admin</span>
+            </div>
             <div class="dist-branch-devices">System: {{ rec.systemName || rec.deviceCode }} (SN {{ rec.serialNumber
               }})</div>
           </div>
@@ -3409,7 +3434,7 @@
           <h5 class="dist-detail-sub">All branches of this distributor ({{ dist.branches.length }})</h5>
           <div class="dist-branch-item" *ngFor="let b of dist.branches">
             <div class="dist-branch-title">{{ b.name }} <small>· Branch ID {{ b.id }} · {{ b.branchCode }} · {{ b.status }}</small></div>
-            <div class="dist-branch-address">{{ b.location }}</div>
+            <div class="dist-branch-address">{{ b.location }}<span *ngIf="b.pincode"> — {{ b.pincode }}</span></div>
             <div class="dist-branch-devices">{{ b.devices.length }} system{{ b.devices.length !== 1 ? 's' : '' }}</div>
             <ul class="dist-branch-device-list" *ngIf="b.devices.length > 0">
               <li *ngFor="let d of b.devices">{{ d.systemName || d.deviceCode }} <small>(SN {{ d.serialNumber }})</small>
