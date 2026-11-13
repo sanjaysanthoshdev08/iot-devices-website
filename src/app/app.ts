@@ -1542,7 +1542,7 @@ export class App implements AfterViewInit, OnDestroy {
     const serialNumber = this.newSystemSN().trim();
     const systemName = this.newSystemName().trim();
     const model = this.newSystemModel().trim();
-    const branchIdStr = this.newSystemBranchId().trim();
+    const branchIdStr = String(this.newSystemBranchId() ?? '').trim();
 
     this.newSystemError.set('');
     this.newSystemSuccess.set('');
@@ -1677,8 +1677,8 @@ export class App implements AfterViewInit, OnDestroy {
     }
     if (this.isSubmittingPurchase()) return;
 
-    const deviceIdStr = this.purchaseDeviceId().trim();
-    const customerUserIdStr = this.purchaseCustomerUserId().trim();
+    const deviceIdStr = String(this.purchaseDeviceId() ?? '').trim();
+    const customerUserIdStr = String(this.purchaseCustomerUserId() ?? '').trim();
     const purchaseRef = this.purchaseReference().trim();
 
     this.purchaseError.set('');
@@ -1881,7 +1881,7 @@ export class App implements AfterViewInit, OnDestroy {
 
     const distributorCode = this.distCode().trim();
     const name = this.distName().trim();
-    const adminUserIdStr = this.distAdminUserId().trim();
+    const adminUserIdStr = String(this.distAdminUserId() ?? '').trim();
     const branchCode = this.distBranchCode().trim();
     const branchName = this.distBranchName().trim();
     const location = this.distLocation().trim();
