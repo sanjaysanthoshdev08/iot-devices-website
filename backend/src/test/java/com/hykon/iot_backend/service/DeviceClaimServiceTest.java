@@ -181,9 +181,15 @@ class DeviceClaimServiceTest {
     }
 
     @Test
-    void deviceWithoutPurchaseEligibilityCannotBeClaimed() {
-        prepareDevice();
-        assertVerificationFailure(request());
+    void unownedDeviceWithoutPurchaseIsClaimedByVerifiedCustomer() {
+        Device device = prepareDevice();
+        when(deviceRepository.saveAndFlush(any(Device.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.claim(request(), "customer@example.com");
+
+        assertNotNull(device.getOwner());
+        assertEquals(30L, device.getOwner().getId());
     }
 
     @Test

@@ -97,10 +97,30 @@ public class DeviceClaimService {
             throw verificationFailed();
         }
 
-        // 2. Check recorded purchase for primary owner claim
-        DevicePurchase purchase = purchaseRepository.findByDeviceIdForUpdate(
-                device.getId()
-        ).orElseThrow(this::verificationFailed);
+        // 2. Check recorded purchase for primary owner claim.
+        // With no purchase record, an unowned device is claimed directly by the
+        // customer who proves possession with the matching Device ID + serial number.
+        java.util.Optional<DevicePurchase> recordedPurchase =
+                purchaseRepository.findByDeviceIdForUpdate(device.getId());
+
+        if (recordedPurchase.isEmpty()) {
+            if (device.getOwner() != null) {
+                throw verificationFailed();
+            }
+
+            device.setOwner(customer);
+            Device claimedDevice = deviceRepository.saveAndFlush(device);
+
+            if (customerAccessRepository != null) {
+                customerAccessRepository.saveAndFlush(
+                        new DeviceCustomerAccess(claimedDevice, customer, true, customer));
+            }
+
+            return DeviceResponse.from(
+                    claimedDevice, getCustomerEmails(claimedDevice.getId(), customer));
+        }
+
+        DevicePurchase purchase = recordedPurchase.get();
 
         if (purchase.getCustomer() == null
                 || !customer.getId().equals(purchase.getCustomer().getId())) {
