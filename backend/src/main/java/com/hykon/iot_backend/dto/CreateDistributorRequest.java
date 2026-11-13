@@ -43,6 +43,12 @@ public class CreateDistributorRequest {
     public String getDistrict() { return district; }
     public void setDistrict(String district) { this.district = district; }
 
+    @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be 6 digits")
+    private String pincode;
+
+    public String getPincode() { return pincode; }
+    public void setPincode(String pincode) { this.pincode = pincode; }
+
     public CreateDistributorRequest() {
     }
 

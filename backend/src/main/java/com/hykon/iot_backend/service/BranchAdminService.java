@@ -173,6 +173,7 @@ public class BranchAdminService {
             branch.setBranchCode(branchCode);
             branch.setName(request.getBranchName().trim());
             branch.setLocation(request.getLocation().trim());
+            branch.setPincode(request.getPincode() == null || request.getPincode().isBlank() ? null : request.getPincode().trim());
             branch.setStatus("ACTIVE");
             branch.setBranchAdmin(savedAdmin);
 

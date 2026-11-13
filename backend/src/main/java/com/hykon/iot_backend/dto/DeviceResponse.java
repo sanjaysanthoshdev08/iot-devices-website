@@ -24,8 +24,36 @@ public record DeviceResponse(
         String state,
         String district,
         String branchCode,
-        String branchLocation
+        String branchLocation,
+        String distributorAdminName,
+        String distributorAdminEmail,
+        String branchAdminName,
+        String branchAdminEmail,
+        String branchPincode
 ) {
+    public DeviceResponse(
+            Long id,
+            String deviceCode,
+            String serialNumber,
+            String systemName,
+            String model,
+            Long branchId,
+            Long distributorId,
+            Long ownerUserId,
+            String status,
+            LocalDateTime createdAt,
+            List<String> customerEmails,
+            String distributorName,
+            String branchName,
+            String distributorCode,
+            String state,
+            String district,
+            String branchCode,
+            String branchLocation
+    ) {
+        this(id, deviceCode, serialNumber, systemName, model, branchId, distributorId, ownerUserId, status, createdAt, customerEmails, distributorName, branchName, distributorCode, state, district, branchCode, branchLocation, null, null, null, null, null);
+    }
+
     public DeviceResponse(
             Long id,
             String deviceCode,
@@ -101,7 +129,16 @@ public record DeviceResponse(
                 branch == null ? null : branch.getDistributor().getState(),
                 branch == null ? null : branch.getDistributor().getDistrict(),
                 branch == null ? null : branch.getBranchCode(),
-                branch == null ? null : branch.getLocation()
+                branch == null ? null : branch.getLocation(),
+                branch == null || branch.getDistributor().getAdministrator() == null
+                        ? null : branch.getDistributor().getAdministrator().getName(),
+                branch == null || branch.getDistributor().getAdministrator() == null
+                        ? null : branch.getDistributor().getAdministrator().getEmail(),
+                branch == null || branch.getBranchAdmin() == null
+                        ? null : branch.getBranchAdmin().getName(),
+                branch == null || branch.getBranchAdmin() == null
+                        ? null : branch.getBranchAdmin().getEmail(),
+                branch == null ? null : branch.getPincode()
         );
     }
 }

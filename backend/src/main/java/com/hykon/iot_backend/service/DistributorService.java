@@ -132,7 +132,8 @@ public class DistributorService {
                                 b.getName(),
                                 b.getLocation(),
                                 b.getStatus(),
-                                devList
+                                devList,
+                                b.getPincode()
                         );
                     }).toList();
 
@@ -204,7 +205,8 @@ public class DistributorService {
                     b.getName(),
                     b.getLocation(),
                     b.getStatus(),
-                    devList
+                    devList,
+                    b.getPincode()
             );
         });
     }
@@ -289,6 +291,7 @@ public class DistributorService {
         branch.setBranchCode(branchCode);
         branch.setName(branchName);
         branch.setLocation(location);
+        branch.setPincode(blankToNull(request.getPincode()));
         branch.setStatus("ACTIVE");
 
         try {
@@ -385,6 +388,7 @@ public class DistributorService {
             branch.setBranchCode(branchCode);
             branch.setName(branchName);
             branch.setLocation(location);
+            branch.setPincode(blankToNull(request.getPincode()));
             branch.setStatus("ACTIVE");
 
             DistributorBranch savedBranch =

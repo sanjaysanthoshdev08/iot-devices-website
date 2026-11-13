@@ -47,6 +47,12 @@ public class DistributorBranch {
     public User getBranchAdmin() { return branchAdmin; }
     public void setBranchAdmin(User branchAdmin) { this.branchAdmin = branchAdmin; }
 
+    @Column(length = 10)
+    private String pincode;
+
+    public String getPincode() { return pincode; }
+    public void setPincode(String pincode) { this.pincode = pincode; }
+
     public DistributorBranch() {
     }
 
