@@ -42,6 +42,16 @@ public class GlobalExceptionHandler {
                 "The request content type is not supported.");
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex) {
+        return errorResponse(
+                HttpStatus.FORBIDDEN,
+                "Forbidden",
+                ex.getMessage() == null || ex.getMessage().isBlank()
+                        ? "Access denied" : ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             MethodArgumentNotValidException ex) {
