@@ -30,6 +30,12 @@ public class RegisterDeviceRequest {
     @Size(max = 100, message = "Branch code must not exceed 100 characters")
     private String branchCode;
 
+    @Positive(message = "Distributor ID must be positive")
+    private Long distributorId;
+
+    public Long getDistributorId() { return distributorId; }
+    public void setDistributorId(Long distributorId) { this.distributorId = distributorId; }
+
     public String getDistributorCode() { return distributorCode; }
     public void setDistributorCode(String distributorCode) { this.distributorCode = distributorCode; }
 

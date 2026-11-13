@@ -35,6 +35,51 @@ public class DeviceRegistrationService {
         this.branchRepository = branchRepository;
     }
 
+    @Transactional(readOnly = true)
+    public com.hykon.iot_backend.dto.RegistrationOptionsResponse registrationOptions(String actorEmail) {
+        User actor = actorEmail == null || actorEmail.isBlank() ? null
+                : userRepository.findByEmailWithRole(actorEmail).orElse(null);
+        if (actor == null || !"ACTIVE".equalsIgnoreCase(actor.getStatus())
+                || actor.getRole() == null || actor.getRole().getName() == null) {
+            throw new AccessDeniedException("Administrator access is required");
+        }
+        RoleName role = actor.getRole().getName();
+
+        java.util.List<Distributor> distributors;
+        java.util.Optional<DistributorBranch> onlyBranch = java.util.Optional.empty();
+        if (role == RoleName.HYKON_ADMIN) {
+            distributors = distributorRepository.findAll(
+                    org.springframework.data.domain.Sort.by("name"));
+        } else if (role == RoleName.DISTRIBUTOR_ADMIN) {
+            distributors = distributorRepository.findByAdministrator_Id(actor.getId())
+                    .map(java.util.List::of).orElse(java.util.List.of());
+        } else if (role == RoleName.BRANCH_ADMIN) {
+            onlyBranch = branchRepository.findByBranchAdmin_Id(actor.getId());
+            distributors = onlyBranch.map(b -> java.util.List.of(b.getDistributor()))
+                    .orElse(java.util.List.of());
+        } else {
+            throw new AccessDeniedException("Administrator access is required");
+        }
+
+        final java.util.Optional<DistributorBranch> restrictTo = onlyBranch;
+        java.util.List<com.hykon.iot_backend.dto.RegistrationOptionsResponse.DistributorOption> out =
+                distributors.stream()
+                        .filter(d -> "ACTIVE".equalsIgnoreCase(d.getStatus()))
+                        .map(d -> new com.hykon.iot_backend.dto.RegistrationOptionsResponse.DistributorOption(
+                                d.getId(), d.getName(), d.getDistributorCode(), d.getState(), d.getDistrict(),
+                                branchRepository.findByDistributor_Id(d.getId()).stream()
+                                        .filter(b -> "ACTIVE".equalsIgnoreCase(b.getStatus()))
+                                        .filter(b -> restrictTo.isEmpty() || restrictTo.get().getId().equals(b.getId()))
+                                        .sorted(java.util.Comparator.comparing(
+                                                DistributorBranch::getName, String.CASE_INSENSITIVE_ORDER))
+                                        .map(b -> new com.hykon.iot_backend.dto.RegistrationOptionsResponse.BranchOption(
+                                                b.getId(), b.getName(), b.getBranchCode(),
+                                                b.getLocation(), b.getAddress(), b.getPincode()))
+                                        .toList()))
+                        .toList();
+        return new com.hykon.iot_backend.dto.RegistrationOptionsResponse(out);
+    }
+
     @Transactional
     public DeviceResponse register(
             RegisterDeviceRequest request,
@@ -70,7 +115,21 @@ public class DeviceRegistrationService {
         String distCodeIn = request.getDistributorCode() == null ? "" : request.getDistributorCode().trim();
         String branchCodeIn = request.getBranchCode() == null ? "" : request.getBranchCode().trim();
 
-        if (!distCodeIn.isEmpty() || !branchCodeIn.isEmpty()) {
+        if (request.getDistributorId() != null) {
+            // Selection by stored IDs (searchable dropdowns): verify both rows in PostgreSQL.
+            if (request.getBranchId() == null) {
+                throw new IllegalArgumentException("Select a branch for the chosen distributor");
+            }
+            Distributor selected = distributorRepository.findById(request.getDistributorId())
+                    .orElseThrow(() -> new IllegalArgumentException("Selected distributor was not found"));
+            DistributorBranch selectedBranch = branchRepository.findById(request.getBranchId())
+                    .orElseThrow(() -> new IllegalArgumentException("Selected branch was not found"));
+            if (selectedBranch.getDistributor() == null
+                    || !selected.getId().equals(selectedBranch.getDistributor().getId())) {
+                throw new IllegalArgumentException(
+                        "The selected branch does not belong to the selected distributor");
+            }
+        } else if (!distCodeIn.isEmpty() || !branchCodeIn.isEmpty()) {
             if (distCodeIn.isEmpty()) {
                 throw new IllegalArgumentException("Distributor code is required");
             }
@@ -87,7 +146,7 @@ public class DeviceRegistrationService {
                                     + "' does not exist under distributor '" + distCodeIn + "'"));
             request.setBranchId(byBranch.getId());
         } else if (request.getBranchId() == null && role != RoleName.BRANCH_ADMIN) {
-            throw new IllegalArgumentException("Distributor code and branch code are required");
+            throw new IllegalArgumentException("Select a distributor and a branch");
         }
 
         DistributorBranch branch = null;

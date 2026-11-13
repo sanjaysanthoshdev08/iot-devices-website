@@ -139,6 +139,11 @@ public class SecurityConfig {
                 ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")
 
                 .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/v1/management/devices/options"
+                ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")
+
+                .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/v1/management/devices/**"
                 ).hasAnyRole("HYKON_ADMIN", "DISTRIBUTOR_ADMIN", "BRANCH_ADMIN")

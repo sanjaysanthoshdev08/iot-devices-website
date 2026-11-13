@@ -397,6 +397,7 @@ public class DistributorService {
                 branch.setName(branchName);
                 branch.setLocation(location);
                 branch.setPincode(blankToNull(request.getPincode()));
+                branch.setAddress(blankToNull(request.getAddress()));
                 branch.setStatus("ACTIVE");
                 savedBranch = branchRepository.saveAndFlush(branch);
             }

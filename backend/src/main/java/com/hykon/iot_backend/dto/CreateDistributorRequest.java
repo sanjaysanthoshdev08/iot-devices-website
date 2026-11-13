@@ -48,6 +48,12 @@ public class CreateDistributorRequest {
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) { this.pincode = pincode; }
 
+    @Size(max = 300, message = "Address must not exceed 300 characters")
+    private String address;
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
     public CreateDistributorRequest() {
     }
 

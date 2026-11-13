@@ -34,6 +34,16 @@ public class DeviceManagementController {
         this.customerAccessService = customerAccessService;
     }
 
+    @GetMapping("/options")
+    public ResponseEntity<ApiResponse<com.hykon.iot_backend.dto.RegistrationOptionsResponse>> options(
+            Authentication principal
+    ) {
+        accessPolicy.requireVerified(principal);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Distributors and branches available to you",
+                registrationService.registrationOptions(principal.getName())));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<DeviceResponse>> register(
             @Valid @RequestBody RegisterDeviceRequest request,
