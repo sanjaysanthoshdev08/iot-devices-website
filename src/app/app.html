@@ -2788,13 +2788,22 @@
             [ngModel]="newSystemModel()" (ngModelChange)="newSystemModel.set($event)" name="systemModel" />
         </div>
 
-        <!-- Field: Branch ID -->
+        <!-- Field: Distributor Code -->
         <div class="modal-field">
-          <label class="modal-label" for="systemBranchId">
-            Branch ID {{ isDistributorRole() ? '(Required for distributors)' : '(Optional)' }}
-          </label>
-          <input type="number" id="systemBranchId" class="modal-input" placeholder="e.g., 1"
-            [ngModel]="newSystemBranchId()" (ngModelChange)="newSystemBranchId.set($event)" name="systemBranchId" />
+          <label class="modal-label" for="systemDistributorCode">Distributor Code</label>
+          <input type="text" id="systemDistributorCode" class="modal-input" placeholder="e.g., DIST-TCR-01"
+            [ngModel]="newSystemDistributorCode()" (ngModelChange)="newSystemDistributorCode.set($event)"
+            name="systemDistributorCode" />
+        </div>
+
+        <!-- Field: Branch Code -->
+        <div class="modal-field">
+          <label class="modal-label" for="systemBranchCode">Branch Code</label>
+          <input type="text" id="systemBranchCode" class="modal-input" placeholder="e.g., BR-OLLUR-01"
+            [ngModel]="newSystemBranchCode()" (ngModelChange)="newSystemBranchCode.set($event)"
+            name="systemBranchCode" />
+          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Both codes must match a registered
+            distributor and its branch.</span>
         </div>
 
         <!-- Form Actions -->

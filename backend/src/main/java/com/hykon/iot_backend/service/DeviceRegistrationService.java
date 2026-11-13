@@ -21,12 +21,15 @@ public class DeviceRegistrationService {
     private final UserRepository userRepository;
     private final DeviceRepository deviceRepository;
     private final DistributorBranchRepository branchRepository;
+    private final com.hykon.iot_backend.repository.DistributorRepository distributorRepository;
 
     public DeviceRegistrationService(
             UserRepository userRepository,
             DeviceRepository deviceRepository,
-            DistributorBranchRepository branchRepository
+            DistributorBranchRepository branchRepository,
+            com.hykon.iot_backend.repository.DistributorRepository distributorRepository
     ) {
+        this.distributorRepository = distributorRepository;
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.branchRepository = branchRepository;
@@ -62,6 +65,29 @@ public class DeviceRegistrationService {
         if (role == RoleName.BRANCH_ADMIN && request.getBranchId() == null) {
             branchRepository.findByBranchAdmin_Id(creator.getId())
                     .ifPresent(own -> request.setBranchId(own.getId()));
+        }
+
+        String distCodeIn = request.getDistributorCode() == null ? "" : request.getDistributorCode().trim();
+        String branchCodeIn = request.getBranchCode() == null ? "" : request.getBranchCode().trim();
+
+        if (!distCodeIn.isEmpty() || !branchCodeIn.isEmpty()) {
+            if (distCodeIn.isEmpty()) {
+                throw new IllegalArgumentException("Distributor code is required");
+            }
+            if (branchCodeIn.isEmpty()) {
+                throw new IllegalArgumentException("Branch code is required");
+            }
+            Distributor byCode = distributorRepository.findByCode(distCodeIn)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Distributor code '" + distCodeIn + "' was not found"));
+            DistributorBranch byBranch = branchRepository
+                    .findByDistributorAndCode(byCode.getId(), branchCodeIn)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Branch code '" + branchCodeIn
+                                    + "' does not exist under distributor '" + distCodeIn + "'"));
+            request.setBranchId(byBranch.getId());
+        } else if (request.getBranchId() == null && role != RoleName.BRANCH_ADMIN) {
+            throw new IllegalArgumentException("Distributor code and branch code are required");
         }
 
         DistributorBranch branch = null;

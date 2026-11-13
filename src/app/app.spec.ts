@@ -1326,7 +1326,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toBe('Branch ID is required for distributor administrators.');
+        expect(app.newSystemError()).toBe('Distributor code and branch code are required.');
         expect(app.isAddSystemModalOpen()).toBe(true);
 
         // Providing valid positive branch ID succeeds
@@ -1343,6 +1343,42 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           branchId: 5
         });
         expect(app.isAddSystemModalOpen()).toBe(false);
+      });
+
+      it('sends distributor and branch codes with the registration request', () => {
+        app.openAddSystemModal();
+        app.newSystemDeviceCode.set('halo1200-000009');
+        app.newSystemSN.set('261000009');
+        app.newSystemName.set('Coded Unit');
+        app.newSystemDistributorCode.set('DIST-1');
+        app.newSystemBranchCode.set('BR-1');
+        mockManagementService.registerDevice.mockReturnValue(of({ success: true, data: { id: 209 } }));
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
+          deviceCode: 'halo1200-000009',
+          serialNumber: '261000009',
+          systemName: 'Coded Unit',
+          model: null,
+          branchId: null,
+          distributorCode: 'DIST-1',
+          branchCode: 'BR-1'
+        });
+      });
+
+      it('rejects a lone distributor code without a branch code', () => {
+        app.openAddSystemModal();
+        app.newSystemDeviceCode.set('halo1200-000010');
+        app.newSystemSN.set('261000010');
+        app.newSystemName.set('Half Coded');
+        app.newSystemDistributorCode.set('DIST-1');
+        app.newSystemBranchCode.set('');
+
+        app.submitAddSystem();
+
+        expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
+        expect(app.newSystemError()).toBe('Enter both the distributor code and the branch code.');
       });
 
       it('blocks customer role (USER) from registering devices', () => {

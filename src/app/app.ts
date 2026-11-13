@@ -1141,6 +1141,8 @@ export class App implements AfterViewInit, OnDestroy {
   newSystemName = signal<string>('');
   newSystemModel = signal<string>('');
   newSystemBranchId = signal<string>('');
+  newSystemDistributorCode = signal<string>('');
+  newSystemBranchCode = signal<string>('');
   newSystemError = signal<string>('');
   newSystemSuccess = signal<string>('');
   isSubmittingSystem = signal<boolean>(false);
@@ -1565,6 +1567,8 @@ export class App implements AfterViewInit, OnDestroy {
     const systemName = this.newSystemName().trim();
     const model = this.newSystemModel().trim();
     const branchIdStr = String(this.newSystemBranchId() ?? '').trim();
+    const distributorCode = String(this.newSystemDistributorCode() ?? '').trim();
+    const branchCode = String(this.newSystemBranchCode() ?? '').trim();
 
     this.newSystemError.set('');
     this.newSystemSuccess.set('');
@@ -1625,8 +1629,13 @@ export class App implements AfterViewInit, OnDestroy {
         return;
       }
       branchId = parsed;
-    } else if (isDistAdmin) {
-      this.newSystemError.set('Branch ID is required for distributor administrators.');
+    } else if (isDistAdmin && !(distributorCode && branchCode)) {
+      this.newSystemError.set('Distributor code and branch code are required.');
+      return;
+    }
+
+    if ((distributorCode && !branchCode) || (!distributorCode && branchCode)) {
+      this.newSystemError.set('Enter both the distributor code and the branch code.');
       return;
     }
 
@@ -1638,7 +1647,8 @@ export class App implements AfterViewInit, OnDestroy {
       serialNumber,
       systemName,
       model: model || null,
-      branchId
+      branchId,
+      ...(distributorCode && branchCode ? { distributorCode, branchCode } : {})
     }).subscribe({
       next: (res) => {
         if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isAddSystemModalOpen()) {
@@ -1651,6 +1661,8 @@ export class App implements AfterViewInit, OnDestroy {
         this.newSystemName.set('');
         this.newSystemModel.set('');
         this.newSystemBranchId.set('');
+        this.newSystemDistributorCode.set('');
+        this.newSystemBranchCode.set('');
         this.showDashboardToast('Device registered successfully.');
         this.loadSystems(0);
       },

@@ -12,6 +12,8 @@ export interface RegisterDeviceManagementRequest {
   systemName: string;
   model?: string | null;
   branchId?: number | null;
+  distributorCode?: string;
+  branchCode?: string;
 }
 
 export interface RecordDevicePurchaseRequest {

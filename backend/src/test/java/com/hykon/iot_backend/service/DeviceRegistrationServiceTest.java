@@ -34,12 +34,15 @@ class DeviceRegistrationServiceTest {
     @Mock
     private DistributorBranchRepository branchRepository;
 
+    @Mock
+    private com.hykon.iot_backend.repository.DistributorRepository distributorRepository;
+
     private DeviceRegistrationService service;
 
     @BeforeEach
     void setUp() {
         service = new DeviceRegistrationService(
-                userRepository, deviceRepository, branchRepository
+                userRepository, deviceRepository, branchRepository, distributorRepository
         );
     }
 
@@ -86,27 +89,76 @@ class DeviceRegistrationServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
+    /** Request carrying registered codes that resolve to a real branch. */
+    private RegisterDeviceRequest requestWithCodes(User admin) {
+        DistributorBranch branch = branch(admin, "ACTIVE", "ACTIVE");
+        when(distributorRepository.findByCode("DIST-1"))
+                .thenReturn(Optional.of(branch.getDistributor()));
+        when(branchRepository.findByDistributorAndCode(1L, "BR-1"))
+                .thenReturn(Optional.of(branch));
+        when(branchRepository.findById(1L)).thenReturn(Optional.of(branch));
+        RegisterDeviceRequest request = request();
+        request.setDistributorCode("DIST-1");
+        request.setBranchCode("BR-1");
+        return request;
+    }
+
     @Test
-    void hykonAdminCanRegisterUnassignedInventory() {
+    void hykonAdminRegistersDeviceUnderVerifiedCodes() {
         User creator = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
         stubCreator(creator);
         allowSave();
 
         DeviceResponse response =
-                service.register(request(), "creator@example.com");
+                service.register(requestWithCodes(creator), "creator@example.com");
 
         assertEquals("halo1200-000001", response.deviceCode());
         assertEquals("261100001", response.serialNumber());
-        assertEquals("HALO 1200", response.systemName());
         assertEquals("ACTIVE", response.status());
         assertNull(response.ownerUserId());
-        assertNull(response.branchId());
+        assertEquals(Long.valueOf(1), response.branchId());
+        assertEquals(Long.valueOf(1), response.distributorId());
+    }
 
-        ArgumentCaptor<Device> saved = ArgumentCaptor.forClass(Device.class);
-        verify(deviceRepository).saveAndFlush(saved.capture());
-        assertSame(creator, saved.getValue().getCreatedBy());
-        assertNull(saved.getValue().getOwner());
-        verifyNoInteractions(branchRepository);
+    @Test
+    void unknownDistributorCodeIsRejectedAndNothingSaved() {
+        stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
+        when(distributorRepository.findByCode("NOPE")).thenReturn(Optional.empty());
+        RegisterDeviceRequest request = request();
+        request.setDistributorCode("NOPE");
+        request.setBranchCode("BR-1");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.register(request, "creator@example.com"));
+        assertTrue(ex.getMessage().contains("was not found"));
+        verify(deviceRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void branchNotUnderDistributorIsRejectedAndNothingSaved() {
+        User creator = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(creator);
+        Distributor distributor = new Distributor();
+        ReflectionTestUtils.setField(distributor, "id", 1L);
+        when(distributorRepository.findByCode("DIST-1")).thenReturn(Optional.of(distributor));
+        when(branchRepository.findByDistributorAndCode(1L, "BR-X")).thenReturn(Optional.empty());
+        RegisterDeviceRequest request = request();
+        request.setDistributorCode("DIST-1");
+        request.setBranchCode("BR-X");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.register(request, "creator@example.com"));
+        assertTrue(ex.getMessage().contains("does not exist under distributor"));
+        verify(deviceRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void hykonAdminMustProvideCodes() {
+        stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.register(request(), "creator@example.com"));
+        verify(deviceRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -155,7 +207,7 @@ class DeviceRegistrationServiceTest {
     void distributorAdminCannotRegisterWithoutBranch() {
         stubCreator(account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE"));
 
-        assertThrows(AccessDeniedException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> service.register(request(), "creator@example.com"));
 
         verifyNoInteractions(deviceRepository, branchRepository);
@@ -187,24 +239,29 @@ class DeviceRegistrationServiceTest {
 
     @Test
     void duplicateDeviceCodeIsRejected() {
-        stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
+        User admin = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(admin);
+        RegisterDeviceRequest request = requestWithCodes(admin);
         when(deviceRepository.findByCode("halo1200-000001"))
                 .thenReturn(Optional.of(new Device()));
 
-        assertThrows(DuplicateResourceException.class,
-                () -> service.register(request(), "creator@example.com"));
+        DuplicateResourceException ex = assertThrows(DuplicateResourceException.class,
+                () -> service.register(request, "creator@example.com"));
+        assertEquals("This system is already registered", ex.getMessage());
 
         verify(deviceRepository, never()).saveAndFlush(any());
     }
 
     @Test
     void duplicateSerialNumberIsRejected() {
-        stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
+        User admin = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(admin);
+        RegisterDeviceRequest request = requestWithCodes(admin);
         when(deviceRepository.findBySerialNumberNormalized("261100001"))
                 .thenReturn(Optional.of(new Device()));
 
         assertThrows(DuplicateResourceException.class,
-                () -> service.register(request(), "creator@example.com"));
+                () -> service.register(request, "creator@example.com"));
 
         verify(deviceRepository, never()).saveAndFlush(any());
     }
@@ -280,11 +337,13 @@ class DeviceRegistrationServiceTest {
 
     @Test
     void databaseConflictIsReportedWithoutSuccessfulRegistration() {
-        stubCreator(account(1L, RoleName.HYKON_ADMIN, "ACTIVE"));
+        User admin = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
+        stubCreator(admin);
+        RegisterDeviceRequest request = requestWithCodes(admin);
         when(deviceRepository.saveAndFlush(any(Device.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThrows(DuplicateResourceException.class,
-                () -> service.register(request(), "creator@example.com"));
+                () -> service.register(request, "creator@example.com"));
     }
 }
