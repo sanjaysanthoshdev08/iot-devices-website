@@ -351,10 +351,16 @@ public class DistributorService {
                         .toUpperCase(Locale.ROOT);
 
         String distributorName = requiredText(request.getName(), "Distributor name");
-        String branchCode = requiredText(request.getBranchCode(), "Branch code")
-                .toUpperCase(Locale.ROOT);
-        String branchName = requiredText(request.getBranchName(), "Branch name");
-        String location = requiredText(request.getLocation(), "Location");
+        requiredText(request.getState(), "State");
+        requiredText(request.getDistrict(), "District");
+
+        // The initial branch is optional; branches are normally created afterwards
+        // through the Create Branch form.
+        boolean withBranch = request.getBranchCode() != null && !request.getBranchCode().isBlank();
+        String branchCode = withBranch ? requiredText(request.getBranchCode(), "Branch code")
+                .toUpperCase(Locale.ROOT) : null;
+        String branchName = withBranch ? requiredText(request.getBranchName(), "Branch name") : null;
+        String location = withBranch ? requiredText(request.getLocation(), "Location") : null;
 
         if (distributorRepository.findByCode(distributorCode).isPresent()) {
             throw new DuplicateResourceException(
@@ -383,16 +389,17 @@ public class DistributorService {
             Distributor savedDistributor =
                     distributorRepository.saveAndFlush(distributor);
 
-            DistributorBranch branch = new DistributorBranch();
-            branch.setDistributor(savedDistributor);
-            branch.setBranchCode(branchCode);
-            branch.setName(branchName);
-            branch.setLocation(location);
-            branch.setPincode(blankToNull(request.getPincode()));
-            branch.setStatus("ACTIVE");
-
-            DistributorBranch savedBranch =
-                    branchRepository.saveAndFlush(branch);
+            DistributorBranch savedBranch = null;
+            if (withBranch) {
+                DistributorBranch branch = new DistributorBranch();
+                branch.setDistributor(savedDistributor);
+                branch.setBranchCode(branchCode);
+                branch.setName(branchName);
+                branch.setLocation(location);
+                branch.setPincode(blankToNull(request.getPincode()));
+                branch.setStatus("ACTIVE");
+                savedBranch = branchRepository.saveAndFlush(branch);
+            }
 
             return DistributorResponse.from(savedDistributor, savedBranch);
         }

@@ -53,6 +53,12 @@ public class DistributorBranch {
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) { this.pincode = pincode; }
 
+    @Column(length = 300)
+    private String address;
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
     public DistributorBranch() {
     }
 

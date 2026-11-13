@@ -21,4 +21,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             WHERE LOWER(u.email) = LOWER(:email)
             """)
     Optional<User> findByEmailWithRole(@Param("email") String email);
+
+    @Query("""
+            SELECT u
+            FROM User u
+            JOIN u.role r
+            WHERE r.name = com.hykon.iot_backend.entity.RoleName.DISTRIBUTOR_ADMIN
+              AND UPPER(u.status) = 'ACTIVE'
+              AND NOT EXISTS (SELECT 1 FROM Distributor d WHERE d.administrator = u)
+            ORDER BY u.name
+            """)
+    java.util.List<User> findUnassignedDistributorAdmins();
 }

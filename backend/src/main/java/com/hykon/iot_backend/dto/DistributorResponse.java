@@ -25,11 +25,11 @@ public record DistributorResponse(
                 distributor.getName(),
                 distributor.getAdministrator().getId(),
                 distributor.getStatus(),
-                branch.getId(),
-                branch.getBranchCode(),
-                branch.getName(),
-                branch.getLocation(),
-                branch.getStatus()
+                branch == null ? null : branch.getId(),
+                branch == null ? null : branch.getBranchCode(),
+                branch == null ? null : branch.getName(),
+                branch == null ? null : branch.getLocation(),
+                branch == null ? null : branch.getStatus()
         );
     }
 }

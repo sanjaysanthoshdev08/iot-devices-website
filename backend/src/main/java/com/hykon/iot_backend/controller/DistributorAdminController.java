@@ -29,6 +29,18 @@ public class DistributorAdminController {
         this.distributorAdminService = distributorAdminService;
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/available")
+    public ResponseEntity<ApiResponse<java.util.List<com.hykon.iot_backend.dto.DistributorAdminOption>>> available(
+            Principal principal
+    ) {
+        if (principal == null) {
+            throw new AccessDeniedException("HYKON_ADMIN access is required");
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                "Distributor administrators without an organization",
+                distributorAdminService.listAvailable(principal.getName())));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<RegisterResponse>> create(
             @Valid @RequestBody RegisterRequest request,

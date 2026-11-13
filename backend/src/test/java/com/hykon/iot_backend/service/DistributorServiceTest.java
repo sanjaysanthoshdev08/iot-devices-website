@@ -66,6 +66,8 @@ class DistributorServiceTest {
         request.setBranchCode(" main ");
         request.setBranchName(" Main Branch ");
         request.setLocation(" Kochi ");
+        request.setState("Kerala");
+        request.setDistrict("Ernakulam");
         return request;
     }
 

@@ -33,6 +33,21 @@ public class DistributorAdminService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<com.hykon.iot_backend.dto.DistributorAdminOption> listAvailable(String creatorEmail) {
+        User creator = creatorEmail == null || creatorEmail.isBlank() ? null
+                : userRepository.findByEmailWithRole(creatorEmail).orElse(null);
+        if (creator == null
+                || !"ACTIVE".equalsIgnoreCase(creator.getStatus())
+                || creator.getRole() == null
+                || creator.getRole().getName() != RoleName.HYKON_ADMIN) {
+            throw new AccessDeniedException("HYKON_ADMIN access is required");
+        }
+        return userRepository.findUnassignedDistributorAdmins().stream()
+                .map(u -> new com.hykon.iot_backend.dto.DistributorAdminOption(u.getId(), u.getName(), u.getEmail()))
+                .toList();
+    }
+
     @Transactional
     public RegisterResponse create(
             RegisterRequest request,

@@ -19,21 +19,20 @@ public class CreateDistributorRequest {
     @Positive(message = "Administrator account ID must be positive")
     private Long administratorUserId;
 
-    @NotBlank(message = "Branch code is required")
     @Size(max = 100, message = "Branch code must not exceed 100 characters")
     private String branchCode;
 
-    @NotBlank(message = "Branch name is required")
     @Size(max = 150, message = "Branch name must not exceed 150 characters")
     private String branchName;
 
-    @NotBlank(message = "Location is required")
     @Size(max = 150, message = "Location must not exceed 150 characters")
     private String location;
 
+    @NotBlank(message = "State is required")
     @Size(max = 100, message = "State must not exceed 100 characters")
     private String state;
 
+    @NotBlank(message = "District is required")
     @Size(max = 100, message = "District must not exceed 100 characters")
     private String district;
 

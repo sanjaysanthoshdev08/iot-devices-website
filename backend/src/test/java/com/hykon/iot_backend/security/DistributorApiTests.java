@@ -41,7 +41,9 @@ class DistributorApiTests {
               "administratorUserId": 20,
               "branchCode": "MAIN",
               "branchName": "Main Branch",
-              "location": "Kochi"
+              "location": "Kochi",
+              "state": "Kerala",
+              "district": "Ernakulam"
             }
             """;
 
@@ -144,9 +146,8 @@ class DistributorApiTests {
                 .andExpect(jsonPath("$.errors.distributorCode").exists())
                 .andExpect(jsonPath("$.errors.name").exists())
                 .andExpect(jsonPath("$.errors.administratorUserId").exists())
-                .andExpect(jsonPath("$.errors.branchCode").exists())
-                .andExpect(jsonPath("$.errors.branchName").exists())
-                .andExpect(jsonPath("$.errors.location").exists());
+                .andExpect(jsonPath("$.errors.state").exists())
+                .andExpect(jsonPath("$.errors.district").exists());
 
         verifyNoInteractions(distributorService);
     }

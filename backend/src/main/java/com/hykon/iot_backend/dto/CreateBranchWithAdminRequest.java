@@ -39,8 +39,21 @@ public class CreateBranchWithAdminRequest {
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
+    @NotBlank(message = "Pincode is required")
     @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be 6 digits")
     private String pincode;
+
+    @NotBlank(message = "Full address is required")
+    @Size(max = 300, message = "Address must not exceed 300 characters")
+    private String address;
+
+    @Size(max = 100, message = "Distributor code must not exceed 100 characters")
+    private String distributorCode;
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+    public String getDistributorCode() { return distributorCode; }
+    public void setDistributorCode(String distributorCode) { this.distributorCode = distributorCode; }
 
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) { this.pincode = pincode; }

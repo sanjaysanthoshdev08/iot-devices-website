@@ -33,6 +33,15 @@ public class BranchAdminController {
         return respond(branchAdminService.create(distributorId, request, name(principal)));
     }
 
+    /** HYKON_ADMIN: create a branch and its branch admin, identifying the distributor by its code. */
+    @PostMapping("/api/v1/admin/branches")
+    public ResponseEntity<ApiResponse<DistributorDirectoryResponse.BranchHierarchy>> createByCode(
+            @Valid @RequestBody CreateBranchWithAdminRequest request,
+            Principal principal
+    ) {
+        return respond(branchAdminService.create(null, request, name(principal)));
+    }
+
     /** DISTRIBUTOR_ADMIN: create a branch and its branch admin in their own distributor. */
     @PostMapping("/api/v1/distributor/branches")
     public ResponseEntity<ApiResponse<DistributorDirectoryResponse.BranchHierarchy>> createOwn(
