@@ -1141,8 +1141,81 @@ export class App implements AfterViewInit, OnDestroy {
   newSystemName = signal<string>('');
   newSystemModel = signal<string>('');
   newSystemBranchId = signal<string>('');
-  newSystemDistributorCode = signal<string>('');
-  newSystemBranchCode = signal<string>('');
+  // Searchable Distributor / Branch dropdowns (shared option list loaded from the backend)
+  regOptions = signal<Array<{ id: number; name: string; distributorCode: string; state?: string | null; district?: string | null;
+    branches: Array<{ id: number; name: string; branchCode: string; location: string; address?: string | null; pincode?: string | null }> }>>([]);
+  regDistId = signal<number | null>(null);
+  regBranchId = signal<number | null>(null);
+  regDistQuery = signal<string>('');
+  regBranchQuery = signal<string>('');
+  regDistOpen = signal<boolean>(false);
+  regBranchOpen = signal<boolean>(false);
+
+  loadRegOptions(done?: () => void) {
+    if (this.isCustomerRole()) return;
+    this.managementService.getRegistrationOptions().subscribe({
+      next: (res) => {
+        const list = res.data?.distributors ?? [];
+        this.regOptions.set(list);
+        // Drop selections that no longer exist.
+        const d = list.find(x => x.id === this.regDistId());
+        if (!d) { this.regDistId.set(null); this.regBranchId.set(null); }
+        else if (!d.branches.some(b => b.id === this.regBranchId())) { this.regBranchId.set(null); }
+        // Single-choice roles (distributor / branch admin): preselect.
+        if (!this.isHykonAdminRole() && list.length === 1) {
+          if (this.regDistId() === null) this.regDistId.set(list[0].id);
+          const cur = list.find(x => x.id === this.regDistId());
+          if (cur && cur.branches.length === 1 && this.regBranchId() === null && this.isBranchAdminRole()) {
+            this.regBranchId.set(cur.branches[0].id);
+          }
+          if (this.brDistId() === null && this.isDistributorRole()) this.brDistId.set(list[0].id);
+        }
+        done?.();
+      },
+      error: () => { this.regOptions.set([]); done?.(); }
+    });
+  }
+
+  regSelectedDistributor() { return this.regOptions().find(d => d.id === this.regDistId()) ?? null; }
+  regSelectedBranch() { return this.regSelectedDistributor()?.branches.find(b => b.id === this.regBranchId()) ?? null; }
+  regDistLabel() { return this.regSelectedDistributor()?.name ?? ''; }
+  regBranchLabel() {
+    const b = this.regSelectedBranch();
+    return b ? this.branchOptionLabel(b) : '';
+  }
+  branchOptionLabel(b: { name: string; location: string }) { return b.location ? b.name + ' – ' + b.location : b.name; }
+  filteredRegDistributors() {
+    const q = this.regDistQuery().trim().toLowerCase();
+    return this.regOptions().filter(d => !q || d.name.toLowerCase().includes(q) || (d.district ?? '').toLowerCase().includes(q));
+  }
+  filteredRegBranches() {
+    const q = this.regBranchQuery().trim().toLowerCase();
+    return (this.regSelectedDistributor()?.branches ?? []).filter(b => !q || b.name.toLowerCase().includes(q) || (b.location ?? '').toLowerCase().includes(q));
+  }
+  pickRegDistributor(d: { id: number }) {
+    if (this.regDistId() !== d.id) { this.regBranchId.set(null); this.regBranchQuery.set(''); }
+    this.regDistId.set(d.id);
+    this.regDistQuery.set('');
+    this.regDistOpen.set(false);
+  }
+  pickRegBranch(b: { id: number }) {
+    this.regBranchId.set(b.id);
+    this.regBranchQuery.set('');
+    this.regBranchOpen.set(false);
+  }
+  openRegDist() { this.regDistQuery.set(''); this.regDistOpen.set(true); }
+  openRegBranch() { this.regBranchQuery.set(''); this.regBranchOpen.set(true); }
+
+  // Create Branch form: distributor picker
+  brDistId = signal<number | null>(null);
+  brDistQuery = signal<string>('');
+  brDistOpen = signal<boolean>(false);
+  brSelectedDistributor() { return this.regOptions().find(d => d.id === this.brDistId()) ?? null; }
+  brFilteredDistributors() {
+    const q = this.brDistQuery().trim().toLowerCase();
+    return this.regOptions().filter(d => !q || d.name.toLowerCase().includes(q) || (d.district ?? '').toLowerCase().includes(q));
+  }
+  pickBrDistributor(d: { id: number }) { this.brDistId.set(d.id); this.brDistQuery.set(''); this.brDistOpen.set(false); }
   newSystemError = signal<string>('');
   newSystemSuccess = signal<string>('');
   isSubmittingSystem = signal<boolean>(false);
@@ -1168,6 +1241,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.branchTargetDistributorId.set(distributorId);
     this.branchDistributorCode.set(distributorCode);
     this.branchAddress.set('');
+    this.brDistId.set(distributorId);
+    this.brDistQuery.set('');
+    this.brDistOpen.set(false);
+    this.loadRegOptions();
     this.newBranchCode.set('');
     this.branchNameInput.set('');
     this.branchLocation.set('');
@@ -1187,13 +1264,12 @@ export class App implements AfterViewInit, OnDestroy {
 
   submitCreateBranch() {
     if (this.isSubmittingBranch()) return;
-    const distributorCode = this.branchDistributorCode().trim();
-    if (!distributorCode) {
-      this.branchError.set('Distributor code is required.');
+    const selectedDistributorId = this.brDistId();
+    if (selectedDistributorId === null) {
+      this.branchError.set(this.isHykonAdminRole() ? 'Select a distributor.' : 'No distributor is assigned to your account.');
       return;
     }
     const request = {
-      distributorCode,
       branchCode: this.newBranchCode().trim(),
       branchName: this.branchNameInput().trim(),
       location: this.branchLocation().trim(),
@@ -1227,14 +1303,14 @@ export class App implements AfterViewInit, OnDestroy {
 
     this.branchError.set('');
     this.isSubmittingBranch.set(true);
-    const branchCall$ = this.isHykonAdminRole()
-      ? this.managementService.createBranchByCode(request)
-      : this.managementService.createBranchWithAdmin(null, request);
+    const branchCall$ = this.managementService.createBranchWithAdmin(
+      this.isHykonAdminRole() ? selectedDistributorId : null, request);
     branchCall$.subscribe({
       next: () => {
         this.isSubmittingBranch.set(false);
         this.closeCreateBranchModal();
         this.showDashboardToast('Branch and branch admin created successfully.');
+        this.loadRegOptions();
         if (this.isHykonAdminRole()) {
           this.loadDistributorDirectory();
         }
@@ -1278,6 +1354,7 @@ export class App implements AfterViewInit, OnDestroy {
   distBranchName = signal<string>('');
   distLocation = signal<string>('');
   distPincode = signal<string>('');
+  distAddress = signal<string>('');
   distState = signal<string>('Kerala');
   distDistrict = signal<string>('');
   distError = signal<string>('');
@@ -1559,7 +1636,10 @@ export class App implements AfterViewInit, OnDestroy {
     if (this.isCustomerRole()) return;
     this.newSystemError.set('');
     this.newSystemSuccess.set('');
+    this.regDistQuery.set('');
+    this.regBranchQuery.set('');
     this.isAddSystemModalOpen.set(true);
+    this.loadRegOptions();
   }
 
   closeAddSystemModal() {
@@ -1579,10 +1659,8 @@ export class App implements AfterViewInit, OnDestroy {
     const deviceCode = this.newSystemDeviceCode().trim();
     const serialNumber = this.newSystemSN().trim();
     const systemName = this.newSystemName().trim();
-    const model = this.newSystemModel().trim();
     const branchIdStr = String(this.newSystemBranchId() ?? '').trim();
-    const distributorCode = String(this.newSystemDistributorCode() ?? '').trim();
-    const branchCode = String(this.newSystemBranchCode() ?? '').trim();
+
 
     this.newSystemError.set('');
     this.newSystemSuccess.set('');
@@ -1629,27 +1707,22 @@ export class App implements AfterViewInit, OnDestroy {
       this.newSystemError.set('System name must not exceed 150 characters.');
       return;
     }
-    if (model && model.length > 100) {
-      this.newSystemError.set('Model must not exceed 100 characters.');
-      return;
-    }
 
-    const isDistAdmin = this.isDistributorRole();
-    let branchId: number | null = null;
-    if (branchIdStr) {
+    const distributorId = this.regDistId();
+    let branchId: number | null = this.regBranchId();
+    if (branchId === null && branchIdStr) {
       const parsed = parseInt(branchIdStr, 10);
       if (isNaN(parsed) || parsed <= 0) {
         this.newSystemError.set('Branch ID must be a positive number.');
         return;
       }
       branchId = parsed;
-    } else if (isDistAdmin && !(distributorCode && branchCode)) {
-      this.newSystemError.set('Distributor code and branch code are required.');
-      return;
     }
-
-    if ((distributorCode && !branchCode) || (!distributorCode && branchCode)) {
-      this.newSystemError.set('Enter both the distributor code and the branch code.');
+    if (branchId === null) {
+      const sel = this.regSelectedDistributor();
+      this.newSystemError.set(sel && sel.branches.length === 0
+        ? 'Add a branch for this distributor before registering a system.'
+        : 'Select a distributor and a branch.');
       return;
     }
 
@@ -1660,9 +1733,9 @@ export class App implements AfterViewInit, OnDestroy {
       deviceCode,
       serialNumber,
       systemName,
-      model: model || null,
+      model: null,
       branchId,
-      ...(distributorCode && branchCode ? { distributorCode, branchCode } : {})
+      ...(distributorId !== null ? { distributorId } : {})
     }).subscribe({
       next: (res) => {
         if (currentReq !== this.managementRequestId || !this.isAuthenticated() || !this.isDashboardAuthorized() || !this.isAddSystemModalOpen()) {
@@ -1675,8 +1748,8 @@ export class App implements AfterViewInit, OnDestroy {
         this.newSystemName.set('');
         this.newSystemModel.set('');
         this.newSystemBranchId.set('');
-        this.newSystemDistributorCode.set('');
-        this.newSystemBranchCode.set('');
+        this.regDistId.set(null);
+        this.regBranchId.set(null);
         this.showDashboardToast('Device registered successfully.');
         this.loadSystems(0);
       },
@@ -1940,6 +2013,11 @@ export class App implements AfterViewInit, OnDestroy {
     const adminUserIdStr = String(this.distAdminUserId() ?? '').trim();
     const state = this.distState().trim();
     const district = this.distDistrict().trim();
+    const branchCode = this.distBranchCode().trim();
+    const branchName = this.distBranchName().trim();
+    const location = this.distLocation().trim();
+    const address = this.distAddress().trim();
+    const pincode = this.distPincode().trim();
 
     this.distError.set('');
     this.distSuccess.set('');
@@ -1973,6 +2051,11 @@ export class App implements AfterViewInit, OnDestroy {
       this.distError.set('District is required.');
       return;
     }
+    if (!branchCode) { this.distError.set('Initial branch code is required.'); return; }
+    if (!branchName) { this.distError.set('Branch name is required.'); return; }
+    if (!location) { this.distError.set('Branch locality is required.'); return; }
+    if (!address) { this.distError.set('Branch address is required.'); return; }
+    if (!/^[0-9]{6}$/.test(pincode)) { this.distError.set('PIN code must be exactly 6 digits.'); return; }
 
     this.isSubmittingDistributor.set(true);
     const currentReq = ++this.managementRequestId;
@@ -1981,6 +2064,11 @@ export class App implements AfterViewInit, OnDestroy {
       distributorCode,
       name,
       administratorUserId,
+      branchCode,
+      branchName,
+      location,
+      address,
+      pincode,
       state,
       district
     }).subscribe({
@@ -1999,8 +2087,10 @@ export class App implements AfterViewInit, OnDestroy {
         this.distDistrict.set('');
         this.distPincode.set('');
         this.lastCreatedAdminId.set(null);
-        this.showDashboardToast('Distributor created successfully. Next: create its branch.');
+        this.showDashboardToast('Distributor and initial branch created successfully.');
+        this.distAddress.set('');
         this.loadDistributorDirectory();
+        this.loadRegOptions();
       },
       error: (err: HttpErrorResponse) => {
         if (currentReq !== this.managementRequestId) return;

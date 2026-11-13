@@ -9660,3 +9660,47 @@
     }
   }
 }
+
+/* ----- Searchable Distributor / Branch dropdowns ----- */
+.system-modal-card .searchable-select {
+  position: relative;
+
+  .ss-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    max-height: 190px;
+    overflow-y: auto;
+    background: #1B1F25;
+    border: 1px solid #282D35;
+    border-radius: 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+    li {
+      padding: 8px 14px;
+      font-size: 13.5px;
+      color: #E7E9ED;
+      cursor: pointer;
+
+      small {
+        color: #8ba2c4;
+      }
+
+      &:hover,
+      &.ss-active {
+        background: #232932;
+      }
+
+      &.ss-empty {
+        color: #8ba2c4;
+        cursor: default;
+        white-space: normal;
+      }
+    }
+  }
+}

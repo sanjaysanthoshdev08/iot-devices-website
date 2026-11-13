@@ -31,6 +31,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     createDistributorAdmin: any;
     listAvailableDistributorAdmins: any;
     createBranchByCode: any;
+    getRegistrationOptions: any;
     createDistributor: any;
     getDistributorDirectory: any;
     authorizeDeviceCustomer: any;
@@ -61,6 +62,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       recordDevicePurchase: vi.fn(),
       createDistributorAdmin: vi.fn(),
       listAvailableDistributorAdmins: vi.fn().mockReturnValue(of({ success: true, data: [] })),
+      getRegistrationOptions: vi.fn().mockReturnValue(of({ success: true, data: { distributors: [] } })),
       createBranchByCode: vi.fn(),
       createDistributor: vi.fn(),
       getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
@@ -1296,14 +1298,15 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           }
         }));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000001',
           serialNumber: '261000001',
           systemName: 'Residential Backup 1200',
-          model: 'HALO 1200',
-          branchId: null
+          model: null,
+          branchId: 1,
+          distributorId: 1
         });
 
         expect(app.isAddSystemModalOpen()).toBe(false);
@@ -1327,62 +1330,67 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.newSystemName.set('Distributor Unit 1');
         app.newSystemBranchId.set(''); // Empty branch ID
 
-        app.submitAddSystem();
+        app.regDistId.set(null); app.regBranchId.set(null); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toBe('Distributor code and branch code are required.');
+        expect(app.newSystemError()).toBe('Select a distributor and a branch.');
         expect(app.isAddSystemModalOpen()).toBe(true);
 
         // Providing valid positive branch ID succeeds
         app.newSystemBranchId.set('5');
         mockManagementService.registerDevice.mockReturnValue(of({ success: true, data: { id: 202 } }));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000002',
           serialNumber: '261000002',
           systemName: 'Distributor Unit 1',
           model: null,
-          branchId: 5
+          branchId: 1,
+          distributorId: 1
         });
         expect(app.isAddSystemModalOpen()).toBe(false);
       });
 
-      it('sends distributor and branch codes with the registration request', () => {
+      it('loads options on open, clears the branch when the distributor changes, and sends stored IDs', () => {
+        mockManagementService.getRegistrationOptions.mockReturnValue(of({
+          success: true,
+          data: { distributors: [
+            { id: 1, name: 'Dist One', distributorCode: 'D1', district: 'Thrissur', branches: [{ id: 11, name: 'Ollur', branchCode: 'B1', location: 'Ollur' }] },
+            { id: 2, name: 'Dist Two', distributorCode: 'D2', district: 'Kochi', branches: [] }
+          ] }
+        }));
         app.openAddSystemModal();
-        app.newSystemDeviceCode.set('halo1200-000009');
-        app.newSystemSN.set('261000009');
-        app.newSystemName.set('Coded Unit');
-        app.newSystemDistributorCode.set('DIST-1');
-        app.newSystemBranchCode.set('BR-1');
-        mockManagementService.registerDevice.mockReturnValue(of({ success: true, data: { id: 209 } }));
+        expect(mockManagementService.getRegistrationOptions).toHaveBeenCalled();
+        expect(app.filteredRegDistributors().length).toBe(2);
 
+        app.pickRegDistributor({ id: 1 });
+        expect(app.filteredRegBranches().map(b => b.name)).toEqual(['Ollur']);
+        app.pickRegBranch({ id: 11 });
+        expect(app.regBranchLabel()).toBe('Ollur – Ollur');
+
+        app.pickRegDistributor({ id: 2 });
+        expect(app.regBranchId()).toBeNull();
+        app.newSystemDeviceCode.set('halo1200-000020');
+        app.newSystemSN.set('261000020');
+        app.newSystemName.set('Unit 20');
         app.submitAddSystem();
-
-        expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
-          deviceCode: 'halo1200-000009',
-          serialNumber: '261000009',
-          systemName: 'Coded Unit',
-          model: null,
-          branchId: null,
-          distributorCode: 'DIST-1',
-          branchCode: 'BR-1'
-        });
-      });
-
-      it('rejects a lone distributor code without a branch code', () => {
-        app.openAddSystemModal();
-        app.newSystemDeviceCode.set('halo1200-000010');
-        app.newSystemSN.set('261000010');
-        app.newSystemName.set('Half Coded');
-        app.newSystemDistributorCode.set('DIST-1');
-        app.newSystemBranchCode.set('');
-
-        app.submitAddSystem();
-
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
-        expect(app.newSystemError()).toBe('Enter both the distributor code and the branch code.');
+        expect(app.newSystemError()).toBe('Add a branch for this distributor before registering a system.');
+
+        app.pickRegDistributor({ id: 1 });
+        app.pickRegBranch({ id: 11 });
+        mockManagementService.registerDevice.mockReturnValue(of({ success: true, data: { id: 20 } }));
+        app.submitAddSystem();
+        expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
+          deviceCode: 'halo1200-000020',
+          serialNumber: '261000020',
+          systemName: 'Unit 20',
+          model: null,
+          branchId: 11,
+          distributorId: 1
+        });
       });
 
       it('blocks customer role (USER) from registering devices', () => {
@@ -1398,7 +1406,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.openAddSystemModal();
         expect(app.isAddSystemModalOpen()).toBe(false);
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
         expect(app.newSystemError()).toBe('Only administrators can register devices.');
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
       });
@@ -1420,7 +1428,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           }
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(app.isAddSystemModalOpen()).toBe(true);
         expect(app.newSystemError()).toBe('Device ID or serial number is already registered');
@@ -1440,7 +1448,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           }
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(app.isAddSystemModalOpen()).toBe(true);
         expect(app.newSystemError()).toBe('Device ID must not exceed 100 characters');
@@ -1455,11 +1463,11 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         const pendingSubject = new Subject<any>();
         mockManagementService.registerDevice.mockReturnValue(pendingSubject.asObservable());
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
         expect(app.isSubmittingSystem()).toBe(true);
 
         // Second submission attempt while pending
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
         expect(mockManagementService.registerDevice).toHaveBeenCalledTimes(1);
 
         pendingSubject.next({ success: true, data: { id: 10 } });
@@ -1630,6 +1638,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
         app.distState.set('Kerala');
+        app.distAddress.set('Kochi Road');
+        app.distPincode.set('680001');
         app.distDistrict.set('Ernakulam');
 
         // Step 2: Distributor creation fails on backend (e.g. branch code conflict)
@@ -1678,12 +1688,17 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           distributorCode: 'DIST-88',
           name: 'Hykon West',
           administratorUserId: 88,
+          branchCode: 'BR-WEST-02',
+          branchName: 'West Branch',
+          location: 'Kochi',
+          address: 'Kochi Road',
+          pincode: '680001',
           state: 'Kerala',
           district: 'Ernakulam'
         });
         expect(app.isCreateDistributorModalOpen()).toBe(false);
         expect(app.lastCreatedAdminId()).toBeNull();
-        expect(app.dashboardToast()).toContain('Distributor created successfully');
+        expect(app.dashboardToast()).toContain('Distributor and initial branch created successfully');
       });
 
       it('clears sensitive passwords on modal close, logout, or session reset', () => {
@@ -1715,7 +1730,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         const pendingSubject = new Subject<any>();
         mockManagementService.registerDevice.mockReturnValue(pendingSubject.asObservable());
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
         expect(app.isSubmittingSystem()).toBe(true);
 
         // User logs out while request is pending
@@ -1742,7 +1757,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           error: { message: 'Token expired' }
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(app.isAddSystemModalOpen()).toBe(false);
         expect(app.isDashboardOpen()).toBe(false);
@@ -1770,7 +1785,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           error: { message: 'Distributor session unverified' }
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(app.isAddSystemModalOpen()).toBe(false);
         expect(app.isDashboardOpen()).toBe(false);
@@ -1789,7 +1804,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           error: { message: 'Forbidden' }
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(app.isAddSystemModalOpen()).toBe(false);
         expect(app.isDeviceAuthModalOpen()).toBe(false);
@@ -1807,7 +1822,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           statusText: 'Unknown Error'
         })));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledTimes(1);
         expect(app.isSubmittingSystem()).toBe(false);
@@ -2211,6 +2226,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
         app.distState.set('Kerala');
+        app.distAddress.set('Kochi Road');
+        app.distPincode.set('680001');
         app.distDistrict.set('Ernakulam');
 
         mockManagementService.createDistributor.mockReturnValue(
@@ -2234,6 +2251,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchName.set('West Branch');
         app.distLocation.set('Kochi');
         app.distState.set('Kerala');
+        app.distAddress.set('Kochi Road');
+        app.distPincode.set('680001');
         app.distDistrict.set('Ernakulam');
 
         const pendingSubject = new Subject<any>();
@@ -2263,6 +2282,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.distBranchName.set('Branch 1');
         app.distLocation.set('Kochi');
         app.distState.set('Kerala');
+        app.distAddress.set('Kochi Road');
+        app.distPincode.set('680001');
         app.distDistrict.set('Ernakulam');
 
         app.submitCreateDistributor();
@@ -2428,7 +2449,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           app.newSystemSN.set(sn);
           app.newSystemName.set('Unit 1');
 
-          app.submitAddSystem();
+          app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
           expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
           expect(app.newSystemError()).toContain('Serial number must be in format YYMM + five-digit device number');
@@ -2440,7 +2461,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.newSystemSN.set('261300001'); // Month 13
         app.newSystemName.set('Unit 1');
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
         expect(app.newSystemError()).toContain('Serial number must be in format YYMM + five-digit device number');
@@ -2451,7 +2472,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.newSystemSN.set('261100000');
         app.newSystemName.set('Unit 1');
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
         expect(app.newSystemError()).toContain('between 00001 and 99999');
@@ -2462,7 +2483,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         app.newSystemSN.set('261100001');
         app.newSystemName.set('Unit 1');
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).not.toHaveBeenCalled();
         expect(app.newSystemError()).toContain('Device ID must be in format <model>-<number>');
@@ -2479,7 +2500,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           data: { id: 4, deviceCode: 'halo1200-4', serialNumber: '261200001', systemName: 'Unit 4', status: 'ACTIVE' }
         }));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalled();
         expect(app.newSystemError()).toBe('');
@@ -2497,14 +2518,15 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
           data: { id: 50, deviceCode: 'halo1200-000050', serialNumber: '261000050', systemName: 'Solar Unit 50', status: 'ACTIVE' }
         }));
 
-        app.submitAddSystem();
+        app.regDistId.set(app.regDistId() ?? 1); app.regBranchId.set(app.regBranchId() ?? 1); app.submitAddSystem();
 
         expect(mockManagementService.registerDevice).toHaveBeenCalledWith({
           deviceCode: 'halo1200-000050',
           serialNumber: '261000050',
           systemName: 'Solar Unit 50',
-          model: 'HALO 1200',
-          branchId: null
+          model: null,
+          branchId: 1,
+          distributorId: 1
         });
         expect(app.isAddSystemModalOpen()).toBe(false);
       });

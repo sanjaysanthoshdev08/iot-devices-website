@@ -14,6 +14,29 @@ export interface RegisterDeviceManagementRequest {
   branchId?: number | null;
   distributorCode?: string;
   branchCode?: string;
+  distributorId?: number | null;
+}
+
+export interface RegistrationBranchOption {
+  id: number;
+  name: string;
+  branchCode: string;
+  location: string;
+  address?: string | null;
+  pincode?: string | null;
+}
+
+export interface RegistrationDistributorOption {
+  id: number;
+  name: string;
+  distributorCode: string;
+  state?: string | null;
+  district?: string | null;
+  branches: RegistrationBranchOption[];
+}
+
+export interface RegistrationOptions {
+  distributors: RegistrationDistributorOption[];
 }
 
 export interface RecordDevicePurchaseRequest {
@@ -56,6 +79,7 @@ export interface CreateDistributorRequest {
   branchCode?: string;
   branchName?: string;
   location?: string;
+  address?: string;
   state?: string;
   district?: string;
   pincode?: string;
@@ -234,6 +258,14 @@ export class ManagementService {
    */
   listAvailableDistributorAdmins(): Observable<ApiResponse<DistributorAdminOption[]>> {
     return this.http.get<ApiResponse<DistributorAdminOption[]>>(`${CREATE_DIST_ADMIN_URL}/available`);
+  }
+
+  /**
+   * Distributors and branches the signed-in admin may pick from (searchable dropdowns).
+   * GET /api/v1/management/devices/options
+   */
+  getRegistrationOptions(): Observable<ApiResponse<RegistrationOptions>> {
+    return this.http.get<ApiResponse<RegistrationOptions>>(`${REGISTER_DEVICE_URL}/options`);
   }
 
   /**

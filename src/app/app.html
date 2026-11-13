@@ -2785,29 +2785,43 @@
             01–12, number 00001–99999, restarts each month)</span>
         </div>
 
-        <!-- Field: Model -->
+        <!-- Field: Distributor (searchable) -->
         <div class="modal-field">
-          <label class="modal-label" for="systemModel">Model (Optional)</label>
-          <input type="text" id="systemModel" class="modal-input" placeholder="e.g., HALO 1200"
-            [ngModel]="newSystemModel()" (ngModelChange)="newSystemModel.set($event)" name="systemModel" />
+          <label class="modal-label" for="regDist">Distributor</label>
+          <div class="searchable-select">
+            <input type="text" id="regDist" class="modal-input" placeholder="Search and select distributor"
+              autocomplete="off" [ngModel]="regDistOpen() ? regDistQuery() : regDistLabel()"
+              (ngModelChange)="regDistQuery.set($event); regDistOpen.set(true)" (focus)="openRegDist()"
+              (blur)="regDistOpen.set(false)" name="regDist" />
+            <ul class="ss-list" *ngIf="regDistOpen()">
+              <li *ngFor="let d of filteredRegDistributors()" (mousedown)="$event.preventDefault(); pickRegDistributor(d)"
+                [class.ss-active]="d.id === regDistId()">{{ d.name }}<small *ngIf="d.district"> · {{ d.district }}</small></li>
+              <li class="ss-empty" *ngIf="filteredRegDistributors().length === 0">No distributors found</li>
+            </ul>
+          </div>
         </div>
 
-        <!-- Field: Distributor Code -->
+        <!-- Field: Branch (searchable, only branches under the selected distributor) -->
         <div class="modal-field">
-          <label class="modal-label" for="systemDistributorCode">Distributor Code</label>
-          <input type="text" id="systemDistributorCode" class="modal-input" placeholder="e.g., DIST-TCR-01"
-            [ngModel]="newSystemDistributorCode()" (ngModelChange)="newSystemDistributorCode.set($event)"
-            name="systemDistributorCode" />
-        </div>
-
-        <!-- Field: Branch Code -->
-        <div class="modal-field">
-          <label class="modal-label" for="systemBranchCode">Branch Code</label>
-          <input type="text" id="systemBranchCode" class="modal-input" placeholder="e.g., BR-OLLUR-01"
-            [ngModel]="newSystemBranchCode()" (ngModelChange)="newSystemBranchCode.set($event)"
-            name="systemBranchCode" />
-          <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;">Both codes must match a registered
-            distributor and its branch.</span>
+          <label class="modal-label" for="regBranch">Branch</label>
+          <div class="searchable-select">
+            <input type="text" id="regBranch" class="modal-input"
+              [placeholder]="regDistId() === null ? 'Select a distributor first' : 'Search and select branch'"
+              autocomplete="off" [disabled]="regDistId() === null"
+              [ngModel]="regBranchOpen() ? regBranchQuery() : regBranchLabel()"
+              (ngModelChange)="regBranchQuery.set($event); regBranchOpen.set(true)" (focus)="openRegBranch()"
+              (blur)="regBranchOpen.set(false)" name="regBranch" />
+            <ul class="ss-list" *ngIf="regBranchOpen() && regDistId() !== null">
+              <li *ngFor="let b of filteredRegBranches()" (mousedown)="$event.preventDefault(); pickRegBranch(b)"
+                [class.ss-active]="b.id === regBranchId()">{{ b.name }}<small *ngIf="b.location"> · {{ b.location }}</small></li>
+              <li class="ss-empty" *ngIf="filteredRegBranches().length === 0">
+                {{ regSelectedDistributor()?.branches?.length ? 'No matching branch' : 'Add a branch for this distributor before registering a system.' }}
+              </li>
+            </ul>
+          </div>
+          <span style="font-size:0.75rem; color:#f0b429; margin-top:2px;"
+            *ngIf="regSelectedDistributor() && regSelectedDistributor()!.branches.length === 0">
+            Add a branch for this distributor before registering a system.</span>
         </div>
 
         <!-- Form Actions -->
@@ -2892,7 +2906,7 @@
     <div class="system-modal-card dist-register-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="dist-modal-title">
       <div class="modal-card-header">
-        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization</h3>
+        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization &amp; Branch</h3>
         <button type="button" class="modal-close-btn" (click)="closeCreateDistributorModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2930,7 +2944,7 @@
 
         <!-- Field: Distributor Name -->
         <div class="modal-field">
-          <label class="modal-label" for="distName">Distributor Name</label>
+          <label class="modal-label" for="distName">Distributor</label>
           <input type="text" id="distName" class="modal-input" placeholder="e.g., Hykon South Distribution"
             [ngModel]="distName()" (ngModelChange)="distName.set($event)" name="distName" required />
         </div>
@@ -2959,6 +2973,34 @@
           <label class="modal-label" for="distDistrict">District</label>
           <input type="text" id="distDistrict" class="modal-input" placeholder="e.g., Ernakulam"
             [ngModel]="distDistrict()" (ngModelChange)="distDistrict.set($event)" name="distDistrict" required />
+        </div>
+
+        <!-- Initial branch -->
+        <div class="modal-field">
+          <label class="modal-label" for="distBranchCode">Initial Branch Code</label>
+          <input type="text" id="distBranchCode" class="modal-input" placeholder="e.g., BR-KOCHI-01"
+            [ngModel]="distBranchCode()" (ngModelChange)="distBranchCode.set($event)" name="distBranchCode" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="distBranchName">Branch Name</label>
+          <input type="text" id="distBranchName" class="modal-input" placeholder="e.g., Kochi Main Branch"
+            [ngModel]="distBranchName()" (ngModelChange)="distBranchName.set($event)" name="distBranchName" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="distLocation">Branch Locality</label>
+          <input type="text" id="distLocation" class="modal-input" placeholder="e.g., Kakkanad"
+            [ngModel]="distLocation()" (ngModelChange)="distLocation.set($event)" name="distLocation" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="distAddress">Branch Address</label>
+          <input type="text" id="distAddress" class="modal-input" placeholder="e.g., Infopark Road, Kakkanad, Kochi"
+            [ngModel]="distAddress()" (ngModelChange)="distAddress.set($event)" name="distAddress" required />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="distPincode">PIN Code</label>
+          <input type="text" id="distPincode" class="modal-input" placeholder="e.g., 682030" maxlength="6"
+            inputmode="numeric" [ngModel]="distPincode()" (ngModelChange)="distPincode.set($event)"
+            name="distPincode" required />
         </div>
 
         <!-- Form Actions -->
@@ -3308,10 +3350,20 @@
         </div>
 
         <div class="modal-field">
-          <label class="modal-label" for="brDistCode">Distributor Code</label>
-          <input type="text" id="brDistCode" class="modal-input" placeholder="e.g., DIST-TCR-01"
-            [ngModel]="branchDistributorCode()" (ngModelChange)="branchDistributorCode.set($event)"
-            name="brDistCode" />
+          <label class="modal-label" for="brDist">Distributor</label>
+          <input *ngIf="isDistributorRole()" type="text" id="brDist" class="modal-input" readonly
+            [value]="brSelectedDistributor()?.name ?? 'Loading…'" name="brDistReadonly" />
+          <div class="searchable-select" *ngIf="!isDistributorRole()">
+            <input type="text" id="brDist" class="modal-input" placeholder="Search and select distributor"
+              autocomplete="off" [ngModel]="brDistOpen() ? brDistQuery() : (brSelectedDistributor()?.name ?? '')"
+              (ngModelChange)="brDistQuery.set($event); brDistOpen.set(true)"
+              (focus)="brDistQuery.set(''); brDistOpen.set(true)" (blur)="brDistOpen.set(false)" name="brDist" />
+            <ul class="ss-list" *ngIf="brDistOpen()">
+              <li *ngFor="let d of brFilteredDistributors()" (mousedown)="$event.preventDefault(); pickBrDistributor(d)"
+                [class.ss-active]="d.id === brDistId()">{{ d.name }}<small *ngIf="d.district"> · {{ d.district }}</small></li>
+              <li class="ss-empty" *ngIf="brFilteredDistributors().length === 0">No distributors found</li>
+            </ul>
+          </div>
         </div>
         <div class="modal-field">
           <label class="modal-label" for="brCode">Branch Code</label>
@@ -3324,17 +3376,17 @@
             [ngModel]="branchNameInput()" (ngModelChange)="branchNameInput.set($event)" name="brName" />
         </div>
         <div class="modal-field">
-          <label class="modal-label" for="brLocation">Location (used for branch verification)</label>
+          <label class="modal-label" for="brLocation">Branch Locality</label>
           <input type="text" id="brLocation" class="modal-input" placeholder="e.g., Aluva, Ernakulam, Kerala"
             [ngModel]="branchLocation()" (ngModelChange)="branchLocation.set($event)" name="brLocation" />
         </div>
         <div class="modal-field">
-          <label class="modal-label" for="brAddress">Full Address</label>
+          <label class="modal-label" for="brAddress">Branch Address</label>
           <input type="text" id="brAddress" class="modal-input" placeholder="e.g., Ollur Road, Thrissur, Kerala"
             [ngModel]="branchAddress()" (ngModelChange)="branchAddress.set($event)" name="brAddress" />
         </div>
         <div class="modal-field">
-          <label class="modal-label" for="brPincode">Pincode (6 digits)</label>
+          <label class="modal-label" for="brPincode">PIN Code</label>
           <input type="text" id="brPincode" class="modal-input" placeholder="e.g., 680306" maxlength="6"
             inputmode="numeric" [ngModel]="branchPincode()" (ngModelChange)="branchPincode.set($event)"
             name="brPincode" />
