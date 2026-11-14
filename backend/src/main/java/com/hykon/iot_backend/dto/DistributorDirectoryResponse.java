@@ -28,13 +28,22 @@ public record DistributorDirectoryResponse(
             String location,
             String status,
             List<DeviceSummary> devices,
-            String pincode
+            String pincode,
+            String branchAdminName,
+            String branchAdminEmail
     ) {
         public BranchHierarchy(
                 Long id, String branchCode, String name, String location,
                 String status, List<DeviceSummary> devices
         ) {
-            this(id, branchCode, name, location, status, devices, null);
+            this(id, branchCode, name, location, status, devices, null, null, null);
+        }
+
+        public BranchHierarchy(
+                Long id, String branchCode, String name, String location,
+                String status, List<DeviceSummary> devices, String pincode
+        ) {
+            this(id, branchCode, name, location, status, devices, pincode, null, null);
         }
     }
 

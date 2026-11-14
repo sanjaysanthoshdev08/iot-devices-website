@@ -2315,40 +2315,37 @@
             <table class="dist-table">
               <thead>
                 <tr>
-                  <th>Distributor</th>
-                  <th>Code</th>
-                  <th>District, State</th>
-                  <th>Administrator</th>
+                  <th>Distributors</th>
+                  <th>Branch Admin Name</th>
+                  <th>Distributor Code</th>
+                  <th>Branch Code</th>
+                  <th>Distributor Email</th>
+                  <th>Branch Admin Email</th>
                   <th>Branches</th>
-                  <th>Devices</th>
+                  <th>Total Devices</th>
                   <th>Status</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let dist of distributorDirectory()">
                   <td class="dist-table-name">{{ dist.name }}</td>
+                  <td>
+                    <div *ngFor="let b of dist.branches">{{ b.branchAdminName || '—' }}</div>
+                    <span *ngIf="dist.branches.length === 0">—</span>
+                  </td>
                   <td><code class="dist-code-val">{{ dist.distributorCode }}</code></td>
-                  <td>{{ dist.district || '—' }}, {{ dist.state || '—' }}</td>
                   <td>
-                    <ng-container *ngIf="dist.administrator; else noAdmin">
-                      <div>{{ dist.administrator.name }}</div>
-                      <div class="dist-table-sub">{{ dist.administrator.email }}</div>
-                    </ng-container>
-                    <ng-template #noAdmin>—</ng-template>
+                    <div *ngFor="let b of dist.branches"><code class="dist-code-val">{{ b.branchCode }}</code></div>
+                    <span *ngIf="dist.branches.length === 0">—</span>
                   </td>
+                  <td>{{ dist.administrator?.email || '—' }}</td>
                   <td>
-                    <div>{{ dist.branches.length }}</div>
-                    <div class="dist-table-sub" *ngIf="dist.branches.length > 0">
-                      <span *ngFor="let b of dist.branches; let last = last">{{ b.name }}{{ last ? '' : ', ' }}</span>
-                    </div>
+                    <div *ngFor="let b of dist.branches">{{ b.branchAdminEmail || '—' }}</div>
+                    <span *ngIf="dist.branches.length === 0">—</span>
                   </td>
+                  <td>{{ dist.branches.length }}</td>
                   <td>{{ distributorDeviceCount(dist) }}</td>
                   <td><span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></td>
-                  <td>
-                    <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id, dist.distributorCode)"
-                      title="Create a branch and its branch admin login">+ Add Branch</button>
-                  </td>
                 </tr>
               </tbody>
             </table>

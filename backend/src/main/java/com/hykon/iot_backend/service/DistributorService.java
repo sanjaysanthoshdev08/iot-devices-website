@@ -170,7 +170,9 @@ public class DistributorService {
                                 b.getLocation(),
                                 b.getStatus(),
                                 devList,
-                                b.getPincode()
+                                b.getPincode(),
+                                b.getBranchAdmin() == null ? null : b.getBranchAdmin().getName(),
+                                b.getBranchAdmin() == null ? null : b.getBranchAdmin().getEmail()
                         );
                     }).toList();
 

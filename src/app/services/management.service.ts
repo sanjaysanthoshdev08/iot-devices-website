@@ -160,6 +160,8 @@ export interface DirectoryBranch {
   status: string;
   devices: DirectoryDevice[];
   pincode?: string | null;
+  branchAdminName?: string | null;
+  branchAdminEmail?: string | null;
 }
 
 export interface DirectoryDistributorAdmin {
