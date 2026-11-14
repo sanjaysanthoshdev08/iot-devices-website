@@ -146,6 +146,8 @@ export class App implements AfterViewInit, OnDestroy {
   readonly isCustomerRole = computed(() => this.currentRole() === 'USER');
   readonly isHykonAdminRole = computed(() => this.currentRole() === 'HYKON_ADMIN');
   readonly isBranchAdminRole = computed(() => this.currentRole() === 'BRANCH_ADMIN');
+  /** The one overseeing Distributor Admin: sees every distributor and can add new distributors with logins. */
+  readonly isOverseerRole = computed(() => this.currentRole() === 'DISTRIBUTOR_ADMIN' && !!this.currentUser()?.allDistributors);
 
   // Explicit login tracking: only true after explicit user/admin/distributor login.
   // Defaults to false so startup / opening the site always displays Log in / Sign up on the home page.
@@ -1173,6 +1175,7 @@ export class App implements AfterViewInit, OnDestroy {
           if (cur && cur.branches.length === 1 && this.regBranchId() === null && this.isBranchAdminRole()) {
             this.regBranchId.set(cur.branches[0].id);
           }
+          if (this.brDistId() === null && this.isDistributorRole()) this.brDistId.set(list[0].id);
         }
         done?.();
       },
@@ -1366,6 +1369,82 @@ export class App implements AfterViewInit, OnDestroy {
   distError = signal<string>('');
   distSuccess = signal<string>('');
   isSubmittingDistributor = signal<boolean>(false);
+
+  // Overseer: add a new distributor with its own login (email + password + unique distributor code)
+  isNewDistModalOpen = signal<boolean>(false);
+  newDistName = signal<string>('');
+  newDistCode = signal<string>('');
+  newDistState = signal<string>('Kerala');
+  newDistDistrict = signal<string>('');
+  newDistEmail = signal<string>('');
+  newDistPassword = signal<string>('');
+  newDistConfirm = signal<string>('');
+  newDistError = signal<string>('');
+  isSubmittingNewDist = signal<boolean>(false);
+
+  openNewDistModal() {
+    if (!this.isOverseerRole()) return;
+    this.newDistName.set('');
+    this.newDistCode.set('');
+    this.newDistDistrict.set('');
+    this.newDistEmail.set('');
+    this.newDistPassword.set('');
+    this.newDistConfirm.set('');
+    this.newDistError.set('');
+    this.isNewDistModalOpen.set(true);
+  }
+
+  closeNewDistModal() {
+    this.isNewDistModalOpen.set(false);
+    this.newDistPassword.set('');
+    this.newDistConfirm.set('');
+    this.newDistError.set('');
+  }
+
+  submitNewDistributor() {
+    if (!this.isOverseerRole() || this.isSubmittingNewDist()) return;
+    const request = {
+      name: this.newDistName().trim(),
+      distributorCode: this.newDistCode().trim(),
+      state: this.newDistState().trim(),
+      district: this.newDistDistrict().trim(),
+      email: this.newDistEmail().trim(),
+      password: this.newDistPassword(),
+      confirmPassword: this.newDistConfirm()
+    };
+    if (!request.name || !request.distributorCode || !request.state || !request.district) {
+      this.newDistError.set('Distributor name, code, state and district are required.');
+      return;
+    }
+    if (!request.email || !request.email.includes('@')) {
+      this.newDistError.set('A valid login email is required.');
+      return;
+    }
+    if (!request.password || request.password.length < 8) {
+      this.newDistError.set('Password must be at least 8 characters.');
+      return;
+    }
+    if (request.password !== request.confirmPassword) {
+      this.newDistError.set('Passwords do not match.');
+      return;
+    }
+    this.newDistError.set('');
+    this.isSubmittingNewDist.set(true);
+    this.managementService.createDistributorWithLogin(request).subscribe({
+      next: () => {
+        this.isSubmittingNewDist.set(false);
+        this.closeNewDistModal();
+        this.showDashboardToast('Distributor and login created successfully.');
+        this.loadDistributorDirectory();
+        this.loadRegOptions();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isSubmittingNewDist.set(false);
+        const fieldMsg = err.error?.errors ? (Object.values(err.error.errors)[0] as string) : '';
+        this.newDistError.set(fieldMsg || this.extractErrorMessage(err, 'Failed to create distributor.'));
+      }
+    });
+  }
 
   // Request cancellation tokens
   managementRequestId = 0;

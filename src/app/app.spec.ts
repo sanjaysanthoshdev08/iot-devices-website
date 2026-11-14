@@ -31,6 +31,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     createDistributorAdmin: any;
     listAvailableDistributorAdmins: any;
     createBranchByCode: any;
+    createDistributorWithLogin: any;
     getRegistrationOptions: any;
     createDistributor: any;
     getDistributorDirectory: any;
@@ -65,6 +66,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       listAvailableDistributorAdmins: vi.fn().mockReturnValue(of({ success: true, data: [] })),
       getRegistrationOptions: vi.fn().mockReturnValue(of({ success: true, data: { distributors: [] } })),
       createBranchByCode: vi.fn(),
+      createDistributorWithLogin: vi.fn(),
       createDistributor: vi.fn(),
       getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
       getDistributorDirectoryForViewer: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
@@ -325,6 +327,46 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
 
       expect(app.isDeviceAuthModalOpen()).toBe(false);
       expect(app.isDashboardOpen()).toBe(true);
+    });
+
+    it('overseeing DISTRIBUTOR_ADMIN adds a distributor with its own login', () => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 2, name: 'Overseer', email: 'distributor_admin@gmail.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE', allDistributors: true });
+      expect(app.isOverseerRole()).toBe(true);
+
+      app.openNewDistModal();
+      expect(app.isNewDistModalOpen()).toBe(true);
+      app.newDistName.set('Ernakulam Distributor');
+      app.newDistCode.set('DIST-EKM-01');
+      app.newDistDistrict.set('Ernakulam');
+      app.newDistEmail.set('ekm@dist.com');
+      app.newDistPassword.set('Secret@123');
+      app.newDistConfirm.set('Different@123');
+      app.submitNewDistributor();
+      expect(mockManagementService.createDistributorWithLogin).not.toHaveBeenCalled();
+      expect(app.newDistError()).toBe('Passwords do not match.');
+
+      app.newDistConfirm.set('Secret@123');
+      mockManagementService.createDistributorWithLogin.mockReturnValue(of({ success: true, data: { id: 5 } }));
+      app.submitNewDistributor();
+      expect(mockManagementService.createDistributorWithLogin).toHaveBeenCalledWith({
+        name: 'Ernakulam Distributor',
+        distributorCode: 'DIST-EKM-01',
+        state: 'Kerala',
+        district: 'Ernakulam',
+        email: 'ekm@dist.com',
+        password: 'Secret@123',
+        confirmPassword: 'Secret@123'
+      });
+      expect(app.isNewDistModalOpen()).toBe(false);
+    });
+
+    it('a scoped DISTRIBUTOR_ADMIN is not the overseer and cannot add distributors', () => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 3, name: 'Thrissur', email: 'thrissur@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE' });
+      expect(app.isOverseerRole()).toBe(false);
+      app.openNewDistModal();
+      expect(app.isNewDistModalOpen()).toBe(false);
     });
 
     it('should bypass verification and open Overview for HYKON_ADMIN role', () => {

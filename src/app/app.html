@@ -2223,6 +2223,18 @@
             </button>
           </ng-container>
 
+          <!-- Overseeing Distributor Admin: add distributors and branches (Accounts page) -->
+          <ng-container *ngIf="activeDashboardNav() === 'accounts' && isOverseerRole()">
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openNewDistModal()"
+              title="Add a distributor with its own login and unique code">
+              <span>+ Add Distributor</span>
+            </button>
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateBranchModal()"
+              title="Create a branch and its branch admin login">
+              <span>+ Create Branch</span>
+            </button>
+          </ng-container>
+
           <!-- + Add New button (Device page) -->
           <button type="button" class="btn-add-system" *ngIf="activeDashboardNav() === 'systems'"
             (click)="openAddSystemModal()" title="Register new system">
@@ -2874,6 +2886,74 @@
           <button type="button" class="btn-modal-cancel" (click)="closeAddSystemModal()">Cancel</button>
           <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingSystem()">
             {{ isSubmittingSystem() ? 'Registering...' : 'Register System' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD DISTRIBUTOR (with its own login) MODAL DIALOG - overseeing Distributor Admin -->
+  <div class="system-modal-backdrop" *ngIf="isAuthenticated() && isNewDistModalOpen()" (click)="closeNewDistModal()">
+    <div class="system-modal-card dist-register-modal ref-style-modal" (click)="$event.stopPropagation()" role="dialog"
+      aria-modal="true" aria-labelledby="new-dist-modal-title">
+      <div class="modal-card-header">
+        <h3 id="new-dist-modal-title" class="modal-card-title">Add <span>Distributor</span></h3>
+        <p class="ref-modal-sub">Each distributor gets its own login and a unique code.</p>
+        <button type="button" class="modal-close-btn" (click)="closeNewDistModal()" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" (ngSubmit)="submitNewDistributor()">
+        <div class="modal-error-alert" *ngIf="newDistError()">
+          <span>{{ newDistError() }}</span>
+        </div>
+
+        <div class="modal-field">
+          <label class="modal-label" for="ndName">Distributor</label>
+          <input type="text" id="ndName" class="modal-input" placeholder="e.g., Thrissur Distributor"
+            [ngModel]="newDistName()" (ngModelChange)="newDistName.set($event)" name="ndName" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndCode">Distributor Code (unique)</label>
+          <input type="text" id="ndCode" class="modal-input" placeholder="e.g., DIST-TCR-02"
+            [ngModel]="newDistCode()" (ngModelChange)="newDistCode.set($event)" name="ndCode" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndState">State</label>
+          <input type="text" id="ndState" class="modal-input" [ngModel]="newDistState()"
+            (ngModelChange)="newDistState.set($event)" name="ndState" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndDistrict">District</label>
+          <input type="text" id="ndDistrict" class="modal-input" placeholder="e.g., Ernakulam"
+            [ngModel]="newDistDistrict()" (ngModelChange)="newDistDistrict.set($event)" name="ndDistrict" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndEmail">Login Email (unique)</label>
+          <input type="email" id="ndEmail" class="modal-input" placeholder="e.g., ernakulam@distributor.com"
+            [ngModel]="newDistEmail()" (ngModelChange)="newDistEmail.set($event)" name="ndEmail" autocomplete="off" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndPw">Password</label>
+          <input type="password" id="ndPw" class="modal-input" placeholder="At least 8 characters"
+            [ngModel]="newDistPassword()" (ngModelChange)="newDistPassword.set($event)" name="ndPw"
+            autocomplete="new-password" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndPw2">Confirm Password</label>
+          <input type="password" id="ndPw2" class="modal-input" placeholder="Confirm password"
+            [ngModel]="newDistConfirm()" (ngModelChange)="newDistConfirm.set($event)" name="ndPw2"
+            autocomplete="new-password" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeNewDistModal()">Cancel</button>
+          <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingNewDist()">
+            {{ isSubmittingNewDist() ? 'Creating...' : 'Add Distributor' }}
           </button>
         </div>
       </form>

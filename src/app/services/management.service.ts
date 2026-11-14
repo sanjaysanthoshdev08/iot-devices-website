@@ -66,6 +66,16 @@ export interface CreateDistributorAdminRequest {
   confirmPassword: string;
 }
 
+export interface CreateDistributorWithLoginRequest {
+  distributorCode: string;
+  name: string;
+  state: string;
+  district: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export interface DistributorAdminOption {
   id: number;
   name: string;
@@ -258,6 +268,17 @@ export class ManagementService {
    */
   getDistributorDirectoryForViewer(): Observable<ApiResponse<DirectoryDistributor[]>> {
     return this.http.get<ApiResponse<DirectoryDistributor[]>>('http://localhost:8080/api/v1/distributor/directory');
+  }
+
+  /**
+   * Overseeing Distributor Admin: create a distributor organization together with its own login.
+   * POST /api/v1/distributor/distributors
+   */
+  createDistributorWithLogin(
+    request: CreateDistributorWithLoginRequest
+  ): Observable<ApiResponse<DistributorResponse>> {
+    return this.http.post<ApiResponse<DistributorResponse>>(
+      'http://localhost:8080/api/v1/distributor/distributors', request);
   }
 
   /**

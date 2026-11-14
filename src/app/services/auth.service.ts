@@ -53,6 +53,7 @@ export interface AuthUser {
   email: string;
   role: string;
   status: string;
+  allDistributors?: boolean;
 }
 
 // Login response from the existing backend
@@ -65,6 +66,7 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   tokenType: string;
+  allDistributors?: boolean;
 }
 
 // Refresh-token request
@@ -235,6 +237,7 @@ export class AuthService {
       email: response.email,
       role: response.role,
       status: response.status,
+      allDistributors: !!response.allDistributors,
     });
     this.persistSession();
   }
@@ -297,6 +300,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         status: user.status,
+        allDistributors: !!user.allDistributors,
       });
     } catch {
       this.clearSession();
