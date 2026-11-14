@@ -9868,3 +9868,55 @@
 .system-modal-backdrop .system-modal-card.ref-style-modal {
   overflow-x: hidden;
 }
+
+
+/* ----- Distributor Admin: distributors table on the Accounts page ----- */
+.dist-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #243044;
+  border-radius: 14px;
+  background: rgba(15, 20, 29, 0.7);
+
+  .dist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    color: #e7e9ed;
+
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #8ba2c4;
+      border-bottom: 1px solid #243044;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(36, 48, 68, 0.6);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .dist-table-name {
+      font-weight: 600;
+    }
+
+    .dist-table-sub {
+      margin-top: 2px;
+      font-size: 12px;
+      color: #8ba2c4;
+    }
+  }
+}

@@ -2259,7 +2259,7 @@
 
         <section class="acct-provisioning-panel" aria-label="Accounts and Provisioning Management">
           <!-- Distributor Directory Header -->
-          <div class="directory-section-header" *ngIf="isHykonAdminRole()">
+          <div class="directory-section-header" *ngIf="isHykonAdminRole() || isDistributorRole()">
             <div class="directory-header-row">
               <div class="directory-titles">
                 <h2 class="directory-title">Distributor Directory</h2>
@@ -2273,12 +2273,12 @@
           </div>
 
           <!-- Directory Loading State -->
-          <div *ngIf="isHykonAdminRole() && isDirectoryLoading()" class="acct-loading-banner">
+          <div *ngIf="(isHykonAdminRole() || isDistributorRole()) && isDirectoryLoading()" class="acct-loading-banner">
             Loading distributor hierarchy...
           </div>
 
           <!-- Directory Error State -->
-          <div *ngIf="isHykonAdminRole() && directoryError()" class="modal-error-alert">
+          <div *ngIf="(isHykonAdminRole() || isDistributorRole()) && directoryError()" class="modal-error-alert">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-alert-icon">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -2292,10 +2292,54 @@
 
           <!-- Directory Empty State -->
           <div
-            *ngIf="isHykonAdminRole() && !isDirectoryLoading() && !directoryError() && distributorDirectory().length === 0"
+            *ngIf="(isHykonAdminRole() || isDistributorRole()) && !isDirectoryLoading() && !directoryError() && distributorDirectory().length === 0"
             class="acct-empty-banner">
             No distributors registered in the system yet. Use the provisioning actions below to create the first
             distributor and administrator.
+          </div>
+
+          <!-- Distributor table (Distributor Admin) -->
+          <div class="dist-table-wrap" *ngIf="isDistributorRole() && !isDirectoryLoading() && distributorDirectory().length > 0">
+            <table class="dist-table">
+              <thead>
+                <tr>
+                  <th>Distributor</th>
+                  <th>Code</th>
+                  <th>District, State</th>
+                  <th>Administrator</th>
+                  <th>Branches</th>
+                  <th>Devices</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let dist of distributorDirectory()">
+                  <td class="dist-table-name">{{ dist.name }}</td>
+                  <td><code class="dist-code-val">{{ dist.distributorCode }}</code></td>
+                  <td>{{ dist.district || '—' }}, {{ dist.state || '—' }}</td>
+                  <td>
+                    <ng-container *ngIf="dist.administrator; else noAdmin">
+                      <div>{{ dist.administrator.name }}</div>
+                      <div class="dist-table-sub">{{ dist.administrator.email }}</div>
+                    </ng-container>
+                    <ng-template #noAdmin>—</ng-template>
+                  </td>
+                  <td>
+                    <div>{{ dist.branches.length }}</div>
+                    <div class="dist-table-sub" *ngIf="dist.branches.length > 0">
+                      <span *ngFor="let b of dist.branches; let last = last">{{ b.name }}{{ last ? '' : ', ' }}</span>
+                    </div>
+                  </td>
+                  <td>{{ distributorDeviceCount(dist) }}</td>
+                  <td><span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></td>
+                  <td>
+                    <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id, dist.distributorCode)"
+                      title="Create a branch and its branch admin login">+ Add Branch</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- Directory Hierarchy List -->

@@ -253,6 +253,14 @@ export class ManagementService {
   }
 
   /**
+   * Read-only directory of every registered distributor (Distributor Admin's Accounts page).
+   * GET /api/v1/distributor/directory
+   */
+  getDistributorDirectoryForViewer(): Observable<ApiResponse<DirectoryDistributor[]>> {
+    return this.http.get<ApiResponse<DirectoryDistributor[]>>('http://localhost:8080/api/v1/distributor/directory');
+  }
+
+  /**
    * Distributor admin logins that are not yet assigned to a distributor organization.
    * GET /api/v1/admin/distributor-admins/available  (HYKON_ADMIN only)
    */

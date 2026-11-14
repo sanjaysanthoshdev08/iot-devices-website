@@ -34,6 +34,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     getRegistrationOptions: any;
     createDistributor: any;
     getDistributorDirectory: any;
+    getDistributorDirectoryForViewer: any;
     authorizeDeviceCustomer: any;
     removeDeviceCustomer: any;
   };
@@ -66,6 +67,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       createBranchByCode: vi.fn(),
       createDistributor: vi.fn(),
       getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
+      getDistributorDirectoryForViewer: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
       authorizeDeviceCustomer: vi.fn(),
       removeDeviceCustomer: vi.fn()
     };
@@ -383,19 +385,21 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.activeDashboardNav()).toBe('systems');
     });
 
-    it('DISTRIBUTOR_ADMIN role can access Overview, Systems, Warnings, but not Accounts', () => {
+    it('DISTRIBUTOR_ADMIN role can access Overview, Systems, Accounts and Warnings', () => {
       mockAuthService.isAuthenticated.set(true);
       mockAuthService.currentUser.set({ id: 2, name: 'Bob', email: 'bob@test.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE' });
 
       expect(app.canAccessTab('overview')).toBe(true);
       expect(app.canAccessTab('systems')).toBe(true);
       expect(app.canAccessTab('alerts')).toBe(true);
-      expect(app.canAccessTab('accounts')).toBe(false);
+      expect(app.canAccessTab('accounts')).toBe(true);
 
+      app.isDashboardOpen.set(true);
+      app.isDashboardAuthorized.set(true);
       app.activeDashboardNav.set('overview');
       app.setDashboardNav('accounts');
-      expect(app.activeDashboardNav()).toBe('overview');
-      expect(app.dashboardToast()).toContain('Access denied');
+      expect(app.activeDashboardNav()).toBe('accounts');
+      expect(mockManagementService.getDistributorDirectoryForViewer).toHaveBeenCalled();
     });
 
     it('HYKON_ADMIN role can access Overview, Systems, Accounts, and Warnings', () => {
@@ -2751,9 +2755,9 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         expect(app.distributorDirectory()[0].branches[0].devices[0].customerEmails).toEqual(['client@test.com']);
       });
 
-      it('non-HYKON_ADMIN cannot load distributor directory', () => {
+      it('customers cannot load the distributor directory', () => {
         mockAuthService.currentUser.set({
-          id: 2, name: 'Dist Bob', email: 'bob@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE'
+          id: 2, name: 'Cust Bob', email: 'bob@cust.com', role: 'USER', status: 'ACTIVE'
         });
 
         app.loadDistributorDirectory();

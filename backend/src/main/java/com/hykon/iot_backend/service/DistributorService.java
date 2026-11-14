@@ -63,6 +63,36 @@ public class DistributorService {
     ) {
         requireHykonAdmin(adminEmail);
 
+        return buildDirectory(page, size, branchLimit, deviceLimit);
+    }
+
+    /** Read-only directory for the Distributor Admin (and HYKON Admin): every distributor with its branches. */
+    @Transactional(readOnly = true)
+    public List<DistributorDirectoryResponse> getDirectoryForViewer(
+            String email,
+            int page,
+            int size,
+            int branchLimit,
+            int deviceLimit
+    ) {
+        User viewer = email == null || email.isBlank() ? null
+                : userRepository.findByEmailWithRole(email).orElse(null);
+        if (viewer == null
+                || !"ACTIVE".equalsIgnoreCase(viewer.getStatus())
+                || viewer.getRole() == null
+                || (viewer.getRole().getName() != RoleName.HYKON_ADMIN
+                    && viewer.getRole().getName() != RoleName.DISTRIBUTOR_ADMIN)) {
+            throw new AccessDeniedException("Distributor administrator access is required");
+        }
+        return buildDirectory(page, size, branchLimit, deviceLimit);
+    }
+
+    private List<DistributorDirectoryResponse> buildDirectory(
+            int page,
+            int size,
+            int branchLimit,
+            int deviceLimit
+    ) {
         int boundedPage = Math.max(page, 0);
         int boundedSize = Math.min(Math.max(size, 1), 50);
         int bLimit = Math.min(Math.max(branchLimit, 1), 100);

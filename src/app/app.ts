@@ -590,10 +590,14 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   loadDistributorDirectory() {
-    if (this.currentRole() !== 'HYKON_ADMIN') return;
+    const role = this.currentRole();
+    if (role !== 'HYKON_ADMIN' && role !== 'DISTRIBUTOR_ADMIN') return;
     this.isDirectoryLoading.set(true);
     this.directoryError.set('');
-    this.managementService.getDistributorDirectory().subscribe({
+    const directory$ = role === 'HYKON_ADMIN'
+      ? this.managementService.getDistributorDirectory()
+      : this.managementService.getDistributorDirectoryForViewer();
+    directory$.subscribe({
       next: (res) => {
         this.isDirectoryLoading.set(false);
         this.distributorDirectory.set(res.data || []);
@@ -603,6 +607,11 @@ export class App implements AfterViewInit, OnDestroy {
         this.directoryError.set(this.extractErrorMessage(err, 'Failed to load distributor directory.'));
       }
     });
+  }
+
+  /** Number of devices registered under a distributor (all its branches). */
+  distributorDeviceCount(dist: { branches?: Array<{ devices?: unknown[] }> }): number {
+    return (dist.branches ?? []).reduce((n, b) => n + (b.devices?.length ?? 0), 0);
   }
 
   authorizeCustomerForSelectedDevice() {
@@ -743,6 +752,7 @@ export class App implements AfterViewInit, OnDestroy {
       case 'USER':
         return tab === 'systems' || tab === 'alerts';
       case 'DISTRIBUTOR_ADMIN':
+        return tab === 'overview' || tab === 'systems' || tab === 'accounts' || tab === 'alerts';
       case 'BRANCH_ADMIN':
         return tab === 'overview' || tab === 'systems' || tab === 'alerts';
       case 'HYKON_ADMIN':
@@ -1029,7 +1039,7 @@ export class App implements AfterViewInit, OnDestroy {
     this.activeDashboardNav.set(tab);
     if (tab === 'systems') {
       this.loadSystems(0);
-    } else if (tab === 'accounts' && this.currentRole() === 'HYKON_ADMIN') {
+    } else if (tab === 'accounts' && (this.currentRole() === 'HYKON_ADMIN' || this.currentRole() === 'DISTRIBUTOR_ADMIN')) {
       this.loadDistributorDirectory();
     } else if (tab === 'overview' && !this.systemRecordsService.isOverviewLoaded()) {
       this.loadOverviewDevices();
