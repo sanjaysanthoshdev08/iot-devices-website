@@ -2902,7 +2902,7 @@
       aria-modal="true" aria-labelledby="new-dist-modal-title">
       <div class="modal-card-header">
         <h3 id="new-dist-modal-title" class="modal-card-title">Create <span>Distributor</span></h3>
-        <p class="ref-modal-sub">Each distributor gets its own login and a unique code.</p>
+        <p class="ref-modal-sub">Please enter the distributor's login details and code.</p>
         <button type="button" class="modal-close-btn" (click)="closeNewDistModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2917,28 +2917,13 @@
         </div>
 
         <div class="modal-field">
-          <label class="modal-label" for="ndName">Distributor</label>
+          <label class="modal-label" for="ndName">Full Name</label>
           <input type="text" id="ndName" class="modal-input" placeholder="e.g., Thrissur Distributor"
             [ngModel]="newDistName()" (ngModelChange)="newDistName.set($event)" name="ndName" />
         </div>
         <div class="modal-field">
-          <label class="modal-label" for="ndCode">Distributor Code (unique)</label>
-          <input type="text" id="ndCode" class="modal-input" placeholder="e.g., DIST-TCR-02"
-            [ngModel]="newDistCode()" (ngModelChange)="newDistCode.set($event)" name="ndCode" />
-        </div>
-        <div class="modal-field">
-          <label class="modal-label" for="ndState">State</label>
-          <input type="text" id="ndState" class="modal-input" [ngModel]="newDistState()"
-            (ngModelChange)="newDistState.set($event)" name="ndState" />
-        </div>
-        <div class="modal-field">
-          <label class="modal-label" for="ndDistrict">District</label>
-          <input type="text" id="ndDistrict" class="modal-input" placeholder="e.g., Ernakulam"
-            [ngModel]="newDistDistrict()" (ngModelChange)="newDistDistrict.set($event)" name="ndDistrict" />
-        </div>
-        <div class="modal-field">
-          <label class="modal-label" for="ndEmail">Login Email (unique)</label>
-          <input type="email" id="ndEmail" class="modal-input" placeholder="e.g., ernakulam@distributor.com"
+          <label class="modal-label" for="ndEmail">Email Address</label>
+          <input type="email" id="ndEmail" class="modal-input" placeholder="e.g., thrissur@distributor.com"
             [ngModel]="newDistEmail()" (ngModelChange)="newDistEmail.set($event)" name="ndEmail" autocomplete="off" />
         </div>
         <div class="modal-field">
@@ -2952,6 +2937,11 @@
           <input type="password" id="ndPw2" class="modal-input" placeholder="Confirm password"
             [ngModel]="newDistConfirm()" (ngModelChange)="newDistConfirm.set($event)" name="ndPw2"
             autocomplete="new-password" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndCode">Distributor Code</label>
+          <input type="text" id="ndCode" class="modal-input" placeholder="e.g., DIST-TCR-02 (unique)"
+            [ngModel]="newDistCode()" (ngModelChange)="newDistCode.set($event)" name="ndCode" />
         </div>
 
         <div class="modal-actions">

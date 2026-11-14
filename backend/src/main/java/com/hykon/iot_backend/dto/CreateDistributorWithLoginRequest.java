@@ -16,11 +16,9 @@ public class CreateDistributorWithLoginRequest {
     @Size(min = 2, max = 100, message = "Distributor name must be between 2 and 100 characters")
     private String name;
 
-    @NotBlank(message = "State is required")
     @Size(max = 100, message = "State must not exceed 100 characters")
     private String state;
 
-    @NotBlank(message = "District is required")
     @Size(max = 100, message = "District must not exceed 100 characters")
     private String district;
 

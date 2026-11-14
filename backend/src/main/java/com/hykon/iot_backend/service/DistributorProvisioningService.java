@@ -42,6 +42,10 @@ public class DistributorProvisioningService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     @Transactional
     public DistributorResponse create(CreateDistributorWithLoginRequest request, String actorEmail) {
         User actor = actorEmail == null || actorEmail.isBlank() ? null
@@ -87,8 +91,8 @@ public class DistributorProvisioningService {
             distributor.setAdministrator(savedLogin);
             distributor.setCreatedBy(actor);
             distributor.setStatus("ACTIVE");
-            distributor.setState(request.getState().trim());
-            distributor.setDistrict(request.getDistrict().trim());
+            distributor.setState(blankToNull(request.getState()));
+            distributor.setDistrict(blankToNull(request.getDistrict()));
 
             return DistributorResponse.from(distributorRepository.saveAndFlush(distributor), null);
         } catch (DataIntegrityViolationException exception) {

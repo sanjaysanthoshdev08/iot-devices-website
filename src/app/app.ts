@@ -1374,8 +1374,6 @@ export class App implements AfterViewInit, OnDestroy {
   isNewDistModalOpen = signal<boolean>(false);
   newDistName = signal<string>('');
   newDistCode = signal<string>('');
-  newDistState = signal<string>('Kerala');
-  newDistDistrict = signal<string>('');
   newDistEmail = signal<string>('');
   newDistPassword = signal<string>('');
   newDistConfirm = signal<string>('');
@@ -1386,7 +1384,6 @@ export class App implements AfterViewInit, OnDestroy {
     if (!this.isOverseerRole()) return;
     this.newDistName.set('');
     this.newDistCode.set('');
-    this.newDistDistrict.set('');
     this.newDistEmail.set('');
     this.newDistPassword.set('');
     this.newDistConfirm.set('');
@@ -1406,14 +1403,16 @@ export class App implements AfterViewInit, OnDestroy {
     const request = {
       name: this.newDistName().trim(),
       distributorCode: this.newDistCode().trim(),
-      state: this.newDistState().trim(),
-      district: this.newDistDistrict().trim(),
       email: this.newDistEmail().trim(),
       password: this.newDistPassword(),
       confirmPassword: this.newDistConfirm()
     };
-    if (!request.name || !request.distributorCode || !request.state || !request.district) {
-      this.newDistError.set('Distributor name, code, state and district are required.');
+    if (!request.name || request.name.length < 2) {
+      this.newDistError.set('Full name is required (at least 2 characters).');
+      return;
+    }
+    if (!request.distributorCode) {
+      this.newDistError.set('Distributor code is required.');
       return;
     }
     if (!request.email || !request.email.includes('@')) {

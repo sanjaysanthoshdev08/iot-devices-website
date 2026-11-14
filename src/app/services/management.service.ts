@@ -69,8 +69,8 @@ export interface CreateDistributorAdminRequest {
 export interface CreateDistributorWithLoginRequest {
   distributorCode: string;
   name: string;
-  state: string;
-  district: string;
+  state?: string;
+  district?: string;
   email: string;
   password: string;
   confirmPassword: string;
