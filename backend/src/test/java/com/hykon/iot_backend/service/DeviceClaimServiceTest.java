@@ -202,14 +202,30 @@ class DeviceClaimServiceTest {
     }
 
     @Test
-    void anotherOwnersDeviceCannotBeTransferredByClaim() {
+    void anotherCustomerJoinsAnOwnedDeviceWithoutTakingOwnership() {
         Device device = prepareDevice();
         User existingOwner = account(31L, RoleName.USER, "ACTIVE");
         device.setOwner(existingOwner);
+        when(customerAccessRepository.countByDeviceId(device.getId())).thenReturn(1L);
+
+        assertNotNull(service.claim(request(), "customer@example.com"));
+
+        assertSame(existingOwner, device.getOwner());
+        verify(customerAccessRepository).saveAndFlush(any(DeviceCustomerAccess.class));
+        verifyNoInteractions(purchaseRepository);
+    }
+
+    @Test
+    void fourthCustomerCannotJoinADeviceWithThreeAccounts() {
+        Device device = prepareDevice();
+        User existingOwner = account(31L, RoleName.USER, "ACTIVE");
+        device.setOwner(existingOwner);
+        when(customerAccessRepository.countByDeviceId(device.getId())).thenReturn(3L);
 
         assertVerificationFailure(request());
+
         assertSame(existingOwner, device.getOwner());
-        verifyNoInteractions(purchaseRepository);
+        verify(customerAccessRepository, never()).saveAndFlush(any(DeviceCustomerAccess.class));
     }
 
     @Test

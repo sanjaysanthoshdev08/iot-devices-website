@@ -24,6 +24,8 @@ public class DeviceClaimService {
     private final DevicePurchaseRepository purchaseRepository;
     private final DeviceCustomerAccessRepository customerAccessRepository;
 
+    private static final int MAX_CUSTOMERS_PER_DEVICE = 3;
+
     @Autowired
     public DeviceClaimService(
             UserRepository userRepository,
@@ -92,9 +94,17 @@ public class DeviceClaimService {
             return DeviceResponse.from(device, emails);
         }
 
-        // If device is already owned by another customer, reject immediately before querying purchase
+        // Device already owned by another customer: up to MAX_CUSTOMERS_PER_DEVICE accounts (including the
+        // owner) may join by proving possession with the matching Device ID + serial number.
+        // Ownership is never transferred.
         if (device.getOwner() != null && !customer.getId().equals(device.getOwner().getId())) {
-            throw verificationFailed();
+            if (customerAccessRepository == null
+                    || customerAccessRepository.countByDeviceId(device.getId()) >= MAX_CUSTOMERS_PER_DEVICE) {
+                throw verificationFailed();
+            }
+            customerAccessRepository.saveAndFlush(
+                    new DeviceCustomerAccess(device, customer, false, customer));
+            return DeviceResponse.from(device, getCustomerEmails(device.getId(), customer));
         }
 
         // 2. Check recorded purchase for primary owner claim.
