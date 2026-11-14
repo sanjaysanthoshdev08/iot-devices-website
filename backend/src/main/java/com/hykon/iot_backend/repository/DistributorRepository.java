@@ -14,6 +14,8 @@ public interface DistributorRepository
 
     boolean existsByAdministrator_Id(Long administratorUserId);
 
+    java.util.List<Distributor> findAllByAdministrator_IdOrderByName(Long administratorUserId);
+
     Optional<Distributor> findByIdAndAdministrator_Id(
             Long distributorId,
             Long administratorUserId

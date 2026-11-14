@@ -36,6 +36,17 @@ public class User {
     )
     private Role role;
 
+    /** true only for the single overseeing Distributor Admin, who sees every distributor and branch. */
+    @Column(name = "all_distributors", nullable = false, columnDefinition = "boolean default false")
+    private boolean allDistributors;
+
+    public boolean isAllDistributors() { return allDistributors; }
+    public void setAllDistributors(boolean allDistributors) { this.allDistributors = allDistributors; }
+
+    public boolean seesAllDistributors() {
+        return allDistributors && role != null && role.getName() == RoleName.DISTRIBUTOR_ADMIN;
+    }
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

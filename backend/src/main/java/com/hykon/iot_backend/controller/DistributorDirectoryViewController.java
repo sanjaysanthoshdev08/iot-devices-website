@@ -17,9 +17,29 @@ import java.util.List;
 public class DistributorDirectoryViewController {
 
     private final DistributorService distributorService;
+    private final com.hykon.iot_backend.service.DistributorProvisioningService provisioningService;
 
-    public DistributorDirectoryViewController(DistributorService distributorService) {
+    public DistributorDirectoryViewController(
+            DistributorService distributorService,
+            com.hykon.iot_backend.service.DistributorProvisioningService provisioningService
+    ) {
         this.distributorService = distributorService;
+        this.provisioningService = provisioningService;
+    }
+
+    /** Distributor Admin: create a distributor organization together with its own email/password login. */
+    @org.springframework.web.bind.annotation.PostMapping("/api/v1/distributor/distributors")
+    public ResponseEntity<ApiResponse<com.hykon.iot_backend.dto.DistributorResponse>> createDistributor(
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+            com.hykon.iot_backend.dto.CreateDistributorWithLoginRequest request,
+            Principal principal
+    ) {
+        if (principal == null) {
+            throw new AccessDeniedException("Distributor administrator access is required");
+        }
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(ApiResponse.success(
+                "Distributor and login created successfully",
+                provisioningService.create(request, principal.getName())));
     }
 
     /** Distributor Admin: read-only list of every registered distributor and its branches. */

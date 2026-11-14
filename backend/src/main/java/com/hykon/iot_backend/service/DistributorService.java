@@ -84,7 +84,14 @@ public class DistributorService {
                     && viewer.getRole().getName() != RoleName.DISTRIBUTOR_ADMIN)) {
             throw new AccessDeniedException("Distributor administrator access is required");
         }
-        return buildDirectory(page, size, branchLimit, deviceLimit);
+        List<DistributorDirectoryResponse> all = buildDirectory(page, size, branchLimit, deviceLimit);
+        if (viewer.getRole().getName() == RoleName.HYKON_ADMIN || viewer.seesAllDistributors()) {
+            return all;
+        }
+        return all.stream()
+                .filter(d -> d.administrator() != null
+                        && viewer.getId().equals(d.administrator().id()))
+                .toList();
     }
 
     private List<DistributorDirectoryResponse> buildDirectory(

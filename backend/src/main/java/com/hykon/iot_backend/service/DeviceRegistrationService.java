@@ -47,9 +47,12 @@ public class DeviceRegistrationService {
 
         java.util.List<Distributor> distributors;
         java.util.Optional<DistributorBranch> onlyBranch = java.util.Optional.empty();
-        if (role == RoleName.HYKON_ADMIN || role == RoleName.DISTRIBUTOR_ADMIN) {
+        if (role == RoleName.HYKON_ADMIN
+                || (role == RoleName.DISTRIBUTOR_ADMIN && actor.seesAllDistributors())) {
             distributors = distributorRepository.findAll(
                     org.springframework.data.domain.Sort.by("name"));
+        } else if (role == RoleName.DISTRIBUTOR_ADMIN) {
+            distributors = distributorRepository.findAllByAdministrator_IdOrderByName(actor.getId());
         } else if (role == RoleName.BRANCH_ADMIN) {
             onlyBranch = branchRepository.findByBranchAdmin_Id(actor.getId());
             distributors = onlyBranch.map(b -> java.util.List.of(b.getDistributor()))

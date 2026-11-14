@@ -174,6 +174,11 @@ public class SecurityConfig {
                     "/api/v1/distributor/directory"
                 ).hasAnyRole("DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
 
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/v1/distributor/distributors"
+                ).hasRole("DISTRIBUTOR_ADMIN")
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(

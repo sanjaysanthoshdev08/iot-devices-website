@@ -12,6 +12,11 @@ public class LoginResponse {
     private String accessToken;
     private String refreshToken;
     private String tokenType;
+    private boolean allDistributors;
+
+    public boolean isAllDistributors() {
+        return allDistributors;
+    }
 
     public LoginResponse() {
     }
@@ -29,6 +34,7 @@ public class LoginResponse {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.tokenType = "Bearer";
+        this.allDistributors = user.seesAllDistributors();
     }
 
     public Long getId() {

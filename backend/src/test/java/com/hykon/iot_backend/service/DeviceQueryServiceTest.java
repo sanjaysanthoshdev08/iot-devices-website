@@ -209,7 +209,7 @@ class DeviceQueryServiceTest {
 
     @Test
     void distributorAdminListsAndReadsDevicesOfEveryDistributor() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
+        allowAccount(RoleName.DISTRIBUTOR_ADMIN).setAllDistributors(true);
         when(deviceRepository.findAll(pageable()))
                 .thenReturn(new PageImpl<>(
                         List.of(device()), pageable(), 1

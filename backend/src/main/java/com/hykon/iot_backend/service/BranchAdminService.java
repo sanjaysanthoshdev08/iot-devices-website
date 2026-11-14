@@ -129,14 +129,28 @@ public class BranchAdminService {
                         .orElseThrow(() -> new IllegalArgumentException("Distributor was not found"));
             } else {
                 if (codeIn.isEmpty()) {
-                    throw new IllegalArgumentException("Select a distributor");
+                    java.util.List<Distributor> own =
+                            (role == RoleName.DISTRIBUTOR_ADMIN && !actor.seesAllDistributors())
+                                    ? distributorRepository.findAllByAdministrator_IdOrderByName(actor.getId())
+                                    : java.util.List.of();
+                    if (own.size() != 1) {
+                        throw new IllegalArgumentException("Select a distributor");
+                    }
+                    distributor = own.get(0);
+                } else {
+                    distributor = distributorRepository.findByCode(codeIn)
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Distributor code '" + codeIn + "' was not found"));
                 }
-                distributor = distributorRepository.findByCode(codeIn)
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Distributor code '" + codeIn + "' was not found"));
             }
         } else {
             throw new AccessDeniedException("Administrator access is required");
+        }
+
+        if (role == RoleName.DISTRIBUTOR_ADMIN && !actor.seesAllDistributors()
+                && (distributor.getAdministrator() == null
+                    || !actor.getId().equals(distributor.getAdministrator().getId()))) {
+            throw new AccessDeniedException("You can only create branches in your own distributor");
         }
 
         if (!"ACTIVE".equalsIgnoreCase(distributor.getStatus())) {
@@ -150,6 +164,9 @@ public class BranchAdminService {
         String branchCode = request.getBranchCode().trim().toUpperCase(Locale.ROOT);
         String adminEmail = request.getAdminEmail().trim().toLowerCase(Locale.ROOT);
 
+        if (branchRepository.existsByBranchCodeIgnoreCase(branchCode)) {
+            throw new DuplicateResourceException("Branch code is already in use");
+        }
         if (branchRepository.findByDistributorAndCode(distributor.getId(), branchCode).isPresent()) {
             throw new DuplicateResourceException("Branch code is already used by this distributor");
         }

@@ -68,8 +68,17 @@ public class DeviceQueryService {
             case HYKON_ADMIN ->
                     devices = deviceRepository.findAll(pageable);
 
-            case DISTRIBUTOR_ADMIN ->
+            case DISTRIBUTOR_ADMIN -> {
+                if (account.seesAllDistributors()) {
                     devices = deviceRepository.findAll(pageable);
+                } else {
+                    requireActiveDistributor(account);
+                    devices = deviceRepository
+                            .findByBranch_Distributor_Administrator_Id(
+                                    account.getId(), pageable
+                            );
+                }
+            }
 
             case BRANCH_ADMIN ->
                     devices = deviceRepository.findByBranch_BranchAdmin_Id(
@@ -106,9 +115,19 @@ public class DeviceQueryService {
                     device = deviceRepository.findById(deviceId)
                             .orElseThrow(this::notFound);
 
-            case DISTRIBUTOR_ADMIN ->
+            case DISTRIBUTOR_ADMIN -> {
+                if (account.seesAllDistributors()) {
                     device = deviceRepository.findById(deviceId)
                             .orElseThrow(this::notFound);
+                } else {
+                    requireActiveDistributor(account);
+                    device = deviceRepository
+                            .findByIdAndBranch_Distributor_Administrator_Id(
+                                    deviceId, account.getId()
+                            )
+                            .orElseThrow(this::notFound);
+                }
+            }
 
             case BRANCH_ADMIN ->
                     device = deviceRepository.findByIdAndBranch_BranchAdmin_Id(
@@ -155,11 +174,7 @@ public class DeviceQueryService {
     }
 
     private void requireActiveDistributor(User account) {
-        Distributor distributor = distributorRepository
-                .findByAdministrator_Id(account.getId())
-                .orElseThrow(this::forbidden);
-
-        if (!"ACTIVE".equalsIgnoreCase(distributor.getStatus())) {
+        if (!distributorRepository.existsByAdministrator_Id(account.getId())) {
             throw forbidden();
         }
     }

@@ -15,6 +15,8 @@ public interface DistributorBranchRepository
 
     Optional<DistributorBranch> findByBranchAdmin_Id(Long branchAdminUserId);
 
+    boolean existsByBranchCodeIgnoreCase(String branchCode);
+
     org.springframework.data.domain.Page<DistributorBranch> findByDistributor_Id(Long distributorId, org.springframework.data.domain.Pageable pageable);
 
     List<DistributorBranch> findByDistributor_IdIn(List<Long> distributorIds);

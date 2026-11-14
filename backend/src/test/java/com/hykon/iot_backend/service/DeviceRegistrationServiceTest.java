@@ -381,8 +381,25 @@ class DeviceRegistrationServiceTest {
     }
 
     @Test
+    void scopedDistributorAdminCannotRegisterInAnotherDistributorsBranch() {
+        User creator = account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        User someoneElse = account(23L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        stubCreator(creator);
+        DistributorBranch other = branch(someoneElse, "ACTIVE", "ACTIVE");
+        when(branchRepository.findById(1L)).thenReturn(Optional.of(other));
+
+        RegisterDeviceRequest request = request();
+        request.setBranchId(1L);
+
+        assertThrows(AccessDeniedException.class,
+                () -> service.register(request, "creator@example.com"));
+        verify(deviceRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void distributorAdminCanRegisterInAnyDistributorsBranch() {
         User creator = account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        creator.setAllDistributors(true);
         User someoneElse = account(23L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
         stubCreator(creator);
         allowSave();
