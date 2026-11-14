@@ -79,10 +79,7 @@ public class DevicePurchaseService {
         }
 
         if (creator.getRole().getName() == RoleName.DISTRIBUTOR_ADMIN
-                && (distributor.getAdministrator() == null
-                || !creator.getId().equals(
-                        distributor.getAdministrator().getId()
-                ))) {
+                && !BranchAccess.canManage(creator, branch)) {
             throw new AccessDeniedException("Device is unavailable");
         }
 

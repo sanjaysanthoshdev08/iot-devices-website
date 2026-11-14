@@ -147,13 +147,9 @@ public class DeviceCustomerAccessService {
         Device device = deviceRepository.findByIdForUpdate(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Device not found"));
 
-        if (admin.getRole().getName() == RoleName.DISTRIBUTOR_ADMIN) {
-            DistributorBranch branch = device.getBranch();
-            Distributor distributor = branch == null ? null : branch.getDistributor();
-            if (distributor == null || distributor.getAdministrator() == null
-                    || !admin.getId().equals(distributor.getAdministrator().getId())) {
-                throw new AccessDeniedException("You do not have permission to manage this device");
-            }
+        if (admin.getRole().getName() == RoleName.DISTRIBUTOR_ADMIN
+                && !BranchAccess.canManage(admin, device.getBranch())) {
+            throw new AccessDeniedException("You do not have permission to manage this device");
         }
         if (admin.getRole().getName() == RoleName.BRANCH_ADMIN
                 && !BranchAccess.canManage(admin, device.getBranch())) {

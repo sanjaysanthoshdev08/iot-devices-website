@@ -185,21 +185,6 @@ class DistributorServiceTest {
     }
 
     @Test
-    void administratorCannotBeAssignedToTwoDistributors() {
-        allowCreator();
-        allowAdministrator();
-
-        when(distributorRepository.existsByAdministrator_Id(20L))
-                .thenReturn(true);
-
-        assertThrows(DuplicateResourceException.class,
-                () -> service.create(request(), "creator@example.com"));
-
-        verify(distributorRepository, never()).saveAndFlush(any());
-        verifyNoInteractions(branchRepository);
-    }
-
-    @Test
     void databaseUniquenessConflictIsReportedAsConflict() {
         allowCreator();
         allowAdministrator();

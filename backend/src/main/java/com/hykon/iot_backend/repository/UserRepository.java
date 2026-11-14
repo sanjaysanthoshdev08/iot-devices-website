@@ -28,7 +28,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             JOIN u.role r
             WHERE r.name = com.hykon.iot_backend.entity.RoleName.DISTRIBUTOR_ADMIN
               AND UPPER(u.status) = 'ACTIVE'
-              AND NOT EXISTS (SELECT 1 FROM Distributor d WHERE d.administrator = u)
             ORDER BY u.name
             """)
     java.util.List<User> findUnassignedDistributorAdmins();

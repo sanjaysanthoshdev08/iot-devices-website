@@ -138,90 +138,6 @@ class DeviceQueryServiceTest {
     }
 
     @Test
-    void distributorListUsesAuthenticatedAdministratorId() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
-        allowDistributor();
-        when(deviceRepository
-                .findByBranch_Distributor_Administrator_Id(
-                        16L, pageable()
-                ))
-                .thenReturn(new PageImpl<>(
-                        List.of(device()), pageable(), 1
-                ));
-
-        Page<DeviceResponse> result = service.list(EMAIL, 0, 20);
-
-        assertEquals(1L, result.getTotalElements());
-        verify(deviceRepository)
-                .findByBranch_Distributor_Administrator_Id(
-                        16L, pageable()
-                );
-        verifyNoMoreInteractions(deviceRepository);
-    }
-
-    @Test
-    void distributorCanReadDeviceWithinOwnDistributor() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
-        allowDistributor();
-        when(deviceRepository
-                .findByIdAndBranch_Distributor_Administrator_Id(
-                        1L, 16L
-                ))
-                .thenReturn(Optional.of(device()));
-
-        assertEquals(1L, service.get(1L, EMAIL).id());
-
-        verify(deviceRepository)
-                .findByIdAndBranch_Distributor_Administrator_Id(
-                        1L, 16L
-                );
-        verifyNoMoreInteractions(deviceRepository);
-    }
-
-    @Test
-    void distributorCannotReadDeviceOutsideOwnDistributor() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
-        allowDistributor();
-
-        assertStatus(HttpStatus.NOT_FOUND,
-                () -> service.get(99L, EMAIL));
-
-        verify(deviceRepository)
-                .findByIdAndBranch_Distributor_Administrator_Id(
-                        99L, 16L
-                );
-        verifyNoMoreInteractions(deviceRepository);
-    }
-
-    @Test
-    void unlinkedDistributorAdminIsDeniedBeforeDeviceLookup() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
-
-        assertStatus(HttpStatus.FORBIDDEN,
-                () -> service.list(EMAIL, 0, 20));
-        assertStatus(HttpStatus.FORBIDDEN,
-                () -> service.get(1L, EMAIL));
-
-        verifyNoInteractions(deviceRepository);
-    }
-
-    @Test
-    void inactiveDistributorIsDeniedBeforeDeviceLookup() {
-        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
-        Distributor distributor = new Distributor();
-        distributor.setStatus("INACTIVE");
-        when(distributorRepository.findByAdministrator_Id(16L))
-                .thenReturn(Optional.of(distributor));
-
-        assertStatus(HttpStatus.FORBIDDEN,
-                () -> service.list(EMAIL, 0, 20));
-        assertStatus(HttpStatus.FORBIDDEN,
-                () -> service.get(1L, EMAIL));
-
-        verifyNoInteractions(deviceRepository);
-    }
-
-    @Test
     void companyAdminCanListAllDevicesAndReadById() {
         allowAccount(RoleName.HYKON_ADMIN);
         when(deviceRepository.findAll(pageable()))
@@ -289,5 +205,19 @@ class DeviceQueryServiceTest {
                 () -> service.get(null, EMAIL));
 
         verifyNoInteractions(deviceRepository, distributorRepository);
+    }
+
+    @Test
+    void distributorAdminListsAndReadsDevicesOfEveryDistributor() {
+        allowAccount(RoleName.DISTRIBUTOR_ADMIN);
+        when(deviceRepository.findAll(pageable()))
+                .thenReturn(new PageImpl<>(
+                        List.of(device()), pageable(), 1
+                ));
+        when(deviceRepository.findById(1L))
+                .thenReturn(Optional.of(device()));
+
+        assertEquals(1L, service.list(EMAIL, 0, 20).getTotalElements());
+        assertEquals(1L, service.get(1L, EMAIL).id());
     }
 }

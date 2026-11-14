@@ -68,13 +68,8 @@ public class DeviceQueryService {
             case HYKON_ADMIN ->
                     devices = deviceRepository.findAll(pageable);
 
-            case DISTRIBUTOR_ADMIN -> {
-                requireActiveDistributor(account);
-                devices = deviceRepository
-                        .findByBranch_Distributor_Administrator_Id(
-                                account.getId(), pageable
-                        );
-            }
+            case DISTRIBUTOR_ADMIN ->
+                    devices = deviceRepository.findAll(pageable);
 
             case BRANCH_ADMIN ->
                     devices = deviceRepository.findByBranch_BranchAdmin_Id(
@@ -111,14 +106,9 @@ public class DeviceQueryService {
                     device = deviceRepository.findById(deviceId)
                             .orElseThrow(this::notFound);
 
-            case DISTRIBUTOR_ADMIN -> {
-                requireActiveDistributor(account);
-                device = deviceRepository
-                        .findByIdAndBranch_Distributor_Administrator_Id(
-                                deviceId, account.getId()
-                        )
-                        .orElseThrow(this::notFound);
-            }
+            case DISTRIBUTOR_ADMIN ->
+                    device = deviceRepository.findById(deviceId)
+                            .orElseThrow(this::notFound);
 
             case BRANCH_ADMIN ->
                     device = deviceRepository.findByIdAndBranch_BranchAdmin_Id(

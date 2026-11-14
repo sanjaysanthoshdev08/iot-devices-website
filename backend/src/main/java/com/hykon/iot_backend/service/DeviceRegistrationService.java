@@ -47,12 +47,9 @@ public class DeviceRegistrationService {
 
         java.util.List<Distributor> distributors;
         java.util.Optional<DistributorBranch> onlyBranch = java.util.Optional.empty();
-        if (role == RoleName.HYKON_ADMIN) {
+        if (role == RoleName.HYKON_ADMIN || role == RoleName.DISTRIBUTOR_ADMIN) {
             distributors = distributorRepository.findAll(
                     org.springframework.data.domain.Sort.by("name"));
-        } else if (role == RoleName.DISTRIBUTOR_ADMIN) {
-            distributors = distributorRepository.findByAdministrator_Id(actor.getId())
-                    .map(java.util.List::of).orElse(java.util.List.of());
         } else if (role == RoleName.BRANCH_ADMIN) {
             onlyBranch = branchRepository.findByBranchAdmin_Id(actor.getId());
             distributors = onlyBranch.map(b -> java.util.List.of(b.getDistributor()))
@@ -176,10 +173,7 @@ public class DeviceRegistrationService {
             }
 
             if (role == RoleName.DISTRIBUTOR_ADMIN
-                    && (distributor.getAdministrator() == null
-                    || !creator.getId().equals(
-                            distributor.getAdministrator().getId()
-                    ))) {
+                    && !BranchAccess.canManage(creator, branch)) {
                 throw new AccessDeniedException("Branch is unavailable");
             }
 

@@ -24,9 +24,8 @@ public final class BranchAccess {
             return true;
         }
         if (role == RoleName.DISTRIBUTOR_ADMIN) {
-            return branch.getDistributor() != null
-                    && branch.getDistributor().getAdministrator() != null
-                    && actor.getId().equals(branch.getDistributor().getAdministrator().getId());
+            // The (single) Distributor Admin oversees every distributor and branch.
+            return branch.getDistributor() != null;
         }
         if (role == RoleName.BRANCH_ADMIN) {
             return branch.getBranchAdmin() != null

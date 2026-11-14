@@ -249,30 +249,6 @@ class DeviceRegistrationServiceTest {
     }
 
     @Test
-    void foreignOrInactiveBranchesAreDeniedBeforeDeviceLookup() {
-        User creator = account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
-        User otherAdmin = account(23L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
-        stubCreator(creator);
-
-        RegisterDeviceRequest request = request();
-        request.setBranchId(1L);
-
-        for (DistributorBranch unavailable : new DistributorBranch[] {
-                branch(otherAdmin, "ACTIVE", "ACTIVE"),
-                branch(creator, "INACTIVE", "ACTIVE"),
-                branch(creator, "ACTIVE", "INACTIVE")
-        }) {
-            when(branchRepository.findById(1L))
-                    .thenReturn(Optional.of(unavailable));
-
-            assertThrows(AccessDeniedException.class,
-                    () -> service.register(request, "creator@example.com"));
-        }
-
-        verifyNoInteractions(deviceRepository);
-    }
-
-    @Test
     void duplicateDeviceCodeIsRejected() {
         User admin = account(1L, RoleName.HYKON_ADMIN, "ACTIVE");
         stubCreator(admin);
@@ -380,5 +356,43 @@ class DeviceRegistrationServiceTest {
 
         assertThrows(DuplicateResourceException.class,
                 () -> service.register(request, "creator@example.com"));
+    }
+
+    @Test
+    void inactiveBranchesAreDeniedBeforeDeviceLookup() {
+        User creator = account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        stubCreator(creator);
+
+        RegisterDeviceRequest request = request();
+        request.setBranchId(1L);
+
+        for (DistributorBranch unavailable : new DistributorBranch[] {
+                branch(creator, "INACTIVE", "ACTIVE"),
+                branch(creator, "ACTIVE", "INACTIVE")
+        }) {
+            when(branchRepository.findById(1L))
+                    .thenReturn(Optional.of(unavailable));
+
+            assertThrows(AccessDeniedException.class,
+                    () -> service.register(request, "creator@example.com"));
+        }
+
+        verifyNoInteractions(deviceRepository);
+    }
+
+    @Test
+    void distributorAdminCanRegisterInAnyDistributorsBranch() {
+        User creator = account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        User someoneElse = account(23L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
+        stubCreator(creator);
+        allowSave();
+        DistributorBranch other = branch(someoneElse, "ACTIVE", "ACTIVE");
+        when(branchRepository.findById(1L)).thenReturn(Optional.of(other));
+
+        RegisterDeviceRequest request = request();
+        request.setBranchId(1L);
+
+        assertEquals(Long.valueOf(1),
+                service.register(request, "creator@example.com").branchId());
     }
 }

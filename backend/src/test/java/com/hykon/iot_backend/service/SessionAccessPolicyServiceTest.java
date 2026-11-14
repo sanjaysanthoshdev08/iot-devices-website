@@ -220,49 +220,6 @@ class SessionAccessPolicyServiceTest {
     }
 
     @Test
-    void unverifiedDistributorSessionIsForbidden() {
-        allowAccount(22L, RoleName.DISTRIBUTOR_ADMIN);
-
-        assertVerificationRequired();
-
-        verify(sessionService).requireActive(SESSION_ID, 22L);
-    }
-
-    @Test
-    void validDistributorGrantAllowsAccess() {
-        allowDistributorGrant();
-
-        assertDoesNotThrow(
-                () -> service.requireVerified(authentication())
-        );
-
-        verify(sessionService).requireActive(SESSION_ID, 22L);
-    }
-
-    @Test
-    void changedDistributorAdministratorInvalidatesVerification() {
-        SessionAccessGrant grant = allowDistributorGrant();
-        grant.getBranch().getDistributor().setAdministrator(
-                user(23L, RoleName.DISTRIBUTOR_ADMIN)
-        );
-
-        assertVerificationRequired();
-    }
-
-    @Test
-    void inactiveBranchOrDistributorInvalidatesDistributorVerification() {
-        SessionAccessGrant grant = allowDistributorGrant();
-        DistributorBranch branch = grant.getBranch();
-
-        branch.setStatus("INACTIVE");
-        assertVerificationRequired();
-
-        branch.setStatus("ACTIVE");
-        branch.getDistributor().setStatus("INACTIVE");
-        assertVerificationRequired();
-    }
-
-    @Test
     void missingVerificationTimestampDoesNotAllowAccess() {
         SessionAccessGrant grant = allowDeviceGrant();
         grant.setDeviceVerifiedAt(null);
@@ -313,5 +270,16 @@ class SessionAccessPolicyServiceTest {
         assertVerificationRequired();
 
         verifyNoInteractions(sessionService, grantRepository);
+    }
+
+    @Test
+    void distributorAdminNeedsNoVerificationGrant() {
+        allowAccount(22L, RoleName.DISTRIBUTOR_ADMIN);
+
+        assertDoesNotThrow(
+                () -> service.requireVerified(authentication())
+        );
+
+        verify(sessionService).requireActive(SESSION_ID, 22L);
     }
 }

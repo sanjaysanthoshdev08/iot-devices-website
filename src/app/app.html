@@ -2961,7 +2961,7 @@
             <option *ngFor="let a of availableDistAdmins()" [value]="'' + a.id">{{ a.name }} – {{ a.email }}</option>
           </select>
           <span style="font-size:0.75rem; color:#8ba2c4; margin-top:2px;" *ngIf="availableDistAdmins().length === 0">
-            No unassigned administrator found. Create one with “+ Create Distributor” first.</span>
+            No administrator account found. Create one with “+ Create Distributor” first.</span>
         </div>
 
         <!-- Field: State -->
@@ -3355,9 +3355,7 @@
 
         <div class="modal-field">
           <label class="modal-label" for="brDist">Distributor</label>
-          <input *ngIf="isDistributorRole()" type="text" id="brDist" class="modal-input" readonly
-            [value]="brSelectedDistributor()?.name ?? 'Loading…'" name="brDistReadonly" />
-          <div class="searchable-select" *ngIf="!isDistributorRole()">
+          <div class="searchable-select">
             <input type="text" id="brDist" class="modal-input" placeholder="Search and select distributor"
               autocomplete="off" [ngModel]="brDistOpen() ? brDistQuery() : (brSelectedDistributor()?.name ?? '')"
               (ngModelChange)="brDistQuery.set($event); brDistOpen.set(true)"

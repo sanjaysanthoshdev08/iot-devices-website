@@ -141,19 +141,6 @@ class DevicePurchaseServiceTest {
     }
 
     @Test
-    void distributorCannotRecordPurchaseForAnotherDistributorDevice() {
-        creator(account(22L, RoleName.DISTRIBUTOR_ADMIN, "ACTIVE"));
-        when(deviceRepository.findByIdForUpdate(1L))
-                .thenReturn(Optional.of(device(23L)));
-
-        assertThrows(AccessDeniedException.class,
-                () -> service.record(request(), "creator@example.com"));
-
-        verifyNoInteractions(purchaseRepository);
-        verify(userRepository, never()).findById(any());
-    }
-
-    @Test
     void existingOwnerCannotBeOverwrittenByPurchaseRecording() {
         Device device = allowHykonAndDevice();
         User existingOwner = account(31L, RoleName.USER, "ACTIVE");

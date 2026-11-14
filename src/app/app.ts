@@ -358,14 +358,9 @@ export class App implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // 3. DISTRIBUTOR_ADMIN: show a distributor verification form
-    if (role === 'DISTRIBUTOR_ADMIN') {
-      this.openDistributorGate();
-      return;
-    }
-
-    // 4. HYKON_ADMIN: bypass verification and open Overview
-    if (role === 'HYKON_ADMIN' || role === 'BRANCH_ADMIN') {
+    // 3/4. HYKON_ADMIN, DISTRIBUTOR_ADMIN (oversees every distributor and branch) and
+    // BRANCH_ADMIN: bypass verification and open Overview
+    if (role === 'HYKON_ADMIN' || role === 'DISTRIBUTOR_ADMIN' || role === 'BRANCH_ADMIN') {
       this.openDashboard('overview');
       this.setDashboardNav('overview');
       return;
@@ -1168,7 +1163,6 @@ export class App implements AfterViewInit, OnDestroy {
           if (cur && cur.branches.length === 1 && this.regBranchId() === null && this.isBranchAdminRole()) {
             this.regBranchId.set(cur.branches[0].id);
           }
-          if (this.brDistId() === null && this.isDistributorRole()) this.brDistId.set(list[0].id);
         }
         done?.();
       },
@@ -1266,7 +1260,7 @@ export class App implements AfterViewInit, OnDestroy {
     if (this.isSubmittingBranch()) return;
     const selectedDistributorId = this.brDistId();
     if (selectedDistributorId === null) {
-      this.branchError.set(this.isHykonAdminRole() ? 'Select a distributor.' : 'No distributor is assigned to your account.');
+      this.branchError.set('Select a distributor.');
       return;
     }
     const request = {
@@ -1303,8 +1297,10 @@ export class App implements AfterViewInit, OnDestroy {
 
     this.branchError.set('');
     this.isSubmittingBranch.set(true);
+    const chosenCode = this.brSelectedDistributor()?.distributorCode ?? '';
     const branchCall$ = this.managementService.createBranchWithAdmin(
-      this.isHykonAdminRole() ? selectedDistributorId : null, request);
+      this.isHykonAdminRole() ? selectedDistributorId : null,
+      this.isHykonAdminRole() ? request : { ...request, distributorCode: chosenCode });
     branchCall$.subscribe({
       next: () => {
         this.isSubmittingBranch.set(false);

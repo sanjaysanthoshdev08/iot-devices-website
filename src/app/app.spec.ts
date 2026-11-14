@@ -315,15 +315,14 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.isDashboardOpen()).toBe(false);
     });
 
-    it('should show distributor verification form for DISTRIBUTOR_ADMIN role', () => {
+    it('should open the dashboard directly, without verification, for DISTRIBUTOR_ADMIN role', () => {
       mockAuthService.isAuthenticated.set(true);
       mockAuthService.currentUser.set({ id: 2, name: 'Bob Dist', email: 'bob@test.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE' });
 
       app.handleFeatureEntry('current');
 
-      expect(app.isDeviceAuthModalOpen()).toBe(true);
-      expect(app.isDistributorRole()).toBe(true);
-      expect(app.isDashboardOpen()).toBe(false);
+      expect(app.isDeviceAuthModalOpen()).toBe(false);
+      expect(app.isDashboardOpen()).toBe(true);
     });
 
     it('should bypass verification and open Overview for HYKON_ADMIN role', () => {

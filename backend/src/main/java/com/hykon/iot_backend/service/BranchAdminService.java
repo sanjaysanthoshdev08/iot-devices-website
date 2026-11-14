@@ -123,27 +123,17 @@ public class BranchAdminService {
 
         String codeIn = request.getDistributorCode() == null ? "" : request.getDistributorCode().trim();
 
-        if (role == RoleName.HYKON_ADMIN) {
+        if (role == RoleName.HYKON_ADMIN || role == RoleName.DISTRIBUTOR_ADMIN) {
             if (distributorId != null) {
                 distributor = distributorRepository.findById(distributorId)
                         .orElseThrow(() -> new IllegalArgumentException("Distributor was not found"));
             } else {
                 if (codeIn.isEmpty()) {
-                    throw new IllegalArgumentException("Distributor code is required");
+                    throw new IllegalArgumentException("Select a distributor");
                 }
                 distributor = distributorRepository.findByCode(codeIn)
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "Distributor code '" + codeIn + "' was not found"));
-            }
-        } else if (role == RoleName.DISTRIBUTOR_ADMIN) {
-            distributor = distributorRepository.findByAdministrator_Id(actor.getId())
-                    .orElseThrow(() -> new AccessDeniedException("No distributor is assigned to this account"));
-            if (distributorId != null && !distributorId.equals(distributor.getId())) {
-                throw new AccessDeniedException("You can only create branches in your own distributor");
-            }
-            if (!codeIn.isEmpty() && !codeIn.equalsIgnoreCase(distributor.getDistributorCode())) {
-                throw new AccessDeniedException(
-                        "This distributor code does not match your assigned distributor");
             }
         } else {
             throw new AccessDeniedException("Administrator access is required");

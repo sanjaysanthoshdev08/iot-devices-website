@@ -368,14 +368,6 @@ public class DistributorService {
             );
         }
 
-        if (distributorRepository.existsByAdministrator_Id(
-                administrator.getId()
-        )) {
-            throw new DuplicateResourceException(
-                    "This administrator is already assigned to a distributor"
-            );
-        }
-
         Distributor distributor = new Distributor();
         distributor.setDistributorCode(distributorCode);
         distributor.setName(distributorName);

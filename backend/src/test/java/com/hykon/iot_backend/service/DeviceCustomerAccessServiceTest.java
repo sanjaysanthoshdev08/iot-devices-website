@@ -213,26 +213,6 @@ class DeviceCustomerAccessServiceTest {
     }
 
     @Test
-    void distributorAdminCannotManageAnotherDistributorsDevice() {
-        User distAdmin = account(2L, "dist@test.com", RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
-        when(userRepository.findByEmailWithRole("dist@test.com")).thenReturn(Optional.of(distAdmin));
-
-        User otherAdmin = account(99L, "other@test.com", RoleName.DISTRIBUTOR_ADMIN, "ACTIVE");
-        Distributor otherDistributor = new Distributor();
-        otherDistributor.setAdministrator(otherAdmin);
-
-        DistributorBranch branch = new DistributorBranch();
-        branch.setDistributor(otherDistributor);
-
-        Device device = createDevice(100L, null);
-        device.setBranch(branch);
-        when(deviceRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(device));
-
-        assertThrows(AccessDeniedException.class,
-                () -> service.authorizeCustomer(100L, new AuthorizeCustomerRequest("user@test.com"), "dist@test.com"));
-    }
-
-    @Test
     void nonAdminCannotAuthorizeCustomer() {
         User customer = account(10L, "user@test.com", RoleName.USER, "ACTIVE");
         when(userRepository.findByEmailWithRole("user@test.com")).thenReturn(Optional.of(customer));
