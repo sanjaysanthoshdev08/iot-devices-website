@@ -9920,3 +9920,23 @@
     }
   }
 }
+
+/* Distributors table: compact spacing, codes stay on one line, dark scrollbar */
+.dist-table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: #3a404b transparent;
+
+  .dist-table {
+    th, td {
+      padding: 10px 12px;
+    }
+
+    .dist-code-val {
+      white-space: nowrap;
+    }
+
+    .dist-table-name {
+      min-width: 140px;
+    }
+  }
+}
