@@ -281,6 +281,19 @@ export class ManagementService {
       'http://localhost:8080/api/v1/distributor/distributors', request);
   }
 
+  /** Overseeing Distributor Admin: distributor logins available when registering a distributor. */
+  listDistributorLogins(): Observable<ApiResponse<DistributorAdminOption[]>> {
+    return this.http.get<ApiResponse<DistributorAdminOption[]>>('http://localhost:8080/api/v1/distributor/logins');
+  }
+
+  /** Overseeing Distributor Admin: register a distributor organization with its initial branch. */
+  registerDistributorAsOverseer(
+    request: CreateDistributorRequest
+  ): Observable<ApiResponse<DistributorResponse>> {
+    return this.http.post<ApiResponse<DistributorResponse>>(
+      'http://localhost:8080/api/v1/distributor/distributors/register', request);
+  }
+
   /**
    * Distributor admin logins that are not yet assigned to a distributor organization.
    * GET /api/v1/admin/distributor-admins/available  (HYKON_ADMIN only)

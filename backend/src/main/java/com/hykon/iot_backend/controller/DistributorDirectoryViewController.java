@@ -18,13 +18,44 @@ public class DistributorDirectoryViewController {
 
     private final DistributorService distributorService;
     private final com.hykon.iot_backend.service.DistributorProvisioningService provisioningService;
+    private final com.hykon.iot_backend.service.DistributorAdminService distributorAdminService;
 
     public DistributorDirectoryViewController(
             DistributorService distributorService,
-            com.hykon.iot_backend.service.DistributorProvisioningService provisioningService
+            com.hykon.iot_backend.service.DistributorProvisioningService provisioningService,
+            com.hykon.iot_backend.service.DistributorAdminService distributorAdminService
     ) {
         this.distributorService = distributorService;
         this.provisioningService = provisioningService;
+        this.distributorAdminService = distributorAdminService;
+    }
+
+    /** Overseeing Distributor Admin: distributor logins that can be chosen when registering a distributor. */
+    @GetMapping("/api/v1/distributor/logins")
+    public ResponseEntity<ApiResponse<List<com.hykon.iot_backend.dto.DistributorAdminOption>>> logins(
+            Principal principal
+    ) {
+        if (principal == null) {
+            throw new AccessDeniedException("Distributor administrator access is required");
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                "Distributor logins",
+                distributorAdminService.listAvailable(principal.getName())));
+    }
+
+    /** Overseeing Distributor Admin: register a distributor organization with its initial branch. */
+    @org.springframework.web.bind.annotation.PostMapping("/api/v1/distributor/distributors/register")
+    public ResponseEntity<ApiResponse<com.hykon.iot_backend.dto.DistributorResponse>> registerDistributor(
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+            com.hykon.iot_backend.dto.CreateDistributorRequest request,
+            Principal principal
+    ) {
+        if (principal == null) {
+            throw new AccessDeniedException("Distributor administrator access is required");
+        }
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(ApiResponse.success(
+                "Distributor and first branch created successfully",
+                distributorService.create(request, principal.getName())));
     }
 
     /** Distributor Admin: create a distributor organization together with its own email/password login. */

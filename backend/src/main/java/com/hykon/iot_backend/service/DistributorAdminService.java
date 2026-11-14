@@ -40,7 +40,7 @@ public class DistributorAdminService {
         if (creator == null
                 || !"ACTIVE".equalsIgnoreCase(creator.getStatus())
                 || creator.getRole() == null
-                || creator.getRole().getName() != RoleName.HYKON_ADMIN) {
+                || !(creator.getRole().getName() == RoleName.HYKON_ADMIN || creator.seesAllDistributors())) {
             throw new AccessDeniedException("HYKON_ADMIN access is required");
         }
         return userRepository.findUnassignedDistributorAdmins().stream()

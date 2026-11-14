@@ -2226,8 +2226,12 @@
           <!-- Overseeing Distributor Admin: add distributors and branches (Accounts page) -->
           <ng-container *ngIf="activeDashboardNav() === 'accounts' && isOverseerRole()">
             <button type="button" class="btn-add-system btn-acct-primary" (click)="openNewDistModal()"
-              title="Add a distributor with its own login and unique code">
-              <span>+ Add Distributor</span>
+              title="Create a distributor login with its unique distributor code">
+              <span>+ Create Distributor</span>
+            </button>
+            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateDistributorModal()"
+              title="Register a distributor organization with its first branch">
+              <span>+ Register Distributor</span>
             </button>
             <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateBranchModal()"
               title="Create a branch and its branch admin login">
@@ -2897,7 +2901,7 @@
     <div class="system-modal-card dist-register-modal ref-style-modal" (click)="$event.stopPropagation()" role="dialog"
       aria-modal="true" aria-labelledby="new-dist-modal-title">
       <div class="modal-card-header">
-        <h3 id="new-dist-modal-title" class="modal-card-title">Add <span>Distributor</span></h3>
+        <h3 id="new-dist-modal-title" class="modal-card-title">Create <span>Distributor</span></h3>
         <p class="ref-modal-sub">Each distributor gets its own login and a unique code.</p>
         <button type="button" class="modal-close-btn" (click)="closeNewDistModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2953,7 +2957,7 @@
         <div class="modal-actions">
           <button type="button" class="btn-modal-cancel" (click)="closeNewDistModal()">Cancel</button>
           <button type="submit" class="btn-modal-submit" [disabled]="isSubmittingNewDist()">
-            {{ isSubmittingNewDist() ? 'Creating...' : 'Add Distributor' }}
+            {{ isSubmittingNewDist() ? 'Creating...' : 'Create Distributor' }}
           </button>
         </div>
       </form>

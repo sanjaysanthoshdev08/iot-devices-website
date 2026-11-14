@@ -2062,7 +2062,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   openCreateDistributorModal() {
-    if (this.currentRole() !== 'HYKON_ADMIN') return;
+    if (this.currentRole() !== 'HYKON_ADMIN' && !this.isOverseerRole()) return;
     if (this.lastCreatedAdminId() && !this.distAdminUserId()) {
       this.distAdminUserId.set(String(this.lastCreatedAdminId()));
     }
@@ -2073,7 +2073,10 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   loadAvailableDistAdmins() {
-    this.managementService.listAvailableDistributorAdmins().subscribe({
+    const logins$ = this.isOverseerRole()
+      ? this.managementService.listDistributorLogins()
+      : this.managementService.listAvailableDistributorAdmins();
+    logins$.subscribe({
       next: (res) => this.availableDistAdmins.set(res.data ?? []),
       error: () => this.availableDistAdmins.set([])
     });
@@ -2087,7 +2090,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   submitCreateDistributor() {
-    if (this.currentRole() !== 'HYKON_ADMIN') {
+    if (this.currentRole() !== 'HYKON_ADMIN' && !this.isOverseerRole()) {
       this.distError.set('HYKON_ADMIN access is required.');
       return;
     }
@@ -2145,7 +2148,10 @@ export class App implements AfterViewInit, OnDestroy {
     this.isSubmittingDistributor.set(true);
     const currentReq = ++this.managementRequestId;
 
-    this.managementService.createDistributor({
+    const createCall$ = this.isOverseerRole()
+      ? this.managementService.registerDistributorAsOverseer.bind(this.managementService)
+      : this.managementService.createDistributor.bind(this.managementService);
+    createCall$({
       distributorCode,
       name,
       administratorUserId,

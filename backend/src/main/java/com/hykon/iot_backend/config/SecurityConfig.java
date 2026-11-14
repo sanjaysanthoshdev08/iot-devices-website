@@ -176,7 +176,13 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.POST,
-                    "/api/v1/distributor/distributors"
+                    "/api/v1/distributor/distributors",
+                    "/api/v1/distributor/distributors/register"
+                ).hasRole("DISTRIBUTOR_ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/v1/distributor/logins"
                 ).hasRole("DISTRIBUTOR_ADMIN")
 
                 .anyRequest().authenticated()

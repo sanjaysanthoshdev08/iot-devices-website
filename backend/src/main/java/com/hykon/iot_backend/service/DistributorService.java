@@ -357,7 +357,7 @@ public class DistributorService {
 
         if (!"ACTIVE".equalsIgnoreCase(creator.getStatus())
                 || creator.getRole() == null
-                || creator.getRole().getName() != RoleName.HYKON_ADMIN) {
+                || !(creator.getRole().getName() == RoleName.HYKON_ADMIN || creator.seesAllDistributors())) {
             throw new AccessDeniedException("HYKON_ADMIN access is required");
         }
 
