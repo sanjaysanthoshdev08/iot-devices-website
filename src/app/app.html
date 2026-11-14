@@ -2324,6 +2324,7 @@
                   <th>Branches</th>
                   <th>Total Devices</th>
                   <th>Status</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -2346,6 +2347,10 @@
                   <td>{{ dist.branches.length }}</td>
                   <td>{{ distributorDeviceCount(dist) }}</td>
                   <td><span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></td>
+                  <td>
+                    <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id, dist.distributorCode)"
+                      title="Add a branch under this distributor">+ Add Branch</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
