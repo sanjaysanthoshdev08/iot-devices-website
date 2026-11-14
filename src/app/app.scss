@@ -9704,3 +9704,167 @@
     }
   }
 }
+
+
+/* ----- Reference-style admin forms (Add Device, Create Distributor, Register Distributor, Create Branch) ----- */
+.system-modal-backdrop .system-modal-card.ref-style-modal {
+  position: relative;
+  max-width: 440px;
+  padding: 28px 30px 26px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(27, 30, 37, 0.96), rgba(18, 20, 25, 0.96));
+  border: 1px solid #2a2f38;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+  max-height: 94vh;
+  overflow-y: auto;
+
+  &.dist-register-modal {
+    max-width: 640px;
+  }
+
+  .modal-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    margin-bottom: 18px;
+
+    &::before {
+      content: '';
+      width: 46px;
+      height: 46px;
+      margin-bottom: 8px;
+      background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236e7bff'/><stop offset='1' stop-color='%23a78bfa'/></linearGradient></defs><path d='M24 24 L22 4 C30 5 36 11 36 19 Z' fill='url(%23g)'/><path d='M24 24 L44 22 C43 30 37 36 29 36 Z' fill='url(%23g)' opacity='.85'/><path d='M24 24 L26 44 C18 43 12 37 12 29 Z' fill='url(%23g)' opacity='.7'/><path d='M24 24 L4 26 C5 18 11 12 19 12 Z' fill='url(%23g)' opacity='.55'/></svg>") center / contain no-repeat;
+    }
+
+    .modal-card-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+
+      span {
+        color: #9aa0ad;
+        font-weight: 600;
+      }
+    }
+
+    .ref-modal-sub {
+      margin: 0;
+      font-size: 14px;
+      color: #c4c8d0;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+  }
+
+  .modal-form {
+    gap: 12px;
+
+    .modal-field {
+      gap: 5px;
+
+      .modal-label {
+        font-size: 12px;
+        color: #8d93a0;
+        padding-left: 4px;
+      }
+
+      .modal-input,
+      .modal-select {
+        background: #1d2127;
+        border: 1px solid #2c323b;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: #e7e9ed;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &::placeholder {
+          color: #6f7681;
+        }
+
+        &:focus {
+          border-color: #8b90a3;
+          box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.28), 0 0 0 3px rgba(139, 144, 163, 0.16);
+        }
+      }
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+      margin-top: 6px;
+
+      .btn-modal-submit {
+        width: 100%;
+        background: #ffffff;
+        color: #12141a;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 16px;
+        font-size: 14.5px;
+        font-weight: 600;
+
+        &:hover:not(:disabled) {
+          background: #e9ebf0;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+        }
+      }
+
+      .btn-modal-cancel {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: #8d93a0;
+        font-size: 13px;
+        padding: 4px;
+
+        &:hover {
+          color: #e7e9ed;
+        }
+      }
+    }
+  }
+}
+
+/* Reference-style forms: full-width searchable dropdowns and a dark scrollbar */
+.system-modal-backdrop .system-modal-card.ref-style-modal {
+  scrollbar-width: thin;
+  scrollbar-color: #3a404b transparent;
+
+  .searchable-select {
+    width: 100%;
+
+    .modal-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+}
+
+/* Keep two-column grid inside the card */
+.system-modal-backdrop .system-modal-card.ref-style-modal.dist-register-modal .modal-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  .modal-field .modal-input,
+  .modal-field .modal-select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+.system-modal-backdrop .system-modal-card.ref-style-modal {
+  overflow-x: hidden;
+}

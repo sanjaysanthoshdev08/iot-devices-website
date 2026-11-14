@@ -2728,10 +2728,11 @@
 
   <!-- 5. REGISTER NEW SYSTEM MODAL DIALOG -->
   <div class="system-modal-backdrop" *ngIf="isAddSystemModalOpen()" (click)="closeAddSystemModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    <div class="system-modal-card ref-style-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="modal-title">
       <div class="modal-card-header">
-        <h3 id="modal-title" class="modal-card-title">Register New System</h3>
+        <h3 id="modal-title" class="modal-card-title">Add <span>Device</span></h3>
+        <p class="ref-modal-sub">Please enter the device details.</p>
         <button type="button" class="modal-close-btn" (click)="closeAddSystemModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2837,10 +2838,11 @@
 
   <!-- CREATE DISTRIBUTOR ADMIN MODAL DIALOG -->
   <div class="system-modal-backdrop" *ngIf="isCreateDistAdminModalOpen()" (click)="closeCreateDistAdminModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    <div class="system-modal-card ref-style-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="dist-admin-modal-title">
       <div class="modal-card-header">
-        <h3 id="dist-admin-modal-title" class="modal-card-title">Create Distributor Administrator</h3>
+        <h3 id="dist-admin-modal-title" class="modal-card-title">Create <span>Distributor</span></h3>
+        <p class="ref-modal-sub">Please enter the administrator's details.</p>
         <button type="button" class="modal-close-btn" (click)="closeCreateDistAdminModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -2903,10 +2905,11 @@
 
   <!-- CREATE DISTRIBUTOR MODAL DIALOG -->
   <div class="system-modal-backdrop" *ngIf="isCreateDistributorModalOpen()" (click)="closeCreateDistributorModal()">
-    <div class="system-modal-card dist-register-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    <div class="system-modal-card dist-register-modal ref-style-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="dist-modal-title">
       <div class="modal-card-header">
-        <h3 id="dist-modal-title" class="modal-card-title">Create Distributor Organization &amp; Branch</h3>
+        <h3 id="dist-modal-title" class="modal-card-title">Register <span>Distributor</span></h3>
+        <p class="ref-modal-sub">Please enter the distributor and branch details.</p>
         <button type="button" class="modal-close-btn" (click)="closeCreateDistributorModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -3332,10 +3335,11 @@
   <!-- CREATE BRANCH + BRANCH ADMIN MODAL -->
   <div class="system-modal-backdrop" *ngIf="isAuthenticated() && isCreateBranchModalOpen()"
     (click)="closeCreateBranchModal()">
-    <div class="system-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+    <div class="system-modal-card ref-style-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
       aria-labelledby="branch-modal-title">
       <div class="modal-card-header">
-        <h3 id="branch-modal-title" class="modal-card-title">Create Branch &amp; Branch Admin</h3>
+        <h3 id="branch-modal-title" class="modal-card-title">Create <span>Branch</span></h3>
+        <p class="ref-modal-sub">Please enter the branch and branch admin details.</p>
         <button type="button" class="modal-close-btn" (click)="closeCreateBranchModal()" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
