@@ -2943,6 +2943,16 @@
           <input type="text" id="ndCode" class="modal-input" placeholder="e.g., DIST-TCR-02 (unique)"
             [ngModel]="newDistCode()" (ngModelChange)="newDistCode.set($event)" name="ndCode" />
         </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndState">State</label>
+          <input type="text" id="ndState" class="modal-input" placeholder="e.g., Kerala"
+            [ngModel]="newDistState()" (ngModelChange)="newDistState.set($event)" name="ndState" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="ndDistrict">District</label>
+          <input type="text" id="ndDistrict" class="modal-input" placeholder="e.g., Thrissur"
+            [ngModel]="newDistDistrict()" (ngModelChange)="newDistDistrict.set($event)" name="ndDistrict" />
+        </div>
 
         <div class="modal-actions">
           <button type="button" class="btn-modal-cancel" (click)="closeNewDistModal()">Cancel</button>

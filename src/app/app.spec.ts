@@ -338,6 +338,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.isNewDistModalOpen()).toBe(true);
       app.newDistName.set('Ernakulam Distributor');
       app.newDistCode.set('DIST-EKM-01');
+      app.newDistDistrict.set('Ernakulam');
       app.newDistEmail.set('ekm@dist.com');
       app.newDistPassword.set('Secret@123');
       app.newDistConfirm.set('Different@123');
@@ -351,6 +352,8 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(mockManagementService.createDistributorWithLogin).toHaveBeenCalledWith({
         name: 'Ernakulam Distributor',
         distributorCode: 'DIST-EKM-01',
+        state: 'Kerala',
+        district: 'Ernakulam',
         email: 'ekm@dist.com',
         password: 'Secret@123',
         confirmPassword: 'Secret@123'
