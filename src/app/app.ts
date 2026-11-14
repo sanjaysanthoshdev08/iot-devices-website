@@ -1176,6 +1176,7 @@ export class App implements AfterViewInit, OnDestroy {
             this.regBranchId.set(cur.branches[0].id);
           }
           if (this.brDistId() === null && this.isDistributorRole()) this.brDistId.set(list[0].id);
+          if (this.isDistributorRole() && !this.branchDistributorCode().trim()) this.branchDistributorCode.set(list[0].distributorCode);
         }
         done?.();
       },
@@ -1269,38 +1270,60 @@ export class App implements AfterViewInit, OnDestroy {
     this.branchError.set('');
   }
 
+  /** The distributor whose code was entered in the Create Branch form (null if the code is unknown). */
+  branchTypedDistributor() {
+    const code = this.branchDistributorCode().trim().toLowerCase();
+    if (!code) return null;
+    return this.regOptions().find(d => (d.distributorCode ?? '').trim().toLowerCase() === code) ?? null;
+  }
+
   submitCreateBranch() {
     if (this.isSubmittingBranch()) return;
-    const selectedDistributorId = this.brDistId();
-    if (selectedDistributorId === null) {
-      this.branchError.set('Select a distributor.');
+    const typedCode = this.branchDistributorCode().trim();
+    if (!typedCode) {
+      this.branchError.set('Distributor code is required.');
       return;
     }
+    const chosen = this.branchTypedDistributor();
+    if (!chosen) {
+      this.branchError.set('Distributor code "' + typedCode + '" was not found.');
+      return;
+    }
+    const selectedDistributorId = chosen.id;
     const request = {
       branchCode: this.newBranchCode().trim(),
       branchName: this.branchNameInput().trim(),
       location: this.branchLocation().trim(),
       address: this.branchAddress().trim(),
-      pincode: this.branchPincode().trim(),
       adminName: this.branchAdminName().trim(),
       adminEmail: this.branchAdminEmail().trim(),
       adminPassword: this.branchAdminPassword(),
       confirmPassword: this.branchAdminConfirm()
     };
-    if (!request.branchCode || !request.branchName || !request.location) {
-      this.branchError.set('Branch code, name and location are required.');
+    if (!request.branchName) {
+      this.branchError.set('Branch name is required.');
       return;
     }
-    if (!request.address) {
-      this.branchError.set('Full address is required.');
+    if (!request.branchCode) {
+      this.branchError.set('New branch code is required.');
       return;
     }
-    if (!/^[0-9]{6}$/.test(request.pincode)) {
-      this.branchError.set('Pincode must be exactly 6 digits.');
+    const codeTaken = this.regOptions().some(d => d.branches.some(b =>
+      (b.branchCode ?? '').trim().toLowerCase() === request.branchCode.toLowerCase()));
+    if (codeTaken) {
+      this.branchError.set('This branch code is already used. Enter a new unique branch code.');
+      return;
+    }
+    if (!request.location) {
+      this.branchError.set('Branch location is required.');
       return;
     }
     if (!request.adminName || !request.adminEmail || !request.adminPassword) {
       this.branchError.set('Branch admin name, email and password are required.');
+      return;
+    }
+    if (!request.address) {
+      this.branchError.set('Branch official address is required.');
       return;
     }
     if (request.adminPassword !== request.confirmPassword) {
@@ -1310,7 +1333,7 @@ export class App implements AfterViewInit, OnDestroy {
 
     this.branchError.set('');
     this.isSubmittingBranch.set(true);
-    const chosenCode = this.brSelectedDistributor()?.distributorCode ?? '';
+    const chosenCode = chosen.distributorCode;
     const branchCall$ = this.managementService.createBranchWithAdmin(
       this.isHykonAdminRole() ? selectedDistributorId : null,
       this.isHykonAdminRole() ? request : { ...request, distributorCode: chosenCode });

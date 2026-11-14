@@ -31,6 +31,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
     createDistributorAdmin: any;
     listAvailableDistributorAdmins: any;
     createBranchByCode: any;
+    createBranchWithAdmin: any;
     createDistributorWithLogin: any;
     getRegistrationOptions: any;
     createDistributor: any;
@@ -66,6 +67,7 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       listAvailableDistributorAdmins: vi.fn().mockReturnValue(of({ success: true, data: [] })),
       getRegistrationOptions: vi.fn().mockReturnValue(of({ success: true, data: { distributors: [] } })),
       createBranchByCode: vi.fn(),
+      createBranchWithAdmin: vi.fn(),
       createDistributorWithLogin: vi.fn(),
       createDistributor: vi.fn(),
       getDistributorDirectory: vi.fn().mockReturnValue(of({ success: true, message: 'OK', data: [] })),
@@ -359,6 +361,50 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         confirmPassword: 'Secret@123'
       });
       expect(app.isNewDistModalOpen()).toBe(false);
+    });
+
+    it('Create Branch form resolves the distributor by code and rejects unknown or already used codes', () => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 2, name: 'Overseer', email: 'distributor_admin@gmail.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE', allDistributors: true });
+      app.regOptions.set([
+        { id: 1, name: 'Thrissur', distributorCode: 'DIST-TCR-01', branches: [{ id: 11, name: 'Ollur', branchCode: 'BR-OLLUR-01', location: 'Ollur' }] }
+      ]);
+      mockManagementService.createBranchWithAdmin = vi.fn().mockReturnValue(of({ success: true, data: {} }));
+      app.openCreateBranchModal();
+      app.regOptions.set([
+        { id: 1, name: 'Thrissur', distributorCode: 'DIST-TCR-01', branches: [{ id: 11, name: 'Ollur', branchCode: 'BR-OLLUR-01', location: 'Ollur' }] }
+      ]);
+
+      app.branchDistributorCode.set('NOPE');
+      app.submitCreateBranch();
+      expect(app.branchError()).toBe('Distributor code "NOPE" was not found.');
+
+      app.branchDistributorCode.set('dist-tcr-01');
+      expect(app.branchTypedDistributor()?.name).toBe('Thrissur');
+      app.branchNameInput.set('Thalore');
+      app.newBranchCode.set('br-ollur-01');
+      app.submitCreateBranch();
+      expect(app.branchError()).toBe('This branch code is already used. Enter a new unique branch code.');
+
+      app.newBranchCode.set('BR-THL-01');
+      app.branchLocation.set('Thalore');
+      app.branchAdminName.set('Thalore Admin');
+      app.branchAdminEmail.set('thl@test.com');
+      app.branchAdminPassword.set('Secret@123');
+      app.branchAdminConfirm.set('Secret@123');
+      app.branchAddress.set('Thalore Road, Thrissur');
+      app.submitCreateBranch();
+      expect(mockManagementService.createBranchWithAdmin).toHaveBeenCalledWith(null, {
+        branchCode: 'BR-THL-01',
+        branchName: 'Thalore',
+        location: 'Thalore',
+        address: 'Thalore Road, Thrissur',
+        adminName: 'Thalore Admin',
+        adminEmail: 'thl@test.com',
+        adminPassword: 'Secret@123',
+        confirmPassword: 'Secret@123',
+        distributorCode: 'DIST-TCR-01'
+      });
     });
 
     it('a scoped DISTRIBUTOR_ADMIN is not the overseer and cannot add distributors', () => {

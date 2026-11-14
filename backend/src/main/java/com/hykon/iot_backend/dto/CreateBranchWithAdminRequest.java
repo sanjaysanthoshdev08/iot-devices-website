@@ -39,7 +39,6 @@ public class CreateBranchWithAdminRequest {
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
-    @NotBlank(message = "Pincode is required")
     @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be 6 digits")
     private String pincode;
 
