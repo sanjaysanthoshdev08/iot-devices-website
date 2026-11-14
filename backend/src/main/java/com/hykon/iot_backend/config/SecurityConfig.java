@@ -178,7 +178,7 @@ public class SecurityConfig {
                     HttpMethod.POST,
                     "/api/v1/distributor/distributors",
                     "/api/v1/distributor/distributors/register"
-                ).hasRole("DISTRIBUTOR_ADMIN")
+                ).hasAnyRole("DISTRIBUTOR_ADMIN", "HYKON_ADMIN")
 
                 .requestMatchers(
                     HttpMethod.GET,

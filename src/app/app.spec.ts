@@ -407,6 +407,24 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       });
     });
 
+    it('HYKON_ADMIN can also create a distributor with its own login from the Accounts page', () => {
+      mockAuthService.isAuthenticated.set(true);
+      mockAuthService.currentUser.set({ id: 1, name: 'HYKON', email: 'hykon_admin@gmail.com', role: 'HYKON_ADMIN', status: 'ACTIVE' });
+
+      app.openNewDistModal();
+      expect(app.isNewDistModalOpen()).toBe(true);
+      app.newDistName.set('Kollam Distributor');
+      app.newDistCode.set('DIST-KLM-01');
+      app.newDistDistrict.set('Kollam');
+      app.newDistEmail.set('kollam@dist.com');
+      app.newDistPassword.set('Secret@123');
+      app.newDistConfirm.set('Secret@123');
+      mockManagementService.createDistributorWithLogin.mockReturnValue(of({ success: true, data: { id: 9 } }));
+      app.submitNewDistributor();
+      expect(mockManagementService.createDistributorWithLogin).toHaveBeenCalled();
+      expect(app.isNewDistModalOpen()).toBe(false);
+    });
+
     it('a scoped DISTRIBUTOR_ADMIN is not the overseer and cannot add distributors', () => {
       mockAuthService.isAuthenticated.set(true);
       mockAuthService.currentUser.set({ id: 3, name: 'Thrissur', email: 'thrissur@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE' });

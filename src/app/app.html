@@ -2207,24 +2207,8 @@
           </div>
 
           <!-- + Create button (Accounts page) -->
-          <!-- HYKON_ADMIN Provisioning buttons (Accounts page) -->
-          <ng-container *ngIf="activeDashboardNav() === 'accounts' && isHykonAdminRole()">
-            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateDistAdminModal()"
-              title="Create Distributor Admin">
-              <span>+ Create Distributor</span>
-            </button>
-            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateDistributorModal()"
-              title="Create Distributor">
-              <span>+ Register Distributor</span>
-            </button>
-            <button type="button" class="btn-add-system btn-acct-primary" (click)="openCreateBranchModal()"
-              title="Create a branch and its branch admin login">
-              <span>+ Create Branch</span>
-            </button>
-          </ng-container>
-
           <!-- Overseeing Distributor Admin: add distributors and branches (Accounts page) -->
-          <ng-container *ngIf="activeDashboardNav() === 'accounts' && isOverseerRole()">
+          <ng-container *ngIf="activeDashboardNav() === 'accounts' && (isOverseerRole() || isHykonAdminRole())">
             <button type="button" class="btn-add-system btn-acct-primary" (click)="openNewDistModal()"
               title="Create a distributor login with its unique distributor code">
               <span>+ Create Distributor</span>
@@ -2306,12 +2290,11 @@
           <div
             *ngIf="(isHykonAdminRole() || isDistributorRole()) && !isDirectoryLoading() && !directoryError() && distributorDirectory().length === 0"
             class="acct-empty-banner">
-            No distributors registered in the system yet. Use the provisioning actions below to create the first
-            distributor and administrator.
+            No distributors registered in the system yet. Use + Create Distributor above to add the first distributor.
           </div>
 
           <!-- Distributor table (Distributor Admin) -->
-          <div class="dist-table-wrap" *ngIf="isDistributorRole() && !isDirectoryLoading() && distributorDirectory().length > 0">
+          <div class="dist-table-wrap" *ngIf="(isDistributorRole() || isHykonAdminRole()) && !isDirectoryLoading() && distributorDirectory().length > 0">
             <table class="dist-table">
               <thead>
                 <tr>
@@ -2356,124 +2339,7 @@
             </table>
           </div>
 
-          <!-- Directory Hierarchy List -->
-          <div *ngIf="isHykonAdminRole() && !isDirectoryLoading() && distributorDirectory().length > 0"
-            class="directory-list">
-            <div *ngFor="let dist of distributorDirectory()" class="distributor-card">
-              <!-- Decorative curved accent SVG within large distributor panel -->
-              <svg class="dist-panel-curve" viewBox="0 0 500 200" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,200 Q280,180 500,60" stroke="#00DCF5" stroke-opacity="0.32" stroke-width="1.5" />
-                <path d="M0,200 Q280,180 500,60 L500,200 Z" fill="url(#distPanelCurveGlow)" opacity="0.16" />
-                <defs>
-                  <linearGradient id="distPanelCurveGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#00DCF5" stop-opacity="0" />
-                    <stop offset="100%" stop-color="#00DCF5" stop-opacity="0.25" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              <!-- Distributor Header -->
-              <div class="distributor-header">
-                <div class="dist-info-left">
-                  <h3 class="dist-title">{{ dist.name }}</h3>
-                  <button type="button" class="btn-record-purchase" (click)="openCreateBranchModal(dist.id, dist.distributorCode)"
-                    title="Create a branch and its branch admin login">+ Add Branch</button>
-                  <div class="dist-meta-row">
-                    <span class="dist-meta-code">Code: <code class="dist-code-val">{{ dist.distributorCode }}</code></span>
-                    <span class="dist-meta-code" *ngIf="dist.district || dist.state">{{ dist.district || '—' }}, {{
-                      dist.state || '—' }}</span>
-                    <span class="dist-meta-status">Status: <span class="dist-status-badge" [class.status-active]="dist.status === 'ACTIVE'">{{ dist.status }}</span></span>
-                  </div>
-                </div>
-                <div *ngIf="dist.administrator" class="dist-admin-info">
-                  <div class="dist-admin-name"><span class="admin-label-text">Administrator:</span> {{ dist.administrator.name }}</div>
-                  <div class="dist-admin-email">{{ dist.administrator.email }}</div>
-                </div>
-              </div>
-
-              <!-- Branches Section -->
-              <div class="branches-container">
-                <div *ngFor="let branch of dist.branches" class="branch-card">
-                  <div class="branch-header">
-                    <div class="branch-name-location">
-                      <strong class="branch-name">{{ branch.name }}</strong>
-                      <span class="branch-location">({{ branch.location }}{{ branch.pincode ? " - " + branch.pincode : "" }})</span>
-                    </div>
-                    <span class="branch-code-badge">Branch ID: <code class="branch-code-val">{{ branch.id }}</code></span>
-                    <span class="branch-code-badge">Branch Code: <code class="branch-code-val">{{ branch.branchCode }}</code></span>
-                  </div>
-
-                  <!-- Devices under Branch -->
-                  <div *ngIf="branch.devices && branch.devices.length > 0" class="branch-devices-section">
-                    <div class="devices-count-label">Registered Devices ({{ branch.devices.length }}):</div>
-                    <div class="branch-devices-list">
-                      <div *ngFor="let dev of branch.devices" class="device-item-row">
-                        <div class="device-info-left">
-                          <strong class="device-code">{{ dev.deviceCode }}</strong>
-                          <span class="device-sn">SN: {{ dev.serialNumber }}</span>
-                          <span *ngIf="dev.model" class="device-model">Model: {{ dev.model }}</span>
-                        </div>
-                        <div class="device-customers-right">
-                          <span class="customers-label">Customers: </span>
-                          <span *ngIf="dev.authorizedCustomers && dev.authorizedCustomers.length > 0" class="customers-val">
-                            <span *ngFor="let c of dev.authorizedCustomers; let last = last">
-                              <span [class.owner-highlight]="c.isPrimaryOwner">{{ c.email }}{{ c.isPrimaryOwner ? ' (Owner)' : '' }}</span>{{ last ? '' : ', ' }}
-                            </span>
-                          </span>
-                          <span *ngIf="!dev.authorizedCustomers || dev.authorizedCustomers.length === 0" class="customers-unassigned">Unassigned</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div *ngIf="!branch.devices || branch.devices.length === 0" class="devices-empty-note">
-                    No devices registered under this branch yet.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Three Action Cards Underneath -->
-          <div class="provisioning-cards-grid" *ngIf="isHykonAdminRole()">
-            <!-- Card 1: Provision Distributor Admin -->
-            <div class="provisioning-card card-prov-admin" (click)="openCreateDistAdminModal()" role="button" tabindex="0">
-              <div class="pcard-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <line x1="20" y1="8" x2="20" y2="14" />
-                  <line x1="23" y1="11" x2="17" y2="11" />
-                </svg>
-              </div>
-              <h4 class="pcard-title">Provision Distributor Admin</h4>
-              <p class="pcard-desc">Create a new administrator credential for a regional distributor partner.</p>
-              <span class="pcard-badge">HYKON_ADMIN</span>
-              <!-- Cyan lower-right curve accent -->
-              <svg class="pcard-corner-curve curve-cyan" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,80 Q90,75 160,15" stroke="#00DCF5" stroke-width="1.2" opacity="0.65"/>
-                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#00DCF5" opacity="0.12"/>
-              </svg>
-            </div>
-
-            <!-- Card 2: Register Distributor Branch -->
-            <div class="provisioning-card card-prov-branch" (click)="openCreateDistributorModal()" role="button" tabindex="0">
-              <div class="pcard-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
-              </div>
-              <h4 class="pcard-title">Register Distributor Branch</h4>
-              <p class="pcard-desc">Link a distributor code and branch location to an administrator user ID.</p>
-              <span class="pcard-badge">HYKON_ADMIN</span>
-              <!-- Blue-cyan lower-right curve accent -->
-              <svg class="pcard-corner-curve curve-blue-cyan" viewBox="0 0 160 80" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0,80 Q90,75 160,15" stroke="#0099FF" stroke-width="1.2" opacity="0.55"/>
-                <path d="M0,80 Q90,75 160,15 L160,80 Z" fill="#0099FF" opacity="0.10"/>
-              </svg>
-            </div>
-          </div>
-        </section>
+</section>
 
       </ng-container><!-- /accounts page -->
 

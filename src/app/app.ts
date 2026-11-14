@@ -1406,7 +1406,7 @@ export class App implements AfterViewInit, OnDestroy {
   isSubmittingNewDist = signal<boolean>(false);
 
   openNewDistModal() {
-    if (!this.isOverseerRole()) return;
+    if (!this.isOverseerRole() && !this.isHykonAdminRole()) return;
     this.newDistName.set('');
     this.newDistCode.set('');
     this.newDistDistrict.set('');
@@ -1425,7 +1425,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   submitNewDistributor() {
-    if (!this.isOverseerRole() || this.isSubmittingNewDist()) return;
+    if ((!this.isOverseerRole() && !this.isHykonAdminRole()) || this.isSubmittingNewDist()) return;
     const request = {
       name: this.newDistName().trim(),
       distributorCode: this.newDistCode().trim(),
