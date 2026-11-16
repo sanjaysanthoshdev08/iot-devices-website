@@ -611,6 +611,19 @@ export class App implements AfterViewInit, OnDestroy {
     });
   }
 
+  /** Accounts table filter: text typed or picked in the distributor search box. */
+  distributorFilter = signal('');
+
+  /** Directory rows matching the filter (name, code, district or email); all rows when empty. */
+  filteredDistributorDirectory(): DirectoryDistributor[] {
+    const q = this.distributorFilter().trim().toLowerCase();
+    const all = this.distributorDirectory();
+    if (!q) return all;
+    return all.filter(d =>
+      [d.name, d.distributorCode, d.district, d.state, d.administrator?.email]
+        .some(v => (v ?? '').toLowerCase().includes(q)));
+  }
+
   /** Number of devices registered under a distributor (all its branches). */
   distributorDeviceCount(dist: { branches?: Array<{ devices?: unknown[] }> }): number {
     return (dist.branches ?? []).reduce((n, b) => n + (b.devices?.length ?? 0), 0);

@@ -9871,6 +9871,42 @@
 
 
 /* ----- Distributor Admin: distributors table on the Accounts page ----- */
+.dist-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  .dist-filter-input {
+    flex: 1 1 280px;
+    max-width: 380px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid #243044;
+    background: rgba(15, 20, 29, 0.7);
+    color: #e6edf7;
+    font-size: 0.9rem;
+    outline: none;
+
+    &:focus { border-color: #4a90e2; }
+  }
+
+  .dist-filter-clear {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid #243044;
+    background: transparent;
+    color: #8ba2c4;
+    cursor: pointer;
+  }
+
+  .dist-filter-count {
+    font-size: 0.8rem;
+    color: #8ba2c4;
+  }
+}
+
 .dist-table-wrap {
   overflow-x: auto;
   border: 1px solid #243044;

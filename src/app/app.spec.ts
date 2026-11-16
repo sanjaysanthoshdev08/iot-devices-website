@@ -425,6 +425,20 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.isNewDistModalOpen()).toBe(false);
     });
 
+    it('Accounts table filter narrows the distributor list by name, code or district', () => {
+      app.distributorDirectory.set([
+        { id: 1, name: 'Thrissur Distributor', distributorCode: 'DIST-TCR-01', status: 'ACTIVE', administrator: null, branches: [], district: 'Thrissur' },
+        { id: 2, name: 'Ernakulam Distributor', distributorCode: 'DIST-EKM-01', status: 'ACTIVE', administrator: null, branches: [], district: 'Ernakulam' }
+      ]);
+      expect(app.filteredDistributorDirectory().length).toBe(2);
+      app.distributorFilter.set('thrissur');
+      expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([1]);
+      app.distributorFilter.set('dist-ekm');
+      expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([2]);
+      app.distributorFilter.set('');
+      expect(app.filteredDistributorDirectory().length).toBe(2);
+    });
+
     it('a scoped DISTRIBUTOR_ADMIN is not the overseer and cannot add distributors', () => {
       mockAuthService.isAuthenticated.set(true);
       mockAuthService.currentUser.set({ id: 3, name: 'Thrissur', email: 'thrissur@dist.com', role: 'DISTRIBUTOR_ADMIN', status: 'ACTIVE' });

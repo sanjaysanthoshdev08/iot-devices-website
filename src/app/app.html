@@ -2294,7 +2294,21 @@
           </div>
 
           <!-- Distributor table (Distributor Admin) -->
-          <div class="dist-table-wrap" *ngIf="(isDistributorRole() || isHykonAdminRole()) && !isDirectoryLoading() && distributorDirectory().length > 0">
+          <div class="dist-filter-bar" *ngIf="(isDistributorRole() || isHykonAdminRole()) && !isDirectoryLoading() && distributorDirectory().length > 0">
+            <input type="text" class="dist-filter-input" list="distFilterList" autocomplete="off"
+              placeholder="Filter by distributor (e.g., Thrissur, Ernakulam)"
+              [ngModel]="distributorFilter()" (ngModelChange)="distributorFilter.set($event)" name="distFilter" />
+            <datalist id="distFilterList">
+              <option *ngFor="let d of distributorDirectory()" [value]="d.name"></option>
+            </datalist>
+            <button type="button" class="dist-filter-clear" *ngIf="distributorFilter()"
+              (click)="distributorFilter.set('')">Clear</button>
+            <span class="dist-filter-count">{{ filteredDistributorDirectory().length }} of {{ distributorDirectory().length }}</span>
+          </div>
+          <div class="acct-empty-banner" *ngIf="(isDistributorRole() || isHykonAdminRole()) && !isDirectoryLoading() && distributorDirectory().length > 0 && filteredDistributorDirectory().length === 0">
+            No distributors match "{{ distributorFilter() }}".
+          </div>
+          <div class="dist-table-wrap" *ngIf="(isDistributorRole() || isHykonAdminRole()) && !isDirectoryLoading() && filteredDistributorDirectory().length > 0">
             <table class="dist-table">
               <thead>
                 <tr>
@@ -2310,7 +2324,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let dist of distributorDirectory()">
+                <tr *ngFor="let dist of filteredDistributorDirectory()">
                   <td class="dist-table-name">{{ dist.name }}</td>
                   <td>
                     <div *ngFor="let b of dist.branches">{{ b.branchAdminName }}&nbsp;</div>
