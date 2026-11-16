@@ -2195,17 +2195,6 @@
         </div>
 
         <div class="systems-header-right">
-          <!-- Search (shown only on Device page) -->
-          <div class="systems-header-search" *ngIf="activeDashboardNav() === 'systems'">
-            <input type="text" class="systems-header-search-input" placeholder="Search system name, serial no., user..."
-              [ngModel]="headerSearchQuery()" (ngModelChange)="onHeaderSearchInput($event)"
-              aria-label="Search devices" />
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-mag-icon">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-
           <!-- + Create button (Accounts page) -->
           <!-- Overseeing Distributor Admin: add distributors and branches (Accounts page) -->
           <ng-container *ngIf="activeDashboardNav() === 'accounts' && (isOverseerRole() || isHykonAdminRole())">
