@@ -235,7 +235,6 @@ export class App implements AfterViewInit, OnDestroy {
     const email = this.contactEmail().trim();
     const phone = this.contactPhone().trim();
     const message = this.contactMessage().trim();
-    const phoneDigits = phone.replace(/[\s\-()]/g, '');
     const nameError = (v: string, label: string) =>
       !v ? `${label} is required.`
         : v.length < 2 ? `${label} must be at least 2 characters.`
@@ -246,10 +245,10 @@ export class App implements AfterViewInit, OnDestroy {
       lastName: nameError(last, 'Last name'),
       email: !email ? 'Email is required.'
         : email.length > 100 ? 'Email must be 100 characters or fewer.'
-        : !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(email)
+        : !/^[A-Za-z0-9]+([._%+-][A-Za-z0-9]+)*@[A-Za-z0-9]+(-[A-Za-z0-9]+)*(\.[A-Za-z0-9]+(-[A-Za-z0-9]+)*)*\.[A-Za-z]{2,}$/.test(email)
           ? 'Enter a valid email address, e.g. name@example.com.' : '',
       phone: !phone ? ''
-        : !/^\+?[0-9]{10,15}$/.test(phoneDigits) ? 'Enter a valid phone number (10 to 15 digits).' : '',
+        : !/^[0-9]{10}$/.test(phone) ? 'Enter a valid 10-digit phone number.' : '',
       message: !message ? 'Message is required.'
         : message.length < 10 ? 'Message must be at least 10 characters.'
         : message.length > 1000 ? 'Message must be 1000 characters or fewer.' : ''

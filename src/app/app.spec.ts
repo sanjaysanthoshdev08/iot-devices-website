@@ -440,14 +440,20 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       app.contactMessage.set('short');
       expect(app.contactFieldErrors()['firstName']).toBe('First name can contain letters only.');
       expect(app.contactFieldErrors()['email']).toContain('valid email');
-      expect(app.contactFieldErrors()['phone']).toContain('valid phone');
+      expect(app.contactFieldErrors()['phone']).toContain('10-digit');
       expect(app.contactFieldErrors()['message']).toContain('at least 10');
       app.contactEmail.set('john@example');
       expect(app.contactFieldErrors()['email']).toContain('valid email');
+      app.contactEmail.set('john..doe@example.com');
+      expect(app.contactFieldErrors()['email']).toContain('valid email');
+      app.contactPhone.set('98765432101');
+      expect(app.contactFieldErrors()['phone']).toContain('10-digit');
+      app.contactEmail.set('john.doe_1@mail.example.co.in');
+      expect(app.contactFieldErrors()['email']).toBe('');
 
       app.contactFirstName.set('Anil');
       app.contactEmail.set('anil@example.com');
-      app.contactPhone.set('+91 98765 43210');
+      app.contactPhone.set('9876543210');
       app.contactMessage.set('I want a quote for a Halo UPS.');
       expect(Object.values(app.contactFieldErrors()).every(e => e === '')).toBe(true);
 

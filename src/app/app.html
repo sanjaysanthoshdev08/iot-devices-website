@@ -981,9 +981,9 @@
               <div class="contact-field-group">
                 <label class="contact-label">Phone Number</label>
                 <input type="tel" class="contact-input" [value]="contactPhone()"
-                  [class.invalid]="contactShowError('phone')" maxlength="20" inputmode="tel" autocomplete="tel"
+                  [class.invalid]="contactShowError('phone')" maxlength="10" inputmode="numeric" autocomplete="tel"
                   (input)="contactPhone.set($any($event.target).value)" (blur)="touchContactField('phone')"
-                  placeholder="Enter Phone Number (optional)" />
+                  placeholder="Enter 10-digit Phone Number (optional)" />
                 <span class="contact-field-error" *ngIf="contactShowError('phone')">{{ contactShowError('phone') }}</span>
               </div>
             </div>
