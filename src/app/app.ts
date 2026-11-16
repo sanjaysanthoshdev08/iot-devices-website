@@ -224,6 +224,47 @@ export class App implements AfterViewInit, OnDestroy {
   contactSubmitting = signal<boolean>(false);
   contactSubmitSuccess = signal<string>('');
   contactSubmitError = signal<string>('');
+  contactTouched = signal<Record<string, boolean>>({});
+  contactSubmitAttempted = signal<boolean>(false);
+
+  /** Validation messages for the enquiry form ('' = field is valid). */
+  contactFieldErrors = computed(() => {
+    const name = /^[\p{L}][\p{L} .'-]*$/u;
+    const first = this.contactFirstName().trim();
+    const last = this.contactLastName().trim();
+    const email = this.contactEmail().trim();
+    const phone = this.contactPhone().trim();
+    const message = this.contactMessage().trim();
+    const phoneDigits = phone.replace(/[\s\-()]/g, '');
+    const nameError = (v: string, label: string) =>
+      !v ? `${label} is required.`
+        : v.length < 2 ? `${label} must be at least 2 characters.`
+        : v.length > 50 ? `${label} must be 50 characters or fewer.`
+        : !name.test(v) ? `${label} can contain letters only.` : '';
+    return {
+      firstName: nameError(first, 'First name'),
+      lastName: nameError(last, 'Last name'),
+      email: !email ? 'Email is required.'
+        : email.length > 100 ? 'Email must be 100 characters or fewer.'
+        : !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(email)
+          ? 'Enter a valid email address, e.g. name@example.com.' : '',
+      phone: !phone ? ''
+        : !/^\+?[0-9]{10,15}$/.test(phoneDigits) ? 'Enter a valid phone number (10 to 15 digits).' : '',
+      message: !message ? 'Message is required.'
+        : message.length < 10 ? 'Message must be at least 10 characters.'
+        : message.length > 1000 ? 'Message must be 1000 characters or fewer.' : ''
+    } as Record<string, string>;
+  });
+
+  /** Error to show under a field: only after the user left it or tried to send. */
+  contactShowError(field: string): string {
+    return (this.contactSubmitAttempted() || this.contactTouched()[field])
+      ? (this.contactFieldErrors()[field] ?? '') : '';
+  }
+
+  touchContactField(field: string) {
+    this.contactTouched.update(t => ({ ...t, [field]: true }));
+  }
 
   // ===== DEVICE & DISTRIBUTOR AUTHENTICATION MODAL STATE =====
   isDeviceAuthModalOpen = signal<boolean>(false);
@@ -3396,13 +3437,10 @@ export class App implements AfterViewInit, OnDestroy {
     event.preventDefault();
     if (this.contactSubmitting()) return;
 
-    const firstName = this.contactFirstName().trim();
-    const lastName = this.contactLastName().trim();
-    const email = this.contactEmail().trim();
-    const message = this.contactMessage().trim();
-
-    if (!firstName || !lastName || !email || !message) {
-      this.contactSubmitError.set('Please fill in all required fields.');
+    this.contactSubmitAttempted.set(true);
+    if (Object.values(this.contactFieldErrors()).some(e => !!e)) {
+      this.contactSubmitSuccess.set('');
+      this.contactSubmitError.set('Please correct the highlighted fields and try again.');
       return;
     }
 
@@ -3419,6 +3457,8 @@ export class App implements AfterViewInit, OnDestroy {
       this.contactEmail.set('');
       this.contactPhone.set('');
       this.contactMessage.set('');
+      this.contactTouched.set({});
+      this.contactSubmitAttempted.set(false);
     }, 1200);
   }
 

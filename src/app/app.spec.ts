@@ -425,6 +425,41 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
       expect(app.isNewDistModalOpen()).toBe(false);
     });
 
+    it('Enquiry form validates every field and only sends when all are valid', () => {
+      vi.useFakeTimers();
+      const submit = () => app.onContactSubmit({ preventDefault: () => {} } as Event);
+
+      submit();
+      expect(app.contactSubmitError()).toContain('correct the highlighted fields');
+      expect(app.contactShowError('email')).toBe('Email is required.');
+
+      app.contactFirstName.set('A1');
+      app.contactLastName.set('Kumar');
+      app.contactEmail.set('john.example.com');
+      app.contactPhone.set('12345');
+      app.contactMessage.set('short');
+      expect(app.contactFieldErrors()['firstName']).toBe('First name can contain letters only.');
+      expect(app.contactFieldErrors()['email']).toContain('valid email');
+      expect(app.contactFieldErrors()['phone']).toContain('valid phone');
+      expect(app.contactFieldErrors()['message']).toContain('at least 10');
+      app.contactEmail.set('john@example');
+      expect(app.contactFieldErrors()['email']).toContain('valid email');
+
+      app.contactFirstName.set('Anil');
+      app.contactEmail.set('anil@example.com');
+      app.contactPhone.set('+91 98765 43210');
+      app.contactMessage.set('I want a quote for a Halo UPS.');
+      expect(Object.values(app.contactFieldErrors()).every(e => e === '')).toBe(true);
+
+      app.contactPhone.set('');
+      submit();
+      expect(app.contactSubmitting()).toBe(true);
+      vi.advanceTimersByTime(1300);
+      expect(app.contactSubmitSuccess()).toContain('sent successfully');
+      expect(app.contactEmail()).toBe('');
+      vi.useRealTimers();
+    });
+
     it('Accounts table filter narrows the distributor list by name, code or district', () => {
       app.distributorDirectory.set([
         { id: 1, name: 'Thrissur Distributor', distributorCode: 'DIST-TCR-01', status: 'ACTIVE', administrator: null, branches: [], district: 'Thrissur' },

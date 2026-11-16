@@ -3482,6 +3482,17 @@
   }
 }
 
+.contact-input.invalid {
+  border-color: #ff6b6b;
+}
+
+.contact-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #ff8a8a;
+}
+
 .contact-feedback-msg {
   font-family: 'Inter', sans-serif;
   font-size: 13.5px;

@@ -951,13 +951,19 @@
               <div class="contact-field-group">
                 <label class="contact-label">First Name</label>
                 <input type="text" class="contact-input active-field" [value]="contactFirstName()"
-                  (input)="contactFirstName.set($any($event.target).value)" placeholder="Enter First Name" />
+                  [class.invalid]="contactShowError('firstName')" maxlength="50" autocomplete="given-name"
+                  (input)="contactFirstName.set($any($event.target).value)" (blur)="touchContactField('firstName')"
+                  placeholder="Enter First Name" />
+                <span class="contact-field-error" *ngIf="contactShowError('firstName')">{{ contactShowError('firstName') }}</span>
               </div>
 
               <div class="contact-field-group">
                 <label class="contact-label">Last Name</label>
                 <input type="text" class="contact-input" [value]="contactLastName()"
-                  (input)="contactLastName.set($any($event.target).value)" placeholder="Enter Last Name" />
+                  [class.invalid]="contactShowError('lastName')" maxlength="50" autocomplete="family-name"
+                  (input)="contactLastName.set($any($event.target).value)" (blur)="touchContactField('lastName')"
+                  placeholder="Enter Last Name" />
+                <span class="contact-field-error" *ngIf="contactShowError('lastName')">{{ contactShowError('lastName') }}</span>
               </div>
             </div>
 
@@ -966,13 +972,19 @@
               <div class="contact-field-group">
                 <label class="contact-label">Email</label>
                 <input type="email" class="contact-input" [value]="contactEmail()"
-                  (input)="contactEmail.set($any($event.target).value)" placeholder="Enter your Email" />
+                  [class.invalid]="contactShowError('email')" maxlength="100" autocomplete="email"
+                  (input)="contactEmail.set($any($event.target).value)" (blur)="touchContactField('email')"
+                  placeholder="Enter your Email" />
+                <span class="contact-field-error" *ngIf="contactShowError('email')">{{ contactShowError('email') }}</span>
               </div>
 
               <div class="contact-field-group">
                 <label class="contact-label">Phone Number</label>
                 <input type="tel" class="contact-input" [value]="contactPhone()"
-                  (input)="contactPhone.set($any($event.target).value)" placeholder="Enter Phone Number" />
+                  [class.invalid]="contactShowError('phone')" maxlength="20" inputmode="tel" autocomplete="tel"
+                  (input)="contactPhone.set($any($event.target).value)" (blur)="touchContactField('phone')"
+                  placeholder="Enter Phone Number (optional)" />
+                <span class="contact-field-error" *ngIf="contactShowError('phone')">{{ contactShowError('phone') }}</span>
               </div>
             </div>
 
@@ -981,7 +993,10 @@
               <div class="contact-field-group full-width">
                 <label class="contact-label">Message</label>
                 <input type="text" class="contact-input" [value]="contactMessage()"
-                  (input)="contactMessage.set($any($event.target).value)" placeholder="Enter your Message" />
+                  [class.invalid]="contactShowError('message')" maxlength="1000"
+                  (input)="contactMessage.set($any($event.target).value)" (blur)="touchContactField('message')"
+                  placeholder="Enter your Message" />
+                <span class="contact-field-error" *ngIf="contactShowError('message')">{{ contactShowError('message') }}</span>
               </div>
             </div>
 
