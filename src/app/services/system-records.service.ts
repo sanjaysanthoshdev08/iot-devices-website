@@ -57,6 +57,9 @@ export class SystemRecordsService {
         (item.deviceCode && item.deviceCode.toLowerCase().includes(query)) ||
         (item.serialNumber && item.serialNumber.toLowerCase().includes(query)) ||
         (item.model && item.model.toLowerCase().includes(query)) ||
+        (item.customerEmails && item.customerEmails.some(e => e.toLowerCase().includes(query))) ||
+        (item.distributorName && item.distributorName.toLowerCase().includes(query)) ||
+        (item.branchName && item.branchName.toLowerCase().includes(query)) ||
         (item.ownerUserId !== null && String(item.ownerUserId).includes(query))
       );
     }
