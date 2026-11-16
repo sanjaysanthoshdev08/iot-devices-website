@@ -431,12 +431,17 @@ describe('Step 9 Part 2: Role-Aware Entry, Gate Verification & Dashboard Navigat
         { id: 2, name: 'Ernakulam Distributor', distributorCode: 'DIST-EKM-01', status: 'ACTIVE', administrator: null, branches: [], district: 'Ernakulam' }
       ]);
       expect(app.filteredDistributorDirectory().length).toBe(2);
+      app.distributorDirectory.update(l => [...l, { id: 3, name: 'Trivandrum Distributor', distributorCode: 'DIST-TVM-01', status: 'ACTIVE', administrator: null, branches: [], district: 'Trivandrum' }]);
+      app.distributorFilter.set('T');
+      expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([1, 3]);
+      app.distributorFilter.set('e');
+      expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([2]);
       app.distributorFilter.set('thrissur');
       expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([1]);
       app.distributorFilter.set('dist-ekm');
       expect(app.filteredDistributorDirectory().map(d => d.id)).toEqual([2]);
       app.distributorFilter.set('');
-      expect(app.filteredDistributorDirectory().length).toBe(2);
+      expect(app.filteredDistributorDirectory().length).toBe(3);
     });
 
     it('a scoped DISTRIBUTOR_ADMIN is not the overseer and cannot add distributors', () => {
