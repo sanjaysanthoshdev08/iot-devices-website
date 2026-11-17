@@ -2412,8 +2412,32 @@ export class App implements AfterViewInit, OnDestroy {
 
   scrollToTop() {
     const scroller = document.querySelector('.viewport-wrapper') as HTMLElement;
-    if (scroller && typeof scroller.scrollTo === 'function') {
-      scroller.scrollTo({ top: 0, behavior: 'smooth' });
+    if (scroller) {
+      // Same eased flow as the navbar links, so the page's own scroll handlers
+      // (About zone, nav underline, canvas) cooperate and it always reaches Home.
+      this.navigationRequestId++;
+      this.isNavClickScrolling.set(true);
+      const startScroll = scroller.scrollTop;
+      const distance = -startScroll;
+      const duration = Math.min(2200, Math.max(600, Math.abs(distance) / 4));
+      let startTime: number | null = null;
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        scroller.scrollTop = startScroll + distance * easeInOutCubic(progress);
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          scroller.scrollTop = 0;
+          this.updateActiveNavIndex(0);
+          this.isNavClickScrolling.set(false);
+          this.updateCanvasFrame(scroller);
+        }
+      };
+      requestAnimationFrame(animateScroll);
     } else if (typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
