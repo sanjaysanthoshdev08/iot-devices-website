@@ -3169,8 +3169,10 @@ export class App implements AfterViewInit, OnDestroy {
     if (canvas.width !== targetW || canvas.height !== targetH) {
       canvas.width = targetW;
       canvas.height = targetH;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+    // Always re-apply the scale: browser zoom / moving between screens changes the pixel ratio
+    // without changing the canvas pixel size, which left a stale scale (picture drawn too small).
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.imageSmoothingEnabled = true;
     (ctx as any).imageSmoothingQuality = 'high';
