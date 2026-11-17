@@ -10022,3 +10022,35 @@
   box-shadow: none;
 }
 .footer-bottom-bar { border-top: 0; box-shadow: none; background: transparent; }
+
+
+/* ===== Scroll-to-top button: always-on pulse (grow / shrink) ===== */
+@keyframes scrollTopPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.55), 0 0 0 0 rgba(0, 229, 255, 0.45);
+  }
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 28px rgba(0, 240, 255, 0.95), 0 0 0 9px rgba(0, 229, 255, 0);
+  }
+}
+
+.btn-scroll-top {
+  animation: scrollTopPulse 2s ease-in-out infinite;
+
+  &:hover {
+    animation: none;
+    transform: translateY(-3px) scale(1.18);
+    box-shadow: 0 0 32px rgba(0, 240, 255, 1);
+  }
+
+  &:active {
+    animation: none;
+    transform: scale(0.96);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
