@@ -10054,3 +10054,11 @@
     animation: none;
   }
 }
+
+
+/* ===== Home hero subtitle: clearer, more readable text ===== */
+.hero-subtitle {
+  color: #e8f1fb;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 14px rgba(5, 11, 24, 0.9);
+}
