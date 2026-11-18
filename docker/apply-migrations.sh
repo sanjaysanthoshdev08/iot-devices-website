@@ -16,4 +16,11 @@ if [ "$($PSQL -tAc "select to_regclass('public.device_telemetry_credentials')")"
 else
   echo "Migration 005 already applied."
 fi
+
+if [ "$($PSQL -tAc "select count(*) from information_schema.columns where table_name='device_telemetry_readings' and column_name='extra_measurements'")" = "0" ]; then
+  echo "Applying migration 014 (universal telemetry extras)..."
+  $PSQL -f /sql/014_add_telemetry_extras.sql
+else
+  echo "Migration 014 already applied."
+fi
 echo "Database ready."

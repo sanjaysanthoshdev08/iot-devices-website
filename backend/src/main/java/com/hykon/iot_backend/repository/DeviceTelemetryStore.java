@@ -155,6 +155,22 @@ public class DeviceTelemetryStore {
                 load.loadPercent());
     }
 
+    /** Universal (v2) telemetry: save extra measurements, firmware version and model for a reading. */
+    public void attachExtras(
+            long readingId, String extrasJson, String firmwareVersion, String model
+    ) {
+        if (extrasJson == null && firmwareVersion == null && model == null) {
+            return;
+        }
+        jdbc.update("""
+                UPDATE device_telemetry_readings
+                   SET extra_measurements = ?::jsonb,
+                       firmware_version = ?,
+                       device_model = ?
+                 WHERE id = ?
+                """, extrasJson, firmwareVersion, model, readingId);
+    }
+
     private <T> Optional<T> optional(
             String sql, RowMapper<T> mapper, Object... arguments
     ) {
