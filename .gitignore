@@ -57,3 +57,4 @@ backend/.env.*
 !backend/.env.example
 build-maven/
 backend/build-maven/
+.env
