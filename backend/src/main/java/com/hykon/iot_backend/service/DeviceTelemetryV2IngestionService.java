@@ -47,7 +47,14 @@ public class DeviceTelemetryV2IngestionService {
 
         var receipt = ingestion.ingest(keyId, secret, translation.reading());
 
-        if (!receipt.duplicate()) {
+        if (receipt.duplicate()) {
+            // Same retry is fine; the same sample number with different extra measurements is a conflict,
+            // exactly like a changed standard reading.
+            if (!store.extrasMatch(receipt.readingId(), translation.extrasJson())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Sample identity already has different content");
+            }
+        } else {
             store.attachExtras(
                     receipt.readingId(), translation.extrasJson(),
                     request.firmwareVersion(), request.model());

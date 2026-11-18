@@ -171,6 +171,16 @@ public class DeviceTelemetryStore {
                 """, extrasJson, firmwareVersion, model, readingId);
     }
 
+    /** True when the reading's stored extra measurements equal the given JSON (both empty counts as equal). */
+    public boolean extrasMatch(long readingId, String extrasJson) {
+        Boolean same = jdbc.queryForObject("""
+                SELECT extra_measurements IS NOT DISTINCT FROM ?::jsonb
+                  FROM device_telemetry_readings
+                 WHERE id = ?
+                """, Boolean.class, extrasJson, readingId);
+        return Boolean.TRUE.equals(same);
+    }
+
     private <T> Optional<T> optional(
             String sql, RowMapper<T> mapper, Object... arguments
     ) {
