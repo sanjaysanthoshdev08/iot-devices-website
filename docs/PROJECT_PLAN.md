@@ -9,6 +9,29 @@ Stack in use (kept): Angular (TypeScript, HTML, SCSS) · Spring Boot 4 / Java ·
 PostgreSQL · ESP32 firmware (PlatformIO).
 
 ---------------------------------------------------------------------------------------------------
+## CURRENT STATUS (updated 2026-11-18)
+
+| # | Item | Status |
+|---|---|---|
+| 13–17 | ESP32 setup, telemetry API, monitoring screens, wireless demo | Done (your own steps; closeout + other-hotspot pending) |
+| 17B | Roles, distributor/branch hierarchy, provisioning, device registration, customer claim (3 per device) | **Done** |
+| D1 | Docker: Postgres + Spring Boot + Nginx/Angular with Docker Compose, first-start seeder, env template | **Done** (tested locally, pushed) |
+| U1 | Universal telemetry v2 endpoint (`POST /api/v2/telemetry/readings`) + migration 014 + unit tests | **Done** (code pushed; live test below) |
+| U2 | Show extra (non-standard) measurements and firmware/model on the website | Pending |
+| U3 | Device model/profile registry (labels, units, ranges per inverter model) | Pending |
+| U4 | Device health: online/offline, last seen, firmware version, stale rules | Pending |
+| U5 | API guide (OpenAPI/Swagger) + simulator that pretends to be many different inverters | Pending |
+| U6 | ESP32 firmware template: home Wi-Fi setup, HTTPS, NTP, offline buffer, OTA | Pending |
+| W1 | Enquiry form saved in DB + emailed; edit/delete for distributors, branches, devices; password reset email | Pending |
+| P1 | Production readiness: remove localhost URLs from services, Flyway, strong secrets, login rate limit, remove test data, retention, backups | Pending |
+| P2 | Charts, warnings/events, summaries, export | Pending |
+| X1 | Deployment (VPS + domain + HTTPS + CI/CD) | Pending (after the above) |
+| X2 | Remote acceptance with a real ESP32 | Pending |
+| X3 | Real inverter communication and verification | Pending |
+
+Next action: U2 → U5 (finish the universal device path), then W1, P1, U6, then deploy.
+
+---------------------------------------------------------------------------------------------------
 ## PART A — Done before the Claude Code work (your own steps 13–17)
 
 | Step | Status |
